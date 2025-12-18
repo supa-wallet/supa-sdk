@@ -1,0 +1,46 @@
+{
+  "name": "@walletino/sdk",
+  "version": "0.1.0",
+  "description": "React SDK for Walletino Backend + Privy.io integration with Canton Network support",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "walletino",
+    "privy",
+    "canton",
+    "stellar",
+    "web3",
+    "react",
+    "sdk"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@privy-io/react-auth": "^3.3.0",
+    "axios": "^1.7.9",
+    "buffer": "^6.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.11"
+  }
+}
+

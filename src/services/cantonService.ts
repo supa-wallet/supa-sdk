@@ -1,0 +1,138 @@
+/**
+ * Canton Network Service
+ * Handles Canton wallet registration, transactions, and devnet tap
+ */
+
+import type { ApiClient } from '../core/client';
+import type {
+  CantonPrepareRegisterRequestDto,
+  CantonPrepareTransactionResponseDto,
+  CantonSubmitRegisterRequestDto,
+  CantonSubmitTransactionResponseDto,
+  CantonPrepareTapRequestDto,
+} from '../core/types';
+import { base64ToHex, hexToBase64 } from '../utils/converters';
+
+export interface CantonRegisterParams {
+  /** Base64 public key from Stellar wallet */
+  publicKey: string;
+  /** Function to sign hash (returns signature in hex) */
+  signFunction: (hashHex: string) => Promise<string>;
+}
+
+export interface CantonTapParams {
+  /** Amount of Canton coins to receive */
+  amount: string;
+  /** Function to sign hash (returns signature in hex) */
+  signFunction: (hashHex: string) => Promise<string>;
+}
+
+export class CantonService {
+  constructor(private client: ApiClient) {}
+
+  /**
+   * Register Canton wallet
+   * Flow:
+   * 1. Call /canton/register/prepare with publicKey -> get hash
+   * 2. Sign hash with Stellar wallet
+   * 3. Call /canton/register/submit with hash + signature
+   * 
+   * @param params Registration parameters
+   */
+  async registerCanton(params: CantonRegisterParams): Promise<void> {
+    const { publicKey, signFunction } = params;
+    
+    // Step 1: Prepare registration - get hash to sign
+    const prepareResponse = await this.client.post<CantonPrepareTransactionResponseDto>(
+      '/canton/register/prepare',
+      { publicKey } as CantonPrepareRegisterRequestDto
+    );
+
+    const hashBase64 = prepareResponse.hash;
+
+    // Step 2: Convert hash to hex for Privy signing
+    const hashHex = base64ToHex(hashBase64);
+
+    // Step 3: Sign hash using Privy
+    const signatureHex = await signFunction(hashHex);
+
+    // Step 4: Convert signature to base64 for Canton
+    const signatureBase64 = hexToBase64(signatureHex);
+
+    // Step 5: Submit signed transaction
+    await this.client.post<void>(
+      '/canton/register/submit',
+      {
+        hash: hashBase64,
+        signature: signatureBase64,
+      } as CantonSubmitRegisterRequestDto
+    );
+  }
+
+  /**
+   * Tap devnet faucet to receive test Canton coins
+   * Flow:
+   * 1. Call /canton/devnet/tap with amount -> get hash
+   * 2. Sign hash with Stellar wallet
+   * 3. Call /canton/api/submit with hash + signature
+   * 
+   * @param params Tap parameters
+   */
+  async tapDevnet(params: CantonTapParams): Promise<CantonSubmitTransactionResponseDto> {
+    const { amount, signFunction } = params;
+    
+    // Step 1: Prepare tap transaction - get hash to sign
+    const prepareResponse = await this.client.post<CantonPrepareTransactionResponseDto>(
+      '/canton/devnet/tap',
+      { amount } as CantonPrepareTapRequestDto
+    );
+
+    const hashBase64 = prepareResponse.hash;
+
+    // Step 2: Convert hash to hex for Privy signing
+    const hashHex = base64ToHex(hashBase64);
+
+    // Step 3: Sign hash using Privy
+    const signatureHex = await signFunction(hashHex);
+
+    // Step 4: Convert signature to base64 for Canton
+    const signatureBase64 = hexToBase64(signatureHex);
+
+    // Step 5: Submit signed transaction
+    return await this.submitTransaction(hashBase64, signatureBase64);
+  }
+
+  /**
+   * Submit signed Canton transaction
+   * @param hash Base64 hash
+   * @param signature Base64 signature
+   */
+  async submitTransaction(
+    hash: string,
+    signature: string
+  ): Promise<CantonSubmitTransactionResponseDto> {
+    return await this.client.post<CantonSubmitTransactionResponseDto>(
+      '/canton/api/submit',
+      {
+        hash,
+        signature,
+      } as CantonSubmitRegisterRequestDto
+    );
+  }
+
+  /**
+   * Check if user has Canton wallet registered
+   * This is inferred - if registration succeeds, user has wallet
+   * If it fails with 409 or similar, wallet already exists
+   */
+  async checkRegistrationStatus(): Promise<boolean> {
+    try {
+      // Try to get user info or balance to check if Canton wallet exists
+      // This is a placeholder - actual implementation depends on backend API
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+}
+

@@ -1,0 +1,141 @@
+/**
+ * HTTP Client for Walletino Backend API
+ * Handles authentication and API communication
+ */
+
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import type { ApiError } from './types';
+
+export interface ClientConfig {
+  baseURL?: string;
+  getAccessToken?: () => Promise<string | null>;
+}
+
+export class ApiClient {
+  private client: AxiosInstance;
+  private getAccessToken?: () => Promise<string | null>;
+
+  constructor(config: ClientConfig = {}) {
+    const baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || 'https://stage_api.walletino.fyi';
+    
+    this.client = axios.create({
+      baseURL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    this.getAccessToken = config.getAccessToken;
+
+    // Request interceptor to add auth token
+    this.client.interceptors.request.use(
+      async (config) => {
+        if (this.getAccessToken) {
+          try {
+            const token = await this.getAccessToken();
+            if (token) {
+              config.headers.Authorization = `Bearer ${token}`;
+            }
+          } catch (error) {
+            console.error('[Walletino SDK] ❌ Failed to get access token:', error);
+          }
+        }
+        
+        // Log request details
+        console.group(`[Walletino SDK] 📤 REQUEST: ${config.method?.toUpperCase()} ${config.url}`);
+        console.log('Headers:', {
+          'Content-Type': config.headers['Content-Type'],
+          'Authorization': config.headers.Authorization ? `Bearer ***${String(config.headers.Authorization).slice(-20)}` : 'none'
+        });
+        if (config.data) {
+          console.log('Request Body:', config.data);
+        }
+        console.groupEnd();
+        
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // Response interceptor for error handling
+    this.client.interceptors.response.use(
+      (response) => {
+        console.group(`[Walletino SDK] 📥 RESPONSE: ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
+        console.log('Status:', response.status, response.statusText);
+        console.log('Response Data:', response.data);
+        console.groupEnd();
+        return response;
+      },
+      (error: AxiosError<ApiError>) => {
+        if (error.response) {
+          console.group(`[Walletino SDK] ❌ ERROR RESPONSE: ${error.response.status} ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
+          console.error('Status:', error.response.status, error.response.statusText);
+          console.error('Request Body:', error.config?.data);
+          console.error('Response Data:', error.response.data);
+          console.groupEnd();
+          
+          const apiError: ApiError = {
+            statusCode: error.response.status,
+            message: error.response.data?.message || error.message,
+            error: error.response.data?.error,
+          };
+          return Promise.reject(apiError);
+        }
+        console.error('[Walletino SDK] ❌ Network error:', error.message);
+        return Promise.reject({
+          statusCode: 0,
+          message: error.message || 'Network error',
+        } as ApiError);
+      }
+    );
+  }
+
+  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.get<T>(url, config);
+    return response.data;
+  }
+
+  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.post<T>(url, data, config);
+    return response.data;
+  }
+
+  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.put<T>(url, data, config);
+    return response.data;
+  }
+
+  async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.delete<T>(url, config);
+    return response.data;
+  }
+
+  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.patch<T>(url, data, config);
+    return response.data;
+  }
+
+  setAccessTokenGetter(getter: () => Promise<string | null>) {
+    this.getAccessToken = getter;
+  }
+
+  getBaseURL(): string {
+    return this.client.defaults.baseURL || '';
+  }
+}
+
+// Singleton instance
+let clientInstance: ApiClient | null = null;
+
+export function createApiClient(config?: ClientConfig): ApiClient {
+  clientInstance = new ApiClient(config);
+  return clientInstance;
+}
+
+export function getApiClient(): ApiClient {
+  if (!clientInstance) {
+    throw new Error('ApiClient not initialized. Call createApiClient first.');
+  }
+  return clientInstance;
+}
+
