@@ -1,6 +1,6 @@
 /**
- * useAPI Hook
- * Provides access to all backend API methods
+ * Walletino Backend API hook
+ * Provides type-safe access to all backend API endpoints
  */
 
 import { useWalletinoContext } from '../providers/WalletinoProvider';
@@ -27,96 +27,153 @@ import type {
   PaymasterResponseDto,
 } from '../core/types';
 
+/**
+ * Return type for useAPI hook
+ * Provides organized access to all backend API methods
+ */
 export interface UseAPIReturn {
-  /** User API methods */
+  /** User management and profile methods */
   user: {
-    /** Get current user */
+    /** Fetches current authenticated user profile */
     getCurrent: () => Promise<UserResponseDto>;
-    /** Get all users */
+    /** Fetches all users (admin only) */
     getAll: () => Promise<UserResponseDto[]>;
-    /** Get user by Privy ID */
+    /** Fetches user by Privy ID */
     getByPrivyId: (privyUserId: string) => Promise<UserResponseDto>;
-    /** Get smart wallet balances */
+    /** Fetches user's smart wallet token balances */
     getBalance: (force?: boolean) => Promise<UserBalanceResponseDto>;
   };
 
-  /** Dialog API methods */
+  /** AI dialog management methods */
   dialogs: {
-    /** Create new dialog */
+    /** Creates a new AI dialog with initial message */
     create: (text: string) => Promise<DialogWithMessagesResponseDto>;
-    /** Get all dialogs */
+    /** Fetches all user dialogs with pagination */
     findAll: (params?: PaginationParams) => Promise<OffsetPaginatedDto<DialogListResponseDto>>;
-    /** Get specific dialog */
+    /** Fetches a specific dialog by ID */
     findOne: (id: number) => Promise<DialogListResponseDto>;
-    /** Delete dialog */
+    /** Deletes a dialog and all its messages */
     delete: (id: number) => Promise<void>;
   };
 
-  /** Message API methods */
+  /** AI message methods within dialogs */
   messages: {
-    /** Create message in dialog */
+    /** Creates a new message in a dialog */
     create: (dialogId: number, text: string) => Promise<MessageResponseDto>;
-    /** Get all messages in dialog */
+    /** Fetches all messages in a dialog with pagination */
     findAll: (dialogId: number, params?: PaginationParams) => Promise<OffsetPaginatedDto<MessageResponseDto>>;
-    /** Get specific message */
+    /** Fetches a specific message by ID */
     findOne: (id: number) => Promise<MessageResponseDto>;
   };
 
-  /** OnChain API methods */
+  /** On-chain data and token price methods */
   onchain: {
-    /** Get token prices by addresses */
+    /** Fetches token prices by contract addresses */
     getPricesByAddresses: (
       addresses: Array<{ network: AlchemyNetwork; contractAddress: string }>
     ) => Promise<NetworkAddressAndPriceDto[]>;
-    /** Get token prices by symbols */
+    /** Fetches token prices by symbols (BTC, ETH, etc.) */
     getTokenPrices: (symbols: string[]) => Promise<Record<string, number>>;
-    /** Get token price history */
+    /** Fetches historical price data for a token */
     getPriceHistory: (params: TokenPriceHistoryParams) => Promise<TokenPriceHistoryResponse>;
-    /** Get 24hr price changes */
+    /** Fetches 24-hour price changes for tokens */
     get24hrPriceChanges: (
       tokens: Array<{ network: AlchemyNetwork; contractAddress: string }>
     ) => Promise<TokenInfoWithPriceChangeDto[]>;
-    /** Get token info */
+    /** Fetches detailed token information */
     getTokenInfo: (network: string, addresses: string | string[]) => Promise<Record<string, TokenInfo>>;
-    /** Get account token balances */
+    /** Fetches token balances for an account */
     getAccountBalances: (network: string, account: string, force?: boolean) => Promise<AccountTokensBalancesResponse>;
   };
 
-  /** Transaction API methods */
+  /** Transaction history methods */
   transactions: {
-    /** Get user transactions */
+    /** Fetches user transaction history */
     get: (params?: TransactionQueryParams) => Promise<any>;
-    /** Force load transactions */
+    /** Forces reload of transaction history from blockchain */
     forceLoad: (params?: TransactionQueryParams) => Promise<any>;
   };
 
-  /** SupaPoints API methods */
+  /** SupaPoints reward system methods */
   supaPoints: {
-    /** Get balance */
+    /** Fetches current SupaPoints balance */
     getBalance: () => Promise<SupaPointsBalanceResponseDto>;
-    /** Get history */
+    /** Fetches SupaPoints transaction history */
     getHistory: (params?: SupaPointsHistoryParams) => Promise<OffsetPaginatedDto<any>>;
-    /** Process daily login */
+    /** Processes daily login bonus */
     dailyLogin: () => Promise<DailyLoginResponseDto>;
   };
 
-  /** Paymaster API methods */
+  /** Paymaster sponsorship methods */
   paymaster: {
-    /** Check sponsorship */
+    /** Checks if transaction qualifies for gas sponsorship */
     checkSponsorship: (request: PaymasterRequestDto) => Promise<PaymasterResponseDto>;
   };
 
-  /** Privy methods */
+  /** Privy wallet methods */
   privy: {
-    /** Get Privy balance */
+    /** Fetches Privy embedded wallet balance */
     getBalance: () => Promise<any>;
   };
 }
 
 /**
- * Hook for accessing backend API
+ * Hook for accessing Walletino Backend API
+ * Provides organized, type-safe access to all backend endpoints
+ * All methods automatically include authentication token from Privy
+ * 
+ * @returns Organized API methods grouped by functionality
+ * 
+ * @example
+ * Basic usage
+ * ```tsx
+ * function UserBalance() {
+ *   const api = useAPI();
+ *   const [balance, setBalance] = useState(null);
+ * 
+ *   useEffect(() => {
+ *     api.user.getBalance().then(setBalance);
+ *   }, []);
+ * 
+ *   return <div>Balance: ${balance?.totalUsdBalance}</div>;
+ * }
+ * ```
+ * 
+ * @example
+ * Creating an AI dialog
+ * ```tsx
+ * function CreateDialog() {
+ *   const api = useAPI();
+ * 
+ *   const handleCreate = async () => {
+ *     const dialog = await api.dialogs.create('Hello AI!');
+ *     console.log('Dialog created:', dialog.id);
+ *     console.log('AI response:', dialog.messages[1].message);
+ *   };
+ * 
+ *   return <button onClick={handleCreate}>Start Chat</button>;
+ * }
+ * ```
+ * 
+ * @example
+ * Fetching crypto prices
+ * ```tsx
+ * function TokenPrices() {
+ *   const api = useAPI();
+ * 
+ *   useEffect(() => {
+ *     api.onchain.getTokenPrices(['BTC', 'ETH', 'SOL'])
+ *       .then(prices => {
+ *         console.log('BTC:', prices.BTC);
+ *         console.log('ETH:', prices.ETH);
+ *       });
+ *   }, []);
+ * 
+ *   return <div>Check console for prices</div>;
+ * }
+ * ```
  */
-export function useAPI(): UseAPIReturn {
+export const useAPI = (): UseAPIReturn => {
   const { apiService } = useWalletinoContext();
 
   return {
@@ -170,5 +227,5 @@ export function useAPI(): UseAPIReturn {
       getBalance: () => apiService.getPrivyBalance(),
     },
   };
-}
+};
 

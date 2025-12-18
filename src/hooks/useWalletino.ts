@@ -1,61 +1,90 @@
 /**
- * useWalletino Hook
- * Main hook that provides access to all SDK functionality
+ * Main Walletino SDK hook
+ * Provides unified access to all SDK functionality
  */
 
 import { useAuth, UseAuthReturn } from './useAuth';
 import { useCanton, UseCantonReturn } from './useCanton';
 import { useAPI, UseAPIReturn } from './useAPI';
 
+/**
+ * Return type for useWalletino hook
+ */
 export interface UseWalletinoReturn {
-  /** Authentication methods */
+  /** Authentication methods and user state */
   auth: UseAuthReturn;
   
-  /** Canton Network operations */
+  /** Canton Network operations and wallet management */
   canton: UseCantonReturn;
   
-  /** Backend API methods */
+  /** Backend API methods for data access */
   api: UseAPIReturn;
   
-  /** Complete onboarding flow */
+  /** Automated onboarding flow (login → create wallet → register Canton) */
   onboard: () => Promise<void>;
 }
 
 /**
- * Main hook for Walletino SDK
- * Provides access to all SDK functionality
+ * Main hook for accessing all Walletino SDK features
+ * Combines authentication, Canton Network, and API functionality
+ * 
+ * @returns Combined SDK functionality with convenience methods
  * 
  * @example
+ * Basic usage
  * ```tsx
- * function MyComponent() {
+ * function Dashboard() {
  *   const { auth, canton, api } = useWalletino();
- *   
- *   const handleLogin = async () => {
- *     await auth.login();
- *     await canton.registerCanton();
- *   };
- *   
- *   return <button onClick={handleLogin}>Login & Register</button>;
+ * 
+ *   if (!auth.authenticated) {
+ *     return <button onClick={auth.login}>Login</button>;
+ *   }
+ * 
+ *   return (
+ *     <div>
+ *       <p>User: {auth.user?.email?.address}</p>
+ *       <button onClick={() => canton.registerCanton()}>
+ *         Register Canton
+ *       </button>
+ *     </div>
+ *   );
+ * }
+ * ```
+ * 
+ * @example
+ * Using automated onboarding
+ * ```tsx
+ * function OnboardButton() {
+ *   const { onboard, canton } = useWalletino();
+ * 
+ *   return (
+ *     <button onClick={onboard}>
+ *       {canton.isRegistered ? 'Already registered' : 'Get Started'}
+ *     </button>
+ *   );
  * }
  * ```
  */
-export function useWalletino(): UseWalletinoReturn {
+export const useWalletino = (): UseWalletinoReturn => {
   const auth = useAuth();
   const canton = useCanton();
   const api = useAPI();
 
   /**
-   * Complete onboarding flow:
-   * 1. Login with Privy
-   * 2. Create Stellar wallet if needed
+   * Automated onboarding flow
+   * Steps:
+   * 1. Login with Privy (if not authenticated)
+   * 2. Create Stellar wallet (if needed)
    * 3. Register Canton wallet
+   * 
+   * Note: If user is not authenticated, only opens login modal
+   * Call again after authentication to continue onboarding
    */
   const onboard = async () => {
     // Step 1: Login if not authenticated
     if (!auth.authenticated) {
       auth.login();
-      // Wait for authentication to complete
-      // Note: This returns immediately, actual login happens in modal
+      // Login happens in modal, returns immediately
       return;
     }
 
@@ -71,5 +100,5 @@ export function useWalletino(): UseWalletinoReturn {
     api,
     onboard,
   };
-}
+};
 

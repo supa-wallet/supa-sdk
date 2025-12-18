@@ -5,21 +5,40 @@
 
 import { privyPublicKeyToCantonBase64 } from './converters';
 
+/**
+ * Stellar wallet interface representing a Privy Stellar wallet
+ */
 export interface StellarWallet {
+  /** Stellar address (public key in Stellar format) */
   address: string;
+  /** Raw public key in hex format */
   publicKey: string;
+  /** Chain type, always 'stellar' for Stellar wallets */
   chainType: 'stellar';
+  /** Wallet client type (e.g., 'privy') */
   walletClientType?: string;
+  /** Whether the wallet was imported or created */
   imported?: boolean;
 }
 
 /**
- * Extract Stellar wallets from Privy user and wallets
- * @param user Privy user object
- * @param wallets Privy wallets array
- * @returns Array of Stellar wallets
+ * Extracts all Stellar wallets from Privy user and wallets array
+ * Combines wallets from both user.linkedAccounts and useWallets hook,
+ * removing duplicates by address.
+ * 
+ * @param user - Privy user object
+ * @param wallets - Privy wallets array from useWallets hook
+ * @returns Array of unique Stellar wallets
+ * 
+ * @example
+ * ```ts
+ * const { user } = usePrivy();
+ * const { wallets } = useWallets();
+ * const stellarWallets = getStellarWallets(user, wallets);
+ * console.log(`Found ${stellarWallets.length} Stellar wallets`);
+ * ```
  */
-export function getStellarWallets(user: any, wallets: any[]): StellarWallet[] {
+export const getStellarWallets = (user: any, wallets: any[]): StellarWallet[] => {
   const stellarWallets: StellarWallet[] = [];
 
   // Get from linked accounts
@@ -42,15 +61,26 @@ export function getStellarWallets(user: any, wallets: any[]): StellarWallet[] {
   );
 
   return uniqueWallets;
-}
+};
 
 /**
- * Get public key in base64 format for Canton Network
- * Removes leading 00 byte and converts hex to base64
- * @param wallet Stellar wallet object
- * @returns Public key in base64 format
+ * Converts Stellar wallet public key to Canton Network base64 format
+ * Handles removal of leading 00 byte and conversion from hex to base64
+ * 
+ * @param wallet - Stellar wallet object containing publicKey
+ * @returns Public key in base64 format ready for Canton Network API
+ * @throws {Error} If wallet is invalid or publicKey is missing/malformed
+ * 
+ * @example
+ * ```ts
+ * const publicKeyBase64 = getPublicKeyBase64(stellarWallet);
+ * // Use with Canton Network API
+ * await fetch('/canton/register/prepare', {
+ *   body: JSON.stringify({ publicKey: publicKeyBase64 })
+ * });
+ * ```
  */
-export function getPublicKeyBase64(wallet: StellarWallet | any): string {
+export const getPublicKeyBase64 = (wallet: StellarWallet | any): string => {
   if (!wallet) {
     throw new Error('Wallet is required');
   }
@@ -79,25 +109,44 @@ export function getPublicKeyBase64(wallet: StellarWallet | any): string {
   }
 
   return privyPublicKeyToCantonBase64(publicKey);
-}
+};
 
 /**
- * Check if a wallet is a Stellar wallet
- * @param wallet Wallet object to check
- * @returns True if wallet is Stellar
+ * Type guard to check if a wallet is a Stellar wallet
+ * @param wallet - Wallet object to check
+ * @returns True if wallet is a valid Stellar wallet
+ * 
+ * @example
+ * ```ts
+ * if (isStellarWallet(wallet)) {
+ *   console.log('Stellar wallet address:', wallet.address);
+ * }
+ * ```
  */
-export function isStellarWallet(wallet: any): wallet is StellarWallet {
+export const isStellarWallet = (wallet: any): wallet is StellarWallet => {
   return wallet && wallet.chainType === 'stellar';
-}
+};
 
 /**
- * Get first Stellar wallet or throw error
- * @param user Privy user object
- * @param wallets Privy wallets array
- * @returns First Stellar wallet
- * @throws Error if no Stellar wallet found
+ * Gets the first Stellar wallet from user and wallets array
+ * Convenience function that throws if no Stellar wallet is found
+ * 
+ * @param user - Privy user object
+ * @param wallets - Privy wallets array from useWallets hook
+ * @returns First Stellar wallet found
+ * @throws {Error} If no Stellar wallet found
+ * 
+ * @example
+ * ```ts
+ * try {
+ *   const wallet = getFirstStellarWallet(user, wallets);
+ *   console.log('Using wallet:', wallet.address);
+ * } catch (err) {
+ *   console.error('No Stellar wallet available');
+ * }
+ * ```
  */
-export function getFirstStellarWallet(user: any, wallets: any[]): StellarWallet {
+export const getFirstStellarWallet = (user: any, wallets: any[]): StellarWallet => {
   const stellarWallets = getStellarWallets(user, wallets);
   
   if (stellarWallets.length === 0) {
@@ -105,5 +154,5 @@ export function getFirstStellarWallet(user: any, wallets: any[]): StellarWallet 
   }
   
   return stellarWallets[0];
-}
+};
 

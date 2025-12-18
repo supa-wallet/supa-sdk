@@ -1,6 +1,6 @@
 /**
- * useAuth Hook
- * Provides authentication methods and user state from Privy
+ * Authentication hook using Privy
+ * Provides user authentication methods, state, and JWT token access
  */
 
 import { usePrivy, useLogin, useLogout } from '@privy-io/react-auth';
@@ -8,33 +8,57 @@ import { useEffect } from 'react';
 import { useWalletinoContext } from '../providers/WalletinoProvider';
 import type { User as PrivyUser } from '@privy-io/react-auth';
 
+/**
+ * Return type for useAuth hook
+ */
 export interface UseAuthReturn {
-  /** Login user with Privy */
+  /** Opens Privy login modal */
   login: () => void;
   
-  /** Logout user */
+  /** Logs out the current user */
   logout: () => Promise<void>;
   
   /** Whether user is authenticated */
   authenticated: boolean;
   
-  /** Whether authentication is loading */
+  /** Whether authentication is in progress */
   loading: boolean;
   
-  /** Privy user object */
+  /** Privy user object containing linked accounts and profile data */
   user: PrivyUser | null;
   
-  /** Get Privy access token for API calls */
+  /** Gets Privy JWT access token for authenticated API calls */
   getAccessToken: () => Promise<string | null>;
   
-  /** Whether user is ready (authenticated and not loading) */
+  /** Whether SDK is ready (not loading) */
   ready: boolean;
 }
 
 /**
- * Hook for authentication operations
+ * Hook for managing user authentication via Privy
+ * Automatically configures API client with access token when user authenticates
+ * 
+ * @returns Authentication methods and user state
+ * 
+ * @example
+ * ```tsx
+ * function LoginButton() {
+ *   const { login, logout, authenticated, user } = useAuth();
+ * 
+ *   if (!authenticated) {
+ *     return <button onClick={login}>Login</button>;
+ *   }
+ * 
+ *   return (
+ *     <div>
+ *       <p>Welcome, {user?.email?.address}!</p>
+ *       <button onClick={logout}>Logout</button>
+ *     </div>
+ *   );
+ * }
+ * ```
  */
-export function useAuth(): UseAuthReturn {
+export const useAuth = (): UseAuthReturn => {
   const { apiClient } = useWalletinoContext();
   const { login: privyLogin } = useLogin();
   const { logout: privyLogout } = useLogout();
@@ -64,5 +88,5 @@ export function useAuth(): UseAuthReturn {
     getAccessToken,
     ready,
   };
-}
+};
 
