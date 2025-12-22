@@ -14,9 +14,16 @@ import {
 interface AppHeaderProps {
   isRegistered: boolean;
   onLogout: () => void;
+  showTechnicalDetails: boolean;
+  onToggleTechnicalDetails: (value: boolean) => void;
 }
 
-export function AppHeader({ isRegistered, onLogout }: AppHeaderProps) {
+export function AppHeader({ 
+  isRegistered, 
+  onLogout,
+  showTechnicalDetails,
+  onToggleTechnicalDetails,
+}: AppHeaderProps) {
   const { mode, toggleTheme } = useTheme();
 
   return (
@@ -35,6 +42,23 @@ export function AppHeader({ isRegistered, onLogout }: AppHeaderProps) {
               Canton Connected
             </Badge>
           )}
+          <label style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            cursor: 'pointer',
+            fontSize: '13px',
+            color: 'var(--text-muted)',
+            whiteSpace: 'nowrap',
+          }}>
+            <input
+              type="checkbox"
+              checked={showTechnicalDetails}
+              onChange={(e) => onToggleTechnicalDetails(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            Show tech details
+          </label>
           <IconButton
             onClick={toggleTheme}
             $variant="secondary"

@@ -1,14 +1,10 @@
-/**
- * Supa Provider
- * Main provider component that wraps Privy and provides SDK context
- */
-
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { PrivyProvider, PrivyClientConfig } from '@privy-io/react-auth';
 import { Buffer } from 'buffer';
 import { createApiClient, ApiClient } from '../core/client';
 import { CantonService } from '../services/cantonService';
 import { ApiService } from '../services/apiService';
+import { ConfirmationModal, SignMessageModal, SignTransactionModal } from '../components/ConfirmationModal';
 
 // Initialize Buffer polyfill for browser (required by Privy SDK)
 if (typeof window !== 'undefined' && !(window as any).Buffer) {
@@ -17,20 +13,47 @@ if (typeof window !== 'undefined' && !(window as any).Buffer) {
 }
 
 export interface SupaConfig {
-  /** Privy App ID (required) */
   privyAppId: string;
-  /** Privy Client ID (optional) */
   privyClientId?: string;
-  /** Backend API base URL (optional, defaults to env var or staging) */
   apiBaseUrl?: string;
-  /** Privy appearance config */
   appearance?: {
     theme?: 'light' | 'dark';
     accentColor?: string;
     logo?: string;
   };
-  /** Login methods to enable */
   loginMethods?: Array<'email' | 'wallet' | 'google' | 'twitter' | 'discord' | 'github' | 'linkedin'>;
+}
+export interface ConfirmModalOptions {
+  title?: string;
+  message: string;
+  confirmText?: string;
+  rejectText?: string;
+  description?: string;
+  infoText?: string;
+  icon?: ReactNode;
+}
+
+export interface SignTransactionOptions {
+  transaction: string;
+  title?: string;
+  description?: string;
+  confirmText?: string;
+  rejectText?: string;
+  infoText?: string;
+}
+
+export interface ModalResult<T = void> {
+  confirmed: boolean;
+  data?: T;
+}
+
+export interface SignMessageModalOptions {
+  message: string;
+  title?: string;
+  description?: string;
+  confirmText?: string;
+  rejectText?: string;
+  infoText?: string;
 }
 
 export interface SupaContextValue {
@@ -38,9 +61,23 @@ export interface SupaContextValue {
   cantonService: CantonService;
   apiService: ApiService;
   config: SupaConfig;
+  theme: 'light' | 'dark';
+  confirm: (options: ConfirmModalOptions) => Promise<ModalResult>;
+  signMessageConfirm: (options: SignMessageModalOptions) => Promise<ModalResult>;
+  signTransactionConfirm: (options: SignTransactionOptions) => Promise<ModalResult>;
+  setModalLoading: (loading: boolean) => void;
+  closeModal: () => void;
 }
 
 const SupaContext = createContext<SupaContextValue | null>(null);
+type ModalType = 'confirm' | 'signMessage' | 'signTransaction';
+
+interface ModalState {
+  type: ModalType | null;
+  options: ConfirmModalOptions | SignMessageModalOptions | SignTransactionOptions | null;
+  resolve: ((result: ModalResult) => void) | null;
+  loading: boolean;
+}
 
 export interface SupaProviderProps {
   config: SupaConfig;
@@ -48,29 +85,74 @@ export interface SupaProviderProps {
 }
 
 export function SupaProvider({ config, children }: SupaProviderProps) {
-  const [contextValue, setContextValue] = useState<SupaContextValue | null>(null);
+  const [services, setServices] = useState<{
+    apiClient: ApiClient;
+    cantonService: CantonService;
+    apiService: ApiService;
+  } | null>(null);
+
+  // Modal state
+  const [modalState, setModalState] = useState<ModalState>({
+    type: null,
+    options: null,
+    resolve: null,
+    loading: false,
+  });
 
   useEffect(() => {
-    // Create API client
     const apiClient = createApiClient({
       baseURL: config.apiBaseUrl,
     });
 
-    // Create services
     const cantonService = new CantonService(apiClient);
     const apiService = new ApiService(apiClient);
 
-    setContextValue({
-      apiClient,
-      cantonService,
-      apiService,
-      config,
-    });
+    setServices({ apiClient, cantonService, apiService });
   }, [config]);
 
-  if (!contextValue) {
+  // Modal methods
+  const createModalConfirm = useCallback(
+    (type: ModalType) => (options: any): Promise<ModalResult> =>
+      new Promise((resolve) => setModalState({ type, options, resolve, loading: false })),
+    []
+  );
+
+  const confirm = useCallback(createModalConfirm('confirm'), [createModalConfirm]);
+  const signMessageConfirm = useCallback(createModalConfirm('signMessage'), [createModalConfirm]);
+  const signTransactionConfirm = useCallback(createModalConfirm('signTransaction'), [createModalConfirm]);
+
+  const setModalLoading = useCallback((loading: boolean) => {
+    setModalState((prev) => ({ ...prev, loading }));
+  }, []);
+
+  const closeModal = useCallback(() => {
+    if (modalState.resolve) {
+      modalState.resolve({ confirmed: false });
+    }
+    setModalState({ type: null, options: null, resolve: null, loading: false });
+  }, [modalState.resolve]);
+
+  const handleConfirm = useCallback(() => {
+    if (modalState.resolve) {
+      modalState.resolve({ confirmed: true });
+    }
+    setModalState({ type: null, options: null, resolve: null, loading: false });
+  }, [modalState.resolve]);
+
+  const handleReject = useCallback(() => {
+    if (modalState.resolve) {
+      modalState.resolve({ confirmed: false });
+    }
+    setModalState({ type: null, options: null, resolve: null, loading: false });
+  }, [modalState.resolve]);
+
+  if (!services) {
     return null;
   }
+
+  // Get current theme (reactive to config changes)
+  const theme = config.appearance?.theme || 'light';
+  const themeClass = theme === 'dark' ? 'privy-dark' : 'privy-light';
 
   // Privy configuration
   const privyConfig: PrivyClientConfig = {
@@ -78,12 +160,28 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
       showWalletUIs: true,
     },
     appearance: {
-      theme: config.appearance?.theme || 'light',
+      theme,
       accentColor: config.appearance?.accentColor ? `#${config.appearance.accentColor.replace('#', '')}` as `#${string}` : undefined,
       logo: config.appearance?.logo,
     },
     loginMethods: config.loginMethods || ['email', 'wallet'],
   };
+
+  const contextValue: SupaContextValue = {
+    ...services,
+    config,
+    theme,
+    confirm,
+    signMessageConfirm,
+    signTransactionConfirm,
+    setModalLoading,
+    closeModal,
+  };
+
+  const isOpen = modalState.type !== null;
+  const isConfirmModal = modalState.type === 'confirm';
+  const isSignMessageModal = modalState.type === 'signMessage';
+  const isSignTransactionModal = modalState.type === 'signTransaction';
 
   return (
     <PrivyProvider
@@ -92,16 +190,50 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
       config={privyConfig}
     >
       <SupaContext.Provider value={contextValue}>
-        {children}
+        <div className={themeClass}>
+          {children}
+
+          {/* Confirmation Modal */}
+          {isConfirmModal && modalState.options && (
+            <ConfirmationModal
+              open={isOpen}
+              onClose={handleReject}
+              onConfirm={handleConfirm}
+              onReject={handleReject}
+              loading={modalState.loading}
+              {...(modalState.options as ConfirmModalOptions)}
+            />
+          )}
+
+          {/* Sign Message Modal */}
+          {isSignMessageModal && modalState.options && (
+            <SignMessageModal
+              open={isOpen}
+              onClose={handleReject}
+              onConfirm={handleConfirm}
+              onReject={handleReject}
+              loading={modalState.loading}
+              {...(modalState.options as SignMessageModalOptions)}
+            />
+          )}
+
+          {/* Sign Transaction Modal */}
+          {isSignTransactionModal && modalState.options && (
+            <SignTransactionModal
+              open={isOpen}
+              onClose={handleReject}
+              onConfirm={handleConfirm}
+              onReject={handleReject}
+              loading={modalState.loading}
+              {...(modalState.options as SignTransactionOptions)}
+            />
+          )}
+        </div>
       </SupaContext.Provider>
     </PrivyProvider>
   );
 }
 
-/**
- * Hook to access Supa context
- * @internal Use specific hooks like useAuth, useCanton, useAPI instead
- */
 export function useSupaContext(): SupaContextValue {
   const context = useContext(SupaContext);
   

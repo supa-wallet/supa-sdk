@@ -17,6 +17,14 @@ import type {
 } from '../core/types';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 
+// Re-export types for external use
+export type {
+  CantonMeResponseDto,
+  CantonActiveContractsResponseDto,
+  CantonPrepareTransactionResponseDto,
+  CantonQueryCompletionResponseDto,
+};
+
 export interface CantonRegisterParams {
   /** Base64 public key from Stellar wallet */
   publicKey: string;

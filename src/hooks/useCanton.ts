@@ -5,9 +5,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useWallets } from '@privy-io/react-auth';
-import { useSignRawHash, useCreateWallet } from '@privy-io/react-auth/extended-chains';
+import { useCreateWallet } from '@privy-io/react-auth/extended-chains';
 import { useSupaContext } from '../providers/SupaProvider';
 import { useAuth } from './useAuth';
+import { useSignRawHashWithModal } from './useSignRawHashWithModal';
+import { useStellarWallet } from './useStellarWallet';
 import { getStellarWallets, getPublicKeyBase64, StellarWallet } from '../utils/stellar';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 import type {
@@ -75,17 +77,14 @@ export function useCanton(): UseCantonReturn {
   const { cantonService } = useSupaContext();
   const { user, authenticated } = useAuth();
   const { wallets } = useWallets();
-  const { signRawHash } = useSignRawHash();
+  const { signRawHashWithModal } = useSignRawHashWithModal();
   const { createWallet } = useCreateWallet();
+  const { stellarWallet, stellarWallets } = useStellarWallet();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [cantonUser, setCantonUser] = useState<CantonMeResponseDto | null>(null);
-
-  // Get Stellar wallets
-  const stellarWallets = authenticated ? getStellarWallets(user, wallets) : [];
-  const stellarWallet = stellarWallets[0] || null;
 
   // Check registration status on mount
   useEffect(() => {
@@ -137,19 +136,33 @@ export function useCanton(): UseCantonReturn {
       // Convert base64 hash to hex for Privy
       const hashHex = base64ToHex(hashBase64);
 
-      // Sign with Privy
-      const result = await signRawHash({
-        address: stellarWallet.address,
-        chainType: 'stellar',
-        hash: hashHex as `0x${string}`,
-      });
+      // Sign with modal confirmation
+      const result = await signRawHashWithModal(
+        {
+          address: stellarWallet.address,
+          chainType: 'stellar',
+          hash: hashHex as `0x${string}`,
+        },
+        {
+          title: 'Sign Hash',
+          description: 'You are about to sign the following hash.',
+          confirmText: 'Sign',
+          rejectText: 'Reject',
+          infoText: 'This operation requires your signature to proceed.',
+          displayHash: `Hash: ${hashBase64}`,
+        }
+      );
+
+      if (!result) {
+        throw new Error('User rejected signature');
+      }
 
       // Convert signature back to base64 for Canton
       return hexToBase64(result.signature);
     } catch (err: any) {
       throw new Error(`Failed to sign hash: ${err.message}`);
     }
-  }, [stellarWallet, signRawHash]);
+  }, [stellarWallet, signRawHashWithModal]);
 
   const registerCanton = useCallback(async () => {
     setLoading(true);
@@ -181,13 +194,27 @@ export function useCanton(): UseCantonReturn {
       // Get public key in base64
       const publicKey = getPublicKeyBase64(wallet);
 
-      // Create sign function that uses Privy
+      // Create sign function that uses modal wrapper
       const signFunction = async (hashHex: string): Promise<string> => {
-        const result = await signRawHash({
-          address: wallet!.address,
-          chainType: 'stellar',
-          hash: hashHex as `0x${string}`,
-        });
+        const result = await signRawHashWithModal(
+          {
+            address: wallet!.address,
+            chainType: 'stellar',
+            hash: hashHex as `0x${string}`,
+          },
+          {
+            title: 'Register Canton Wallet',
+            description: 'Sign to register your wallet with Canton Network.',
+            confirmText: 'Sign & Register',
+            rejectText: 'Cancel',
+            infoText: 'This signature is required to register your wallet with Canton Network. No tokens will be spent.',
+            displayHash: 'Canton Wallet Registration',
+          }
+        );
+        
+        if (!result) {
+          throw new Error('User rejected signature');
+        }
         
         return result.signature;
       };
@@ -206,7 +233,7 @@ export function useCanton(): UseCantonReturn {
     } finally {
       setLoading(false);
     }
-  }, [stellarWallet, createStellarWallet, user, wallets, signRawHash, cantonService]);
+  }, [stellarWallet, createStellarWallet, user, wallets, signRawHashWithModal, cantonService]);
 
   const tapDevnet = useCallback(async (
     amount: string,
@@ -220,13 +247,28 @@ export function useCanton(): UseCantonReturn {
     setError(null);
 
     try {
-      // Create sign function
+      // Create sign function with automatic modal
       const signFunction = async (hashHex: string): Promise<string> => {
-        const result = await signRawHash({
-          address: stellarWallet.address,
-          chainType: 'stellar',
-          hash: hashHex as `0x${string}`,
-        });
+        const result = await signRawHashWithModal(
+          {
+            address: stellarWallet.address,
+            chainType: 'stellar',
+            hash: hashHex as `0x${string}`,
+          },
+          {
+            title: 'Tap Devnet Faucet',
+            description: `You are requesting ${amount} tokens from the devnet faucet.`,
+            confirmText: 'Confirm & Sign',
+            rejectText: 'Cancel',
+            infoText: 'This will submit a transaction to receive test tokens from the Canton Network devnet faucet.',
+            displayHash: `Request ${amount} Canton tokens from devnet faucet`,
+          }
+        );
+        
+        if (!result) {
+          throw new Error('User rejected signature');
+        }
+        
         return result.signature;
       };
 
@@ -239,7 +281,7 @@ export function useCanton(): UseCantonReturn {
     } finally {
       setLoading(false);
     }
-  }, [stellarWallet, signRawHash, cantonService]);
+  }, [stellarWallet, signRawHashWithModal, cantonService]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -265,11 +307,26 @@ export function useCanton(): UseCantonReturn {
 
     try {
       const signFunction = async (hashHex: string): Promise<string> => {
-        const result = await signRawHash({
-          address: stellarWallet.address,
-          chainType: 'stellar',
-          hash: hashHex as `0x${string}`,
-        });
+        const result = await signRawHashWithModal(
+          {
+            address: stellarWallet.address,
+            chainType: 'stellar',
+            hash: hashHex as `0x${string}`,
+          },
+          {
+            title: 'Sign Message',
+            description: 'You are about to sign the following message:',
+            confirmText: 'Sign',
+            rejectText: 'Reject',
+            infoText: 'Signing a message proves ownership of your wallet without exposing private keys.',
+            displayHash: message,
+          }
+        );
+        
+        if (!result) {
+          throw new Error('User rejected signature');
+        }
+        
         return result.signature;
       };
 
@@ -281,7 +338,7 @@ export function useCanton(): UseCantonReturn {
     } finally {
       setLoading(false);
     }
-  }, [stellarWallet, signRawHash, cantonService]);
+  }, [stellarWallet, signRawHashWithModal, cantonService]);
 
   const sendTransaction = useCallback(async (
     commandId: unknown,
@@ -302,13 +359,28 @@ export function useCanton(): UseCantonReturn {
         disclosedContracts
       );
 
-      // Step 2: Sign hash
+      // Step 2: Sign hash with automatic modal
       const hashHex = base64ToHex(prepareResponse.hash);
-      const signResult = await signRawHash({
-        address: stellarWallet.address,
-        chainType: 'stellar',
-        hash: hashHex as `0x${string}`,
-      });
+
+      const signResult = await signRawHashWithModal(
+        {
+          address: stellarWallet.address,
+          chainType: 'stellar',
+          hash: hashHex as `0x${string}`,
+        },
+        {
+          title: 'Sign Transaction',
+          description: 'Review and sign the following transaction.',
+          confirmText: 'Sign & Send',
+          rejectText: 'Reject',
+          infoText: 'This transaction will be submitted to the blockchain. Make sure you understand what you are signing.',
+          displayHash: `Transaction Hash: ${prepareResponse.hash}`,
+        }
+      );
+
+      if (!signResult) {
+        throw new Error('User rejected transaction');
+      }
 
       // Step 3: Submit signed transaction and wait for completion
       const signatureBase64 = hexToBase64(signResult.signature);
@@ -324,7 +396,7 @@ export function useCanton(): UseCantonReturn {
     } finally {
       setLoading(false);
     }
-  }, [stellarWallet, signRawHash, cantonService]);
+  }, [stellarWallet, signRawHashWithModal, cantonService]);
 
   return {
     stellarWallet,

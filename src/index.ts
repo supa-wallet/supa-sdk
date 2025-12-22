@@ -43,10 +43,19 @@
 // ===== Core Provider =====
 /**
  * Main provider component that wraps your application
+ * Includes built-in confirmation modals for signing operations
  * @see {@link SupaProvider}
  */
 export { SupaProvider, useSupaContext } from './providers/SupaProvider';
-export type { SupaConfig, SupaContextValue, SupaProviderProps } from './providers/SupaProvider';
+export type { 
+  SupaConfig, 
+  SupaContextValue, 
+  SupaProviderProps,
+  ConfirmModalOptions,
+  SignMessageModalOptions,
+  SignTransactionOptions as SignTransactionModalOptions,
+  ModalResult,
+} from './providers/SupaProvider';
 
 // ===== Main Hook =====
 /**
@@ -81,6 +90,49 @@ export type { UseCantonReturn } from './hooks/useCanton';
  */
 export { useAPI } from './hooks/useAPI';
 export type { UseAPIReturn } from './hooks/useAPI';
+
+/**
+ * Sign message hook with confirmation modal
+ * @see {@link useSignMessage}
+ */
+export { useSignMessage } from './hooks/useSignMessage';
+export type { UseSignMessageReturn, SignMessageOptions } from './hooks/useSignMessage';
+
+/**
+ * Send transaction hook with confirmation modal
+ * @see {@link useSendTransaction}
+ */
+export { useSendTransaction } from './hooks/useSendTransaction';
+export type { UseSendTransactionReturn, SendTransactionOptions } from './hooks/useSendTransaction';
+
+/**
+ * Sign raw hash with automatic confirmation modal
+ * @see {@link useSignRawHashWithModal}
+ */
+export { useSignRawHashWithModal } from './hooks/useSignRawHashWithModal';
+export type { UseSignRawHashWithModalReturn, SignRawHashModalOptions } from './hooks/useSignRawHashWithModal';
+
+/**
+ * Confirmation modal hook
+ * @see {@link useConfirmModal}
+ */
+export { useConfirmModal } from './hooks/useConfirmModal';
+export type { UseConfirmModalReturn } from './hooks/useConfirmModal';
+
+/**
+ * Stellar wallet hook
+ * @see {@link useStellarWallet}
+ */
+export { useStellarWallet } from './hooks/useStellarWallet';
+export type { UseStellarWalletReturn } from './hooks/useStellarWallet';
+
+// ===== UI Components =====
+/**
+ * Confirmation modal components (for custom usage)
+ * @see {@link ConfirmationModal}, {@link SignMessageModal}, {@link SignTransactionModal}
+ */
+export { ConfirmationModal, SignMessageModal, SignTransactionModal } from './components/ConfirmationModal';
+export type { ConfirmationModalProps, SignMessageModalProps, SignTransactionModalProps } from './components/ConfirmationModal';
 
 // ===== TypeScript Types =====
 /**

@@ -1,4 +1,4 @@
-import { useCanton } from '@supa/sdk';
+import { useSendTransaction } from '@supa/sdk';
 import { useState } from 'react';
 import type { CantonQueryCompletionResponseDto } from '@supa/sdk';
 import { Send, AlertTriangle, CheckCircle } from 'lucide-react';
@@ -14,18 +14,19 @@ import {
   Flex,
   Text,
   Alert,
-  CodeBlock,
-  WalletCard,
-  WalletIcon,
-  WalletInfo,
-  WalletLabel,
-  WalletAddress,
 } from '../ui';
-import { Modal } from '../ui/Modal';
 import styled from 'styled-components';
 import { theme } from '../ui/theme';
 
-const CommandPreview = styled.pre`
+const SuccessBox = styled.div`
+  background: ${theme.colors.info.muted};
+  border: 1px solid ${theme.colors.info.primary}40;
+  border-radius: ${theme.radii.md};
+  padding: ${theme.space[4]};
+  margin-top: ${theme.space[4]};
+`;
+
+const ResultDisplay = styled.pre`
   background: ${theme.colors.bg.primary};
   border: 1px solid ${theme.colors.border.primary};
   border-radius: ${theme.radii.md};
@@ -36,209 +37,147 @@ const CommandPreview = styled.pre`
   word-break: break-word;
   max-height: 200px;
   overflow-y: auto;
-  margin: 0;
+  margin: ${theme.space[3]} 0 0 0;
   color: ${theme.colors.text.secondary};
 `;
 
-const SuccessBox = styled.div`
-  background: ${theme.colors.info.muted};
-  border: 1px solid ${theme.colors.info.primary}40;
+const InfoRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.space[2]};
+  padding: ${theme.space[3]};
+  background: ${theme.colors.bg.tertiary};
   border-radius: ${theme.radii.md};
-  padding: ${theme.space[4]};
-  margin-top: ${theme.space[4]};
+  margin-bottom: ${theme.space[2]};
 `;
 
-export function SendTransaction() {
-  const { sendTransaction, loading, error } = useCanton();
+const InfoLabel = styled.span`
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: ${theme.colors.text.muted};
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const InfoValue = styled.span`
+  font-size: 0.875rem;
+  color: ${theme.colors.text.primary};
+  font-family: ${theme.fonts.mono};
+  word-break: break-word;
+`;
+
+interface SendTransactionProps {
+  showTechnicalDetails: boolean;
+}
+
+export function SendTransaction({ showTechnicalDetails }: SendTransactionProps) {
+  // Using the new useSendTransaction hook with built-in confirmation modal
+  const { sendTransaction, loading, error } = useSendTransaction();
   const [commandId, setCommandId] = useState('');
   const [disclosedContracts, setDisclosedContracts] = useState('');
   const [result, setResult] = useState<CantonQueryCompletionResponseDto | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [parsedCommand, setParsedCommand] = useState<unknown>(null);
-  const [parsedDisclosed, setParsedDisclosed] = useState<unknown>(null);
 
-  const handleSendClick = () => {
+  const handleSendClick = async () => {
     if (!commandId.trim()) return;
 
-    let cmd: unknown;
-    let disclosed: unknown = undefined;
+    const parseJSON = (str: string) => {
+      try { return JSON.parse(str); } catch { return str; }
+    };
 
-    try {
-      cmd = JSON.parse(commandId);
-      setParsedCommand(cmd);
-    } catch {
-      cmd = commandId;
-      setParsedCommand(commandId);
-    }
+    const cmd = parseJSON(commandId);
+    const disclosed = disclosedContracts.trim() ? parseJSON(disclosedContracts) : undefined;
 
-    if (disclosedContracts.trim()) {
-      try {
-        disclosed = JSON.parse(disclosedContracts);
-        setParsedDisclosed(disclosed);
-      } catch {
-        disclosed = disclosedContracts;
-        setParsedDisclosed(disclosedContracts);
-      }
-    } else {
-      setParsedDisclosed(null);
-    }
-
-    setShowConfirmDialog(true);
-  };
-
-  const handleConfirmSend = async () => {
-    setShowConfirmDialog(false);
-    setIsProcessing(true);
     setResult(null);
-
-    try {
-      const res = await sendTransaction(parsedCommand, parsedDisclosed ?? undefined);
-      setResult(res);
-    } catch (err: any) {
-      console.error('Failed to send transaction:', err);
-    } finally {
-      setIsProcessing(false);
-    }
+    await sendTransaction(cmd, disclosed, {
+      showTechnicalDetails,
+      onSuccess: setResult,
+      onRejection: () => console.log('User rejected transaction'),
+      onError: (err) => console.error('Transaction failed:', err),
+    });
   };
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <Send /> Send Transaction
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Flex $direction="column" $gap={4}>
-            <InputGroup>
-              <InputLabel>Command</InputLabel>
-              <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
-                Enter JSON object, array, or string
-              </Text>
-              <TextArea
-                value={commandId}
-                onChange={(e) => setCommandId(e.target.value)}
-                placeholder='{"command": "example"} or "simple-command"'
-                $mono
-              />
-            </InputGroup>
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <Send /> Send Transaction
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Flex $direction="column" $gap={4}>
+          <InputGroup>
+            <InputLabel>Command</InputLabel>
+            <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
+              Enter JSON object, array, or string
+            </Text>
+            <TextArea
+              value={commandId}
+              onChange={(e) => setCommandId(e.target.value)}
+              placeholder='{"command": "example"} or "simple-command"'
+              $mono
+            />
+          </InputGroup>
 
-            <InputGroup>
-              <InputLabel>Disclosed Contracts (optional)</InputLabel>
-              <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
-                Enter JSON object or array
-              </Text>
-              <TextArea
-                value={disclosedContracts}
-                onChange={(e) => setDisclosedContracts(e.target.value)}
-                placeholder='{"contract": "data"}'
-                $mono
-              />
-            </InputGroup>
-          </Flex>
+          <InputGroup>
+            <InputLabel>Disclosed Contracts (optional)</InputLabel>
+            <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
+              Enter JSON object or array
+            </Text>
+            <TextArea
+              value={disclosedContracts}
+              onChange={(e) => setDisclosedContracts(e.target.value)}
+              placeholder='{"contract": "data"}'
+              $mono
+            />
+          </InputGroup>
+        </Flex>
 
-          <Button
-            $variant="primary"
-            $fullWidth
-            onClick={handleSendClick}
-            disabled={isProcessing || loading || !commandId.trim()}
-            style={{ marginTop: 16 }}
-          >
-            <Send style={{ width: 16, height: 16 }} />
-            {isProcessing ? 'Sending...' : 'Send Transaction'}
-          </Button>
+        <Button
+          $variant="primary"
+          $fullWidth
+          onClick={handleSendClick}
+          disabled={loading || !commandId.trim()}
+          style={{ marginTop: 16 }}
+        >
+          <Send style={{ width: 16, height: 16 }} />
+          {loading ? 'Sending...' : 'Send Transaction'}
+        </Button>
 
-          {error && (
-            <Alert $variant="error" style={{ marginTop: 16 }}>
-              <AlertTriangle />
-              {error.message}
-            </Alert>
-          )}
-
-          {result && (
-            <SuccessBox>
-              <Flex $align="center" $gap={2} style={{ marginBottom: 16 }}>
-                <CheckCircle style={{ width: 18, height: 18, color: theme.colors.info.primary }} />
-                <Text $weight={500} style={{ color: theme.colors.info.primary }}>
-                  Transaction {result.status}
-                </Text>
-              </Flex>
-
-              <WalletCard style={{ marginBottom: 12 }}>
-                <WalletInfo>
-                  <WalletLabel>Status</WalletLabel>
-                  <WalletAddress>{result.status}</WalletAddress>
-                </WalletInfo>
-              </WalletCard>
-
-              <WalletCard style={{ marginBottom: 12 }}>
-                <WalletInfo>
-                  <WalletLabel>Message</WalletLabel>
-                  <WalletAddress>{result.message}</WalletAddress>
-                </WalletInfo>
-              </WalletCard>
-
-              {result.data && (
-                <WalletCard>
-                  <WalletInfo>
-                    <WalletLabel>Data</WalletLabel>
-                    <CommandPreview style={{ marginTop: 8 }}>
-                      {JSON.stringify(result.data, null, 2)}
-                    </CommandPreview>
-                  </WalletInfo>
-                </WalletCard>
-              )}
-            </SuccessBox>
-          )}
-        </CardContent>
-      </Card>
-
-      <Modal
-        open={showConfirmDialog}
-        onClose={() => setShowConfirmDialog(false)}
-        title={
-          <>
-            <Send style={{ color: theme.colors.accent.primary }} />
-            Confirm Transaction
-          </>
-        }
-        footer={
-          <>
-            <Button $variant="secondary" onClick={() => setShowConfirmDialog(false)}>
-              Cancel
-            </Button>
-            <Button $variant="primary" onClick={handleConfirmSend}>
-              <Send style={{ width: 16, height: 16 }} />
-              Confirm & Send
-            </Button>
-          </>
-        }
-      >
-        <Text $color="secondary" style={{ marginBottom: 16 }}>
-          You are about to send the following transaction:
-        </Text>
-
-        <InputLabel style={{ marginBottom: 8 }}>Command</InputLabel>
-        <CommandPreview>{JSON.stringify(parsedCommand, null, 2)}</CommandPreview>
-
-        {parsedDisclosed !== null && (
-          <>
-            <InputLabel style={{ marginTop: 16, marginBottom: 8 }}>
-              Disclosed Contracts
-            </InputLabel>
-            <CommandPreview>{JSON.stringify(parsedDisclosed, null, 2)}</CommandPreview>
-          </>
+        {error && (
+          <Alert $variant="error" style={{ marginTop: 16 }}>
+            <AlertTriangle />
+            {error.message}
+          </Alert>
         )}
 
-        <Alert $variant="warning" style={{ marginTop: 16 }}>
-          <AlertTriangle />
-          <Text $size="sm">
-            This action will submit a transaction to the Canton Network.
-          </Text>
-        </Alert>
-      </Modal>
-    </>
+        {result && (
+          <SuccessBox>
+            <Flex $align="center" $gap={2} style={{ marginBottom: 16 }}>
+              <CheckCircle style={{ width: 18, height: 18, color: theme.colors.info.primary }} />
+              <Text $weight={500} style={{ color: theme.colors.info.primary }}>
+                Transaction {result.status}
+              </Text>
+            </Flex>
+
+            <InfoRow>
+              <InfoLabel>Status</InfoLabel>
+              <InfoValue>{result.status}</InfoValue>
+            </InfoRow>
+
+            <InfoRow>
+              <InfoLabel>Message</InfoLabel>
+              <InfoValue>{result.message}</InfoValue>
+            </InfoRow>
+
+            {result.data && (
+              <InfoRow>
+                <InfoLabel>Data</InfoLabel>
+                <ResultDisplay>{JSON.stringify(result.data, null, 2)}</ResultDisplay>
+              </InfoRow>
+            )}
+          </SuccessBox>
+        )}
+      </CardContent>
+    </Card>
   );
 }

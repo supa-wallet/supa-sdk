@@ -50,7 +50,11 @@ const StyledTab = styled(Tab)`
   }
 `;
 
-export function CantonOperationsTabs() {
+interface CantonOperationsTabsProps {
+  showTechnicalDetails: boolean;
+}
+
+export function CantonOperationsTabs({ showTechnicalDetails }: CantonOperationsTabsProps) {
   return (
     <Section>
       <SectionTitle>
@@ -81,10 +85,10 @@ export function CantonOperationsTabs() {
             <CantonContracts />
           </TabPanel>
           <TabPanel>
-            <SignMessage />
+            <SignMessage showTechnicalDetails={showTechnicalDetails} />
           </TabPanel>
           <TabPanel>
-            <SendTransaction />
+            <SendTransaction showTechnicalDetails={showTechnicalDetails} />
           </TabPanel>
         </TabPanels>
       </TabGroup>

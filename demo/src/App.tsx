@@ -1,4 +1,5 @@
 import './types/styled.d.ts';
+import { useState } from 'react';
 import { SupaProvider, useSupa } from '@supa/sdk';
 import {
   LoginScreen,
@@ -16,37 +17,46 @@ import {
   Main,
   Footer,
   Divider,
+  useTheme,
 } from './ui';
 
 function App() {
+  return (
+    <ThemeProvider>
+      <AppWithTheme />
+    </ThemeProvider>
+  );
+}
+
+function AppWithTheme() {
+  const { mode } = useTheme();
   const privyAppId = import.meta.env.VITE_PRIVY_APP_ID || 'cm9u92yyo01x2jv0nbmeqoptk';
   const privyClientId =
     import.meta.env.VITE_PRIVY_CLIENT_ID || 'WY5iwwJvDRXsGG6KkftbHs3zEzXKeXMJRyfhN87f58y31';
 
   return (
-    <ThemeProvider>
-      <SupaProvider
-        config={{
-          privyAppId,
-          privyClientId,
-          apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi',
-          appearance: {
-            theme: 'dark',
-          },
-          loginMethods: ['email', 'wallet'],
-        }}
-      >
-        <GlobalStyles />
-        <ToastProvider>
-          <Demo />
-        </ToastProvider>
-      </SupaProvider>
-    </ThemeProvider>
+    <SupaProvider
+      config={{
+        privyAppId,
+        privyClientId,
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi',
+        appearance: {
+          theme: mode,
+        },
+        loginMethods: ['email', 'wallet'],
+      }}
+    >
+      <GlobalStyles />
+      <ToastProvider>
+        <Demo />
+      </ToastProvider>
+    </SupaProvider>
   );
 }
 
 function Demo() {
   const { auth, canton } = useSupa();
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
   // Login view
   if (!auth.authenticated) {
@@ -58,7 +68,12 @@ function Demo() {
 
   return (
     <AppLayout>
-      <AppHeader isRegistered={canton.isRegistered} onLogout={auth.logout} />
+      <AppHeader 
+        isRegistered={canton.isRegistered} 
+        onLogout={auth.logout}
+        showTechnicalDetails={showTechnicalDetails}
+        onToggleTechnicalDetails={setShowTechnicalDetails}
+      />
 
       <Main>
         <OnboardingSteps
@@ -80,7 +95,7 @@ function Demo() {
           <>
             <DevnetFaucet onTap={canton.tapDevnet} />
             <Divider />
-            <CantonOperationsTabs />
+            <CantonOperationsTabs showTechnicalDetails={showTechnicalDetails} />
           </>
         )}
       </Main>
