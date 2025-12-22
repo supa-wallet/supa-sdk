@@ -109,7 +109,7 @@ export * from './utils/stellar';
  * @see {@link CantonService}
  */
 export { CantonService } from './services/cantonService';
-export type { CantonRegisterParams, CantonTapParams } from './services/cantonService';
+export type { CantonRegisterParams, CantonTapParams, CantonSubmitPreparedOptions } from './services/cantonService';
 
 /**
  * Backend API service for direct access (advanced usage)

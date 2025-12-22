@@ -40,10 +40,19 @@ export interface CantonSubmitRegisterRequestDto {
 }
 
 export interface CantonSubmitTransactionResponseDto {
-  /** Canton party ID */
-  partyId: string;
-  /** User email (can be null if not set) */
-  email: string | null;
+  /** Submission ID for tracking completion */
+  submissionId: string;
+}
+
+export type CantonQueryCompletionStatus = 'completed' | 'unknown';
+
+export interface CantonQueryCompletionResponseDto {
+  /** Status of the completion query */
+  status: CantonQueryCompletionStatus;
+  /** Completion data (nullable, present when status is 'completed') */
+  data: Record<string, unknown> | null;
+  /** Message explaining the status */
+  message: string;
 }
 
 export interface CantonPrepareTapRequestDto {

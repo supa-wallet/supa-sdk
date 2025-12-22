@@ -11,10 +11,11 @@ import { useAuth } from './useAuth';
 import { getStellarWallets, getPublicKeyBase64, StellarWallet } from '../utils/stellar';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 import type {
-  CantonSubmitTransactionResponseDto,
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
+  CantonQueryCompletionResponseDto,
 } from '../core/types';
+import type { CantonSubmitPreparedOptions } from '../services/cantonService';
 
 export interface UseCantonReturn {
   /** First Stellar wallet (primary) */
@@ -42,7 +43,7 @@ export interface UseCantonReturn {
   getActiveContracts: (templateIds?: string[]) => Promise<CantonActiveContractsResponseDto>;
   
   /** Tap devnet faucet */
-  tapDevnet: (amount: string) => Promise<CantonSubmitTransactionResponseDto>;
+  tapDevnet: (amount: string, options?: CantonSubmitPreparedOptions) => Promise<CantonQueryCompletionResponseDto>;
   
   /** Sign hash with Stellar wallet */
   signHash: (hashBase64: string) => Promise<string>;
@@ -50,11 +51,12 @@ export interface UseCantonReturn {
   /** Sign text message */
   signMessage: (message: string) => Promise<string>;
   
-  /** Prepare and submit transaction */
+  /** Prepare and submit transaction with polling for completion */
   sendTransaction: (
     commandId: unknown,
-    disclosedContracts?: unknown
-  ) => Promise<CantonSubmitTransactionResponseDto>;
+    disclosedContracts?: unknown,
+    options?: CantonSubmitPreparedOptions
+  ) => Promise<CantonQueryCompletionResponseDto>;
   
   /** Loading state */
   loading: boolean;
@@ -206,7 +208,10 @@ export function useCanton(): UseCantonReturn {
     }
   }, [stellarWallet, createStellarWallet, user, wallets, signRawHash, cantonService]);
 
-  const tapDevnet = useCallback(async (amount: string): Promise<CantonSubmitTransactionResponseDto> => {
+  const tapDevnet = useCallback(async (
+    amount: string,
+    options?: CantonSubmitPreparedOptions
+  ): Promise<CantonQueryCompletionResponseDto> => {
     if (!stellarWallet) {
       throw new Error('No Stellar wallet found');
     }
@@ -225,13 +230,8 @@ export function useCanton(): UseCantonReturn {
         return result.signature;
       };
 
-      // Tap devnet
-      const result = await cantonService.tapDevnet({
-        amount,
-        signFunction,
-      });
-
-      return result;
+      // Tap devnet with polling
+      return await cantonService.tapDevnet({ amount, signFunction }, options);
     } catch (err: any) {
       const error = new Error(`Failed to tap devnet: ${err.message}`);
       setError(error);
@@ -285,8 +285,9 @@ export function useCanton(): UseCantonReturn {
 
   const sendTransaction = useCallback(async (
     commandId: unknown,
-    disclosedContracts?: unknown
-  ): Promise<CantonSubmitTransactionResponseDto> => {
+    disclosedContracts?: unknown,
+    options?: CantonSubmitPreparedOptions
+  ): Promise<CantonQueryCompletionResponseDto> => {
     if (!stellarWallet) {
       throw new Error('No Stellar wallet found');
     }
@@ -309,11 +310,12 @@ export function useCanton(): UseCantonReturn {
         hash: hashHex as `0x${string}`,
       });
 
-      // Step 3: Submit signed transaction
+      // Step 3: Submit signed transaction and wait for completion
       const signatureBase64 = hexToBase64(signResult.signature);
-      return await cantonService.submitPrepared(
+      return await cantonService.submitPreparedAndWait(
         prepareResponse.hash,
-        signatureBase64
+        signatureBase64,
+        options
       );
     } catch (err: any) {
       const error = new Error(`Failed to send transaction: ${err.message}`);

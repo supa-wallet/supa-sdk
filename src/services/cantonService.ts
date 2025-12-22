@@ -13,6 +13,7 @@ import type {
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
   CantonPrepareTransactionRequestDto,
+  CantonQueryCompletionResponseDto,
 } from '../core/types';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 
@@ -28,6 +29,13 @@ export interface CantonTapParams {
   amount: string;
   /** Function to sign hash (returns signature in hex) */
   signFunction: (hashHex: string) => Promise<string>;
+}
+
+export interface CantonSubmitPreparedOptions {
+  /** Timeout in milliseconds to wait for completion (default: 30000) */
+  timeout?: number;
+  /** Polling interval in milliseconds (default: 1000) */
+  pollInterval?: number;
 }
 
 export class CantonService {
@@ -77,11 +85,16 @@ export class CantonService {
    * Flow:
    * 1. Call /canton/devnet/tap with amount -> get hash
    * 2. Sign hash with Stellar wallet
-   * 3. Call /canton/api/submit with hash + signature
+   * 3. Call /canton/api/submit_prepared with hash + signature
+   * 4. Poll for completion
    * 
    * @param params Tap parameters
+   * @param options Polling options
    */
-  async tapDevnet(params: CantonTapParams): Promise<CantonSubmitTransactionResponseDto> {
+  async tapDevnet(
+    params: CantonTapParams,
+    options?: CantonSubmitPreparedOptions
+  ): Promise<CantonQueryCompletionResponseDto> {
     const { amount, signFunction } = params;
     
     // Step 1: Prepare tap transaction - get hash to sign
@@ -101,8 +114,8 @@ export class CantonService {
     // Step 4: Convert signature to base64 for Canton
     const signatureBase64 = hexToBase64(signatureHex);
 
-    // Step 5: Submit signed transaction
-    return await this.submitPrepared(hashBase64, signatureBase64);
+    // Step 5: Submit signed transaction and wait for completion
+    return await this.submitPreparedAndWait(hashBase64, signatureBase64, options);
   }
 
   /**
@@ -121,6 +134,53 @@ export class CantonService {
         signature,
       } as CantonSubmitRegisterRequestDto
     );
+  }
+
+  /**
+   * Query completion status for a submission
+   * @param submissionId Submission ID from submitPrepared
+   */
+  async queryCompletion(submissionId: string): Promise<CantonQueryCompletionResponseDto> {
+    return await this.client.get<CantonQueryCompletionResponseDto>(
+      `/canton/api/query_completion?submissionId=${encodeURIComponent(submissionId)}`
+    );
+  }
+
+  /**
+   * Submit signed Canton transaction and wait for completion
+   * Polls the ledger API until the transaction is completed or timeout is reached
+   * @param hash Base64 hash
+   * @param signature Base64 signature
+   * @param options Polling options (timeout, pollInterval)
+   * @returns Completion data when transaction is completed
+   * @throws Error if timeout is reached before completion
+   */
+  async submitPreparedAndWait(
+    hash: string,
+    signature: string,
+    options: CantonSubmitPreparedOptions = {}
+  ): Promise<CantonQueryCompletionResponseDto> {
+    const { timeout = 30000, pollInterval = 1000 } = options;
+    
+    // Submit the transaction
+    const submitResponse = await this.submitPrepared(hash, signature);
+    const { submissionId } = submitResponse;
+    
+    // Poll for completion
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeout) {
+      const completionResponse = await this.queryCompletion(submissionId);
+      
+      if (completionResponse.status === 'completed') {
+        return completionResponse;
+      }
+      
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    }
+    
+    throw new Error(`Transaction completion timeout after ${timeout}ms for submissionId: ${submissionId}`);
   }
 
   /**

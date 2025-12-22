@@ -1,6 +1,6 @@
 import { useCanton } from '@supa/sdk';
 import { useState } from 'react';
-import type { CantonSubmitTransactionResponseDto } from '@supa/sdk';
+import type { CantonQueryCompletionResponseDto } from '@supa/sdk';
 import { Send, AlertTriangle, CheckCircle } from 'lucide-react';
 import {
   Card,
@@ -52,7 +52,7 @@ export function SendTransaction() {
   const { sendTransaction, loading, error } = useCanton();
   const [commandId, setCommandId] = useState('');
   const [disclosedContracts, setDisclosedContracts] = useState('');
-  const [result, setResult] = useState<CantonSubmitTransactionResponseDto | null>(null);
+  const [result, setResult] = useState<CantonQueryCompletionResponseDto | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [parsedCommand, setParsedCommand] = useState<unknown>(null);
@@ -162,24 +162,31 @@ export function SendTransaction() {
               <Flex $align="center" $gap={2} style={{ marginBottom: 16 }}>
                 <CheckCircle style={{ width: 18, height: 18, color: theme.colors.info.primary }} />
                 <Text $weight={500} style={{ color: theme.colors.info.primary }}>
-                  Transaction submitted successfully
+                  Transaction {result.status}
                 </Text>
               </Flex>
 
               <WalletCard style={{ marginBottom: 12 }}>
                 <WalletInfo>
-                  <WalletLabel>Party ID</WalletLabel>
-                  <WalletAddress style={{ fontSize: '0.8125rem', wordBreak: 'break-all' }}>
-                    {result.partyId}
-                  </WalletAddress>
+                  <WalletLabel>Status</WalletLabel>
+                  <WalletAddress>{result.status}</WalletAddress>
                 </WalletInfo>
               </WalletCard>
 
-              {result.email && (
+              <WalletCard style={{ marginBottom: 12 }}>
+                <WalletInfo>
+                  <WalletLabel>Message</WalletLabel>
+                  <WalletAddress>{result.message}</WalletAddress>
+                </WalletInfo>
+              </WalletCard>
+
+              {result.data && (
                 <WalletCard>
                   <WalletInfo>
-                    <WalletLabel>Email</WalletLabel>
-                    <WalletAddress>{result.email}</WalletAddress>
+                    <WalletLabel>Data</WalletLabel>
+                    <CommandPreview style={{ marginTop: 8 }}>
+                      {JSON.stringify(result.data, null, 2)}
+                    </CommandPreview>
                   </WalletInfo>
                 </WalletCard>
               )}

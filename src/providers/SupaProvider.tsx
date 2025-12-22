@@ -74,6 +74,9 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
 
   // Privy configuration
   const privyConfig: PrivyClientConfig = {
+    embeddedWallets: {
+      showWalletUIs: true,
+    },
     appearance: {
       theme: config.appearance?.theme || 'light',
       accentColor: config.appearance?.accentColor ? `#${config.appearance.accentColor.replace('#', '')}` as `#${string}` : undefined,
