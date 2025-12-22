@@ -5,7 +5,7 @@
 
 import { usePrivy, useLogin, useLogout } from '@privy-io/react-auth';
 import { useEffect } from 'react';
-import { useWalletinoContext } from '../providers/WalletinoProvider';
+import { useSupaContext } from '../providers/SupaProvider';
 import type { User as PrivyUser } from '@privy-io/react-auth';
 
 /**
@@ -59,7 +59,7 @@ export interface UseAuthReturn {
  * ```
  */
 export const useAuth = (): UseAuthReturn => {
-  const { apiClient } = useWalletinoContext();
+  const { apiClient } = useSupaContext();
   const { login: privyLogin } = useLogin();
   const { logout: privyLogout } = useLogout();
   const { authenticated, ready, user, getAccessToken } = usePrivy();

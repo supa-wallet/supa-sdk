@@ -1,7 +1,7 @@
 {
-  "name": "@walletino/sdk",
+  "name": "@supa/sdk",
   "version": "0.1.0",
-  "description": "React SDK for Walletino Backend + Privy.io integration with Canton Network support",
+  "description": "React SDK for Supa Backend + Privy.io integration with Canton Network support",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -15,7 +15,7 @@
     "type-check": "tsc --noEmit"
   },
   "keywords": [
-    "walletino",
+    "supa",
     "privy",
     "canton",
     "stellar",
@@ -43,4 +43,7 @@
     "vite": "^7.1.11"
   }
 }
+
+
+
 

@@ -1,5 +1,5 @@
 /**
- * TypeScript types generated from Walletino Backend API Swagger
+ * TypeScript types generated from Supa Backend API Swagger
  * Based on OpenAPI 3.0.0 specification
  */
 
@@ -40,13 +40,122 @@ export interface CantonSubmitRegisterRequestDto {
 }
 
 export interface CantonSubmitTransactionResponseDto {
-  /** Result from Canton submission */
-  result: string;
+  /** Canton party ID */
+  partyId: string;
+  /** User email (can be null if not set) */
+  email: string | null;
 }
 
 export interface CantonPrepareTapRequestDto {
   /** Positive integer amount of how many canton coins to receive */
   amount: string;
+}
+
+export interface CantonMeResponseDto {
+  /** Canton party ID */
+  partyId: string;
+  /** User email (can be null if not set) */
+  email: string | null;
+}
+
+// ============= Canton Active Contracts Types =============
+
+/** Amount with rate decay for Canton Amulet */
+export interface CantonAmuletAmount {
+  /** Initial amount as decimal string */
+  initialAmount: string;
+  /** Round number when created */
+  createdAt: { number: string };
+  /** Rate per round for decay */
+  ratePerRound: { rate: string };
+}
+
+/** Create argument for Canton Amulet contract */
+export interface CantonAmuletCreateArgument {
+  /** DSO party ID */
+  dso: string;
+  /** Owner party ID */
+  owner: string;
+  /** Amount with rate */
+  amount: CantonAmuletAmount;
+}
+
+/** Created event for Canton contract */
+export interface CantonCreatedEvent {
+  /** Offset in ledger */
+  offset: number;
+  /** Node ID */
+  nodeId: number;
+  /** Contract ID */
+  contractId: string;
+  /** Template ID in format packageId:module:entity */
+  templateId: string;
+  /** Contract key (can be null) */
+  contractKey: unknown | null;
+  /** Create argument data */
+  createArgument: CantonAmuletCreateArgument | Record<string, unknown>;
+  /** Created event blob (base64) */
+  createdEventBlob: string;
+  /** Interface views */
+  interfaceViews: unknown[];
+  /** Witness parties */
+  witnessParties: string[];
+  /** Signatories */
+  signatories: string[];
+  /** Observers */
+  observers: string[];
+  /** Created timestamp (ISO 8601) */
+  createdAt: string;
+  /** Package name */
+  packageName: string;
+  /** Representative package ID */
+  representativePackageId: string;
+  /** ACS delta flag */
+  acsDelta: boolean;
+}
+
+/** Active contract in Canton */
+export interface CantonJsActiveContract {
+  /** Created event with all contract details */
+  createdEvent: CantonCreatedEvent;
+  /** Synchronizer ID */
+  synchronizerId: string;
+  /** Reassignment counter */
+  reassignmentCounter: number;
+}
+
+/** Contract entry wrapper */
+export interface CantonContractEntry {
+  JsActiveContract: CantonJsActiveContract;
+}
+
+/** Active contract response item from API */
+export interface CantonActiveContractItem {
+  /** Workflow ID (can be empty) */
+  workflowId: string;
+  /** Contract entry containing the active contract */
+  contractEntry: CantonContractEntry;
+}
+
+/** Response from /canton/api/active_contracts */
+export type CantonActiveContractsResponseDto = CantonActiveContractItem[];
+
+// ============= Legacy Canton Types (for backward compatibility) =============
+
+export interface CantonActiveContract {
+  /** Contract ID */
+  contractId: string;
+  /** Template ID */
+  templateId: string;
+  /** Contract blob data (untyped) */
+  blob: unknown;
+}
+
+export interface CantonPrepareTransactionRequestDto {
+  /** Command or array of commands */
+  commandId: unknown;
+  /** Optional disclosed contracts */
+  disclosedContracts?: unknown;
 }
 
 // ============= User Types =============
@@ -297,4 +406,7 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: ApiError;
 }
+
+
+
 

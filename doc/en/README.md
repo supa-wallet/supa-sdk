@@ -1,13 +1,13 @@
-# Walletino SDK - English Documentation
+# Supa SDK - English Documentation
 
-Complete documentation for Walletino SDK in English.
+Complete documentation for Supa SDK.
 
-## 📚 Documentation Contents
+## Documentation Contents
 
 ### Getting Started
 **[→ Getting Started Guide](./getting-started.md)**
 
-Step-by-step guide to integrate Walletino SDK into your project:
+Step-by-step guide to integrate Supa SDK into your project:
 - Prerequisites and installation
 - Environment setup
 - Provider configuration
@@ -21,7 +21,7 @@ Complete API documentation:
 - `useAuth` - Authentication hook
 - `useCanton` - Canton Network operations
 - `useAPI` - Backend API access
-- `useWalletino` - Main SDK hook
+- `useSupa` - Main SDK hook
 - Utility functions
 - TypeScript types
 
@@ -58,20 +58,20 @@ Documentation standards for contributors:
 - Best practices
 - Good and bad examples
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-npm install @walletino/sdk
+npm install @supa/sdk
 ```
 
 ```tsx
-import { WalletinoProvider, useAuth, useCanton } from '@walletino/sdk';
+import { SupaProvider, useAuth, useCanton } from '@supa/sdk';
 
 function App() {
   return (
-    <WalletinoProvider config={{ privyAppId: 'your_app_id' }}>
+    <SupaProvider config={{ privyAppId: 'your_app_id' }}>
       <Dashboard />
-    </WalletinoProvider>
+    </SupaProvider>
   );
 }
 
@@ -91,7 +91,7 @@ function Dashboard() {
 }
 ```
 
-## 📖 Recommended Reading Order
+## Recommended Reading Order
 
 ### For New Users
 1. [Getting Started](./getting-started.md) - Start here
@@ -109,20 +109,20 @@ function Dashboard() {
 2. [API Reference](./api-reference.md) - Existing patterns
 3. Source code with JSDoc comments
 
-## 🔗 External Resources
+## External Resources
 
 - **Privy Documentation**: https://docs.privy.io
 - **Canton Network**: https://canton.network
-- **Backend API**: https://stage_api.walletino.fyi/api
+- **Backend API**: https://stage_api.supa.fyi/api
 - **TypeScript**: https://www.typescriptlang.org/docs/
 
-## 📞 Support
+## Support
 
 - **GitHub Issues**: Report bugs and request features
 - **GitHub Discussions**: Ask questions and share ideas
 - **Documentation Issues**: Report unclear or outdated docs
 
-## 🌍 Other Languages
+## Other Languages
 
 - **Русский**: [../ru/README.md](../ru/README.md)
 
@@ -131,5 +131,4 @@ function Dashboard() {
 **Version**: 0.1.0  
 **Last Updated**: December 2025  
 **Language**: English  
-**Status**: Production Ready ✅
-
+**Status**: Production Ready

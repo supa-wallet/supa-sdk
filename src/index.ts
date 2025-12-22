@@ -1,7 +1,7 @@
 /**
- * Walletino SDK
+ * Supa SDK
  * 
- * React SDK for seamless integration with Walletino Backend API and Privy.io authentication,
+ * React SDK for seamless integration with Supa Backend API and Privy.io authentication,
  * featuring full Canton Network support with Ed25519 signing via Stellar wallets.
  * 
  * @packageDocumentation
@@ -9,13 +9,13 @@
  * @example
  * Basic setup
  * ```tsx
- * import { WalletinoProvider, useAuth, useCanton } from '@walletino/sdk';
+ * import { SupaProvider, useAuth, useCanton } from '@supa/sdk';
  * 
  * function App() {
  *   return (
- *     <WalletinoProvider config={{ privyAppId: 'your_app_id' }}>
+ *     <SupaProvider config={{ privyAppId: 'your_app_id' }}>
  *       <Dashboard />
- *     </WalletinoProvider>
+ *     </SupaProvider>
  *   );
  * }
  * 
@@ -35,7 +35,7 @@
  * }
  * ```
  * 
- * @see {@link https://github.com/your-repo/walletino-sdk | GitHub Repository}
+ * @see {@link https://github.com/your-repo/supa-sdk | GitHub Repository}
  * @see {@link https://docs.privy.io | Privy Documentation}
  * @see {@link https://canton.network | Canton Network}
  */
@@ -43,18 +43,22 @@
 // ===== Core Provider =====
 /**
  * Main provider component that wraps your application
- * @see {@link WalletinoProvider}
+ * @see {@link SupaProvider}
  */
-export { WalletinoProvider, useWalletinoContext } from './providers/WalletinoProvider';
-export type { WalletinoConfig, WalletinoContextValue, WalletinoProviderProps } from './providers/WalletinoProvider';
+export { SupaProvider, useSupaContext } from './providers/SupaProvider';
+export type { SupaConfig, SupaContextValue, SupaProviderProps } from './providers/SupaProvider';
 
 // ===== Main Hook =====
 /**
  * Primary hook combining all SDK functionality
- * @see {@link useWalletino}
+ * @see {@link useSupa}
  */
-export { useWalletino } from './hooks/useWalletino';
-export type { UseWalletinoReturn } from './hooks/useWalletino';
+export { useSupa } from './hooks/useSupa';
+export type { UseSupaReturn } from './hooks/useSupa';
+
+// Legacy exports (deprecated, use useSupa instead)
+export { useSupa as useWalletino } from './hooks/useSupa';
+export type { UseSupaReturn as UseWalletinoReturn } from './hooks/useSupa';
 
 // ===== Individual Hooks =====
 /**

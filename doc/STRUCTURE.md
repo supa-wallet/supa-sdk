@@ -1,6 +1,6 @@
 # Documentation Structure
 
-This document explains the multilingual documentation structure of Walletino SDK.
+This document explains the multilingual documentation structure of Supa SDK.
 
 ## 📁 Directory Structure
 
@@ -184,8 +184,11 @@ For documentation issues:
 
 ---
 
-**Maintained by**: Walletino Team  
+**Maintained by**: Supa Team  
 **Last Updated**: December 2025  
 **Version**: 1.0  
 **Languages**: English, Russian
+
+
+
 

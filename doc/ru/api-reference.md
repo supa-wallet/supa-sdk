@@ -1,39 +1,39 @@
 # API Reference
 
-Полный справочник по всем API методам, хукам и типам Walletino SDK.
+Полный справочник по всем API методам, хукам и типам Supa SDK.
 
 ## 📖 Содержание
 
-- [WalletinoProvider](#walletinoprovider)
+- [SupaProvider](#supaprovider)
 - [useAuth](#useauth)
 - [useCanton](#usecanton)
 - [useAPI](#useapi)
-- [useWalletino](#usewalletino)
+- [useSupa](#usesupa)
 - [Утилиты](#utilities)
 - [TypeScript Types](#typescript-types)
 
 ---
 
-## WalletinoProvider
+## SupaProvider
 
 Главный провайдер SDK. Должен обернуть всё приложение.
 
 ### Props
 
 ```typescript
-interface WalletinoProviderProps {
-  config: WalletinoConfig;
+interface SupaProviderProps {
+  config: SupaConfig;
   children: ReactNode;
 }
 
-interface WalletinoConfig {
+interface SupaConfig {
   /** Privy App ID (обязательно) */
   privyAppId: string;
   
   /** Privy Client ID (опционально) */
   privyClientId?: string;
   
-  /** Backend API base URL (по умолчанию: https://stage_api.walletino.fyi) */
+  /** Backend API base URL (по умолчанию: https://stage_api.supa.fyi) */
   apiBaseUrl?: string;
   
   /** Настройки внешнего вида Privy */
@@ -54,15 +54,15 @@ interface WalletinoConfig {
 ### Пример
 
 ```tsx
-import { WalletinoProvider } from '@walletino/sdk';
+import { SupaProvider } from '@supa/sdk';
 
 function App() {
   return (
-    <WalletinoProvider
+    <SupaProvider
       config={{
         privyAppId: 'your_app_id',
         privyClientId: 'your_client_id',
-        apiBaseUrl: 'https://stage_api.walletino.fyi',
+        apiBaseUrl: 'https://stage_api.supa.fyi',
         appearance: {
           theme: 'light',
           accentColor: '6366f1',
@@ -72,7 +72,7 @@ function App() {
       }}
     >
       <YourApp />
-    </WalletinoProvider>
+    </SupaProvider>
   );
 }
 ```
@@ -115,7 +115,7 @@ interface UseAuthReturn {
 #### Базовая аутентификация
 
 ```tsx
-import { useAuth } from '@walletino/sdk';
+import { useAuth } from '@supa/sdk';
 
 function LoginButton() {
   const { login, logout, authenticated, user, loading } = useAuth();
@@ -140,7 +140,7 @@ function LoginButton() {
 #### Получение токена для API
 
 ```tsx
-import { useAuth } from '@walletino/sdk';
+import { useAuth } from '@supa/sdk';
 
 function SecureComponent() {
   const { getAccessToken, authenticated } = useAuth();
@@ -168,7 +168,7 @@ function SecureComponent() {
 #### Защищенный роут
 
 ```tsx
-import { useAuth } from '@walletino/sdk';
+import { useAuth } from '@supa/sdk';
 import { Navigate } from 'react-router-dom';
 
 function ProtectedRoute({ children }) {
@@ -244,7 +244,7 @@ interface StellarWallet {
 #### Регистрация Canton кошелька
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
 function RegisterCanton() {
   const { registerCanton, isRegistered, loading, error } = useCanton();
@@ -276,7 +276,7 @@ function RegisterCanton() {
 #### Получение тестовых токенов
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
 function TapDevnet() {
   const { tapDevnet, loading, error, clearError } = useCanton();
@@ -306,7 +306,7 @@ function TapDevnet() {
 #### Подпись произвольного хэша
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 import { useState } from 'react';
 
 function SignHash() {
@@ -350,7 +350,7 @@ function SignHash() {
 
 ## useAPI
 
-Хук для работы с Walletino Backend API.
+Хук для работы с Supa Backend API.
 
 ### Returns
 
@@ -383,7 +383,7 @@ interface UserAPI {
 **Пример:**
 
 ```tsx
-import { useAPI } from '@walletino/sdk';
+import { useAPI } from '@supa/sdk';
 import { useEffect, useState } from 'react';
 
 function UserBalance() {
@@ -430,7 +430,7 @@ interface DialogsAPI {
 **Пример:**
 
 ```tsx
-import { useAPI } from '@walletino/sdk';
+import { useAPI } from '@supa/sdk';
 import { useState } from 'react';
 
 function CreateDialog() {
@@ -471,55 +471,6 @@ interface MessagesAPI {
 }
 ```
 
-### OnChain API
-
-```typescript
-interface OnChainAPI {
-  /** Получить цены токенов */
-  getTokenPrices: (symbols: string[]) => Promise<Record<string, number>>;
-  
-  /** Получить информацию о токенах */
-  getTokenInfo: (network: string, addresses: string[]) => Promise<TokenInfo>;
-  
-  /** Получить балансы аккаунта */
-  getAccountBalances: (network: string, account: string) => Promise<any>;
-  
-  /** Получить историю цен */
-  getPriceHistory: (params: PriceHistoryParams) => Promise<any>;
-}
-```
-
-**Пример:**
-
-```tsx
-import { useAPI } from '@walletino/sdk';
-import { useEffect, useState } from 'react';
-
-function TokenPrices() {
-  const api = useAPI();
-  const [prices, setPrices] = useState({});
-
-  useEffect(() => {
-    const fetchPrices = () => {
-      api.onchain.getTokenPrices(['BTC', 'ETH', 'SOL'])
-        .then(setPrices);
-    };
-
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div>
-      {Object.entries(prices).map(([symbol, price]) => (
-        <p key={symbol}>{symbol}: ${price}</p>
-      ))}
-    </div>
-  );
-}
-```
-
 ### SupaPoints API
 
 ```typescript
@@ -549,14 +500,14 @@ interface TransactionsAPI {
 
 ---
 
-## useWalletino
+## useSupa
 
 Главный хук, объединяющий все остальные хуки.
 
 ### Returns
 
 ```typescript
-interface UseWalletinoReturn {
+interface UseSupaReturn {
   auth: UseAuthReturn;
   canton: UseCantonReturn;
   api: UseAPIReturn;
@@ -566,10 +517,10 @@ interface UseWalletinoReturn {
 ### Пример
 
 ```tsx
-import { useWalletino } from '@walletino/sdk';
+import { useSupa } from '@supa/sdk';
 
 function Dashboard() {
-  const { auth, canton, api } = useWalletino();
+  const { auth, canton, api } = useSupa();
 
   return (
     <div>
@@ -648,7 +599,7 @@ import {
   hexToBase64, 
   base64ToHex,
   privyPublicKeyToCantonBase64 
-} from '@walletino/sdk';
+} from '@supa/sdk';
 
 // Конвертация публичного ключа
 const wallet = { publicKey: '00e95cb2553361ed...' };
@@ -672,14 +623,14 @@ console.log(hashHex); // "0x1220e33..."
 ```typescript
 import type {
   // Config
-  WalletinoConfig,
-  WalletinoProviderProps,
+  SupaConfig,
+  SupaProviderProps,
   
   // Hook returns
   UseAuthReturn,
   UseCantonReturn,
   UseAPIReturn,
-  UseWalletinoReturn,
+  UseSupaReturn,
   
   // Wallet types
   StellarWallet,
@@ -693,14 +644,14 @@ import type {
   CantonSubmitTransactionResponseDto,
   TokenInfo,
   // ... и многие другие
-} from '@walletino/sdk';
+} from '@supa/sdk';
 ```
 
 ### Использование типов
 
 ```typescript
-import { useCanton } from '@walletino/sdk';
-import type { StellarWallet, CantonSubmitTransactionResponseDto } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
+import type { StellarWallet, CantonSubmitTransactionResponseDto } from '@supa/sdk';
 
 function Component() {
   const { stellarWallet, tapDevnet } = useCanton();

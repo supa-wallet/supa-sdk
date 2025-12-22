@@ -10,6 +10,9 @@ import type {
   CantonSubmitRegisterRequestDto,
   CantonSubmitTransactionResponseDto,
   CantonPrepareTapRequestDto,
+  CantonMeResponseDto,
+  CantonActiveContractsResponseDto,
+  CantonPrepareTransactionRequestDto,
 } from '../core/types';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 
@@ -99,7 +102,7 @@ export class CantonService {
     const signatureBase64 = hexToBase64(signatureHex);
 
     // Step 5: Submit signed transaction
-    return await this.submitTransaction(hashBase64, signatureBase64);
+    return await this.submitPrepared(hashBase64, signatureBase64);
   }
 
   /**
@@ -107,16 +110,84 @@ export class CantonService {
    * @param hash Base64 hash
    * @param signature Base64 signature
    */
-  async submitTransaction(
+  async submitPrepared(
     hash: string,
     signature: string
   ): Promise<CantonSubmitTransactionResponseDto> {
     return await this.client.post<CantonSubmitTransactionResponseDto>(
-      '/canton/api/submit',
+      '/canton/api/submit_prepared',
       {
         hash,
         signature,
       } as CantonSubmitRegisterRequestDto
+    );
+  }
+
+  /**
+   * Get current Canton user info (partyId and email)
+   * Only works after registration
+   */
+  async getMe(): Promise<CantonMeResponseDto> {
+    return await this.client.get<CantonMeResponseDto>('/canton/api/me');
+  }
+
+  /**
+   * Get active contracts with optional template filtering
+   * Returns array of active contract items with full contract details
+   * @param templateIds Optional array of template IDs to filter by
+   */
+  async getActiveContracts(
+    templateIds?: string[]
+  ): Promise<CantonActiveContractsResponseDto> {
+    const params = new URLSearchParams();
+    if (templateIds) {
+      templateIds.forEach(id => params.append('templateId', id));
+    }
+    
+    const queryString = params.toString();
+    const url = queryString 
+      ? `/canton/api/active_contracts?${queryString}`
+      : '/canton/api/active_contracts';
+    
+    // API returns array directly, not wrapped in an object
+    return await this.client.get<CantonActiveContractsResponseDto>(url);
+  }
+
+  /**
+   * Sign text message (client-side only, no backend call)
+   * Converts text to bytes and signs with Stellar wallet
+   * @param message Text message to sign
+   * @param signFunction Function to sign hash (returns signature in hex)
+   */
+  async signMessage(
+    message: string,
+    signFunction: (hashHex: string) => Promise<string>
+  ): Promise<string> {
+    // Convert message to bytes
+    const encoder = new TextEncoder();
+    const messageBytes = encoder.encode(message);
+    
+    // Hash the message using SHA-256
+    const hashBuffer = await crypto.subtle.digest('SHA-256', messageBytes);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = '0x' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // Sign and return signature in hex
+    return await signFunction(hashHex);
+  }
+
+  /**
+   * Prepare Canton transaction
+   * @param commandId Command or array of commands
+   * @param disclosedContracts Optional disclosed contracts
+   */
+  async prepareTransaction(
+    commandId: unknown,
+    disclosedContracts?: unknown
+  ): Promise<CantonPrepareTransactionResponseDto> {
+    return await this.client.post<CantonPrepareTransactionResponseDto>(
+      '/canton/api/prepare_transaction',
+      { commandId, disclosedContracts } as CantonPrepareTransactionRequestDto
     );
   }
 
@@ -127,8 +198,7 @@ export class CantonService {
    */
   async checkRegistrationStatus(): Promise<boolean> {
     try {
-      // Try to get user info or balance to check if Canton wallet exists
-      // This is a placeholder - actual implementation depends on backend API
+      await this.getMe();
       return true;
     } catch (error) {
       return false;

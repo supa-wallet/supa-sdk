@@ -1,6 +1,6 @@
 # Canton Network Integration
 
-Подробное руководство по интеграции с Canton Network через Walletino SDK.
+Подробное руководство по интеграции с Canton Network через Supa SDK.
 
 ## 📖 Содержание
 
@@ -17,7 +17,7 @@
 
 ## Что такое Canton Network
 
-**Canton Network** - это распределенная сеть для синхронизации данных и выполнения смарт-контрактов. SDK интегрируется с Canton через Walletino Backend API.
+**Canton Network** - это распределенная сеть для синхронизации данных и выполнения смарт-контрактов. SDK интегрируется с Canton через Supa Backend API.
 
 ### Ключевые особенности
 
@@ -55,13 +55,13 @@ Canton (Ed25519) ← SDK ← Privy (Stellar = Ed25519)
          │ useCanton()
          ↓
 ┌─────────────────┐      ┌──────────────┐
-│  Walletino SDK  │ ←───→│  Privy SDK   │
+│  Supa SDK  │ ←───→│  Privy SDK   │
 │                 │      │  (Stellar)   │
 └────────┬────────┘      └──────────────┘
          │ API calls
          ↓
 ┌─────────────────┐      ┌──────────────┐
-│ Walletino API   │ ←───→│   Canton     │
+│ Supa API   │ ←───→│   Canton     │
 │   (Backend)     │      │   Network    │
 └─────────────────┘      └──────────────┘
 ```
@@ -114,7 +114,7 @@ SDK делает это автоматически через `privyPublicKeyToC
 ### Пример конвертации вручную
 
 ```typescript
-import { privyPublicKeyToCantonBase64 } from '@walletino/sdk';
+import { privyPublicKeyToCantonBase64 } from '@supa/sdk';
 
 const wallet = {
   publicKey: '00e95cb2553361ed95250c74f854814675d971cacdbd5dc3ec5de627fff7b71518'
@@ -148,7 +148,7 @@ SDK автоматически конвертирует через `base64ToHex(
 Самый простой способ - использовать `registerCanton()`:
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
 function RegisterButton() {
   const { registerCanton, isRegistered, loading, error } = useCanton();
@@ -186,9 +186,9 @@ function RegisterButton() {
 Для более тонкого контроля:
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
-import { useAuth } from '@walletino/sdk';
-import { getPublicKeyBase64 } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
+import { useAuth } from '@supa/sdk';
+import { getPublicKeyBase64 } from '@supa/sdk';
 
 function ManualRegistration() {
   const { getAccessToken } = useAuth();
@@ -211,7 +211,7 @@ function ManualRegistration() {
 
     // Шаг 4: Вызвать /canton/register/prepare
     const prepareResponse = await fetch(
-      'https://stage_api.walletino.fyi/canton/register/prepare',
+      'https://stage_api.supa.fyi/canton/register/prepare',
       {
         method: 'POST',
         headers: {
@@ -249,7 +249,7 @@ function ManualRegistration() {
 Canton может запросить подпись любого хэша (например, для транзакций):
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
 function SignTransaction() {
   const { signHash, stellarWallet } = useCanton();
@@ -287,8 +287,8 @@ function SignTransaction() {
 
 ```tsx
 import { useSignRawHash } from '@privy-io/react-auth/extended-chains';
-import { useCanton } from '@walletino/sdk';
-import { base64ToHex, hexToBase64 } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
+import { base64ToHex, hexToBase64 } from '@supa/sdk';
 
 function DirectSigning() {
   const { signRawHash } = useSignRawHash();
@@ -329,7 +329,7 @@ Devnet faucet позволяет получить тестовые токены 
 ### Базовое использование
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
 function TapFaucet() {
   const { tapDevnet, loading, error } = useCanton();
@@ -361,7 +361,7 @@ function TapFaucet() {
 ### С разными суммами
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 import { useState } from 'react';
 
 function CustomAmountTap() {
@@ -407,7 +407,7 @@ function CustomAmountTap() {
 ### Проверка статуса регистрации
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 import { useEffect } from 'react';
 
 function RegistrationStatus() {
@@ -433,7 +433,7 @@ function RegistrationStatus() {
 ### Обработка ошибок
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
 function ErrorHandling() {
   const { registerCanton, error, clearError } = useCanton();
@@ -474,8 +474,8 @@ function ErrorHandling() {
 Если нужно отправить собственную транзакцию:
 
 ```tsx
-import { useAuth, useCanton } from '@walletino/sdk';
-import { hexToBase64 } from '@walletino/sdk';
+import { useAuth, useCanton } from '@supa/sdk';
+import { hexToBase64 } from '@supa/sdk';
 
 function CustomCantonTransaction() {
   const { getAccessToken } = useAuth();
@@ -485,7 +485,7 @@ function CustomCantonTransaction() {
     // 1. Подготовить транзакцию на backend
     const token = await getAccessToken();
     const prepareResponse = await fetch(
-      'https://stage_api.walletino.fyi/canton/api/prepare-custom',
+      'https://stage_api.supa.fyi/canton/api/prepare-custom',
       {
         method: 'POST',
         headers: {
@@ -502,7 +502,7 @@ function CustomCantonTransaction() {
 
     // 3. Отправить подписанную транзакцию
     const submitResponse = await fetch(
-      'https://stage_api.walletino.fyi/canton/api/submit',
+      'https://stage_api.supa.fyi/canton/api/submit',
       {
         method: 'POST',
         headers: {
@@ -567,7 +567,7 @@ if (!isRegistered) {
 
 **Решение**: Используйте встроенную функцию SDK:
 ```tsx
-import { getPublicKeyBase64 } from '@walletino/sdk';
+import { getPublicKeyBase64 } from '@supa/sdk';
 
 const publicKey = getPublicKeyBase64(stellarWallet);
 ```

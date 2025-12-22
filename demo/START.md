@@ -7,7 +7,7 @@ cd /Users/molodcovdanila/Documents/webdev/supa-sdk/demo
 npm run dev
 ```
 
-Приложение будет доступно на `http://localhost:5173`
+Приложение будет доступно на `http://localhost:6969`
 
 ## Важно
 
@@ -46,4 +46,7 @@ npm install
 Проверьте `.env` файл в корне проекта (`/supa-sdk/.env`):
 - VITE_PRIVY_APP_ID должен быть заполнен
 - VITE_PRIVY_CLIENT_ID должен быть заполнен
+
+
+
 

@@ -1,5 +1,5 @@
 /**
- * Walletino Provider
+ * Supa Provider
  * Main provider component that wraps Privy and provides SDK context
  */
 
@@ -13,10 +13,10 @@ import { ApiService } from '../services/apiService';
 // Initialize Buffer polyfill for browser (required by Privy SDK)
 if (typeof window !== 'undefined' && !(window as any).Buffer) {
   (window as any).Buffer = Buffer;
-  console.log('[Walletino SDK] ✅ Buffer polyfill initialized');
+  console.log('[Supa SDK] ✅ Buffer polyfill initialized');
 }
 
-export interface WalletinoConfig {
+export interface SupaConfig {
   /** Privy App ID (required) */
   privyAppId: string;
   /** Privy Client ID (optional) */
@@ -33,22 +33,22 @@ export interface WalletinoConfig {
   loginMethods?: Array<'email' | 'wallet' | 'google' | 'twitter' | 'discord' | 'github' | 'linkedin'>;
 }
 
-export interface WalletinoContextValue {
+export interface SupaContextValue {
   apiClient: ApiClient;
   cantonService: CantonService;
   apiService: ApiService;
-  config: WalletinoConfig;
+  config: SupaConfig;
 }
 
-const WalletinoContext = createContext<WalletinoContextValue | null>(null);
+const SupaContext = createContext<SupaContextValue | null>(null);
 
-export interface WalletinoProviderProps {
-  config: WalletinoConfig;
+export interface SupaProviderProps {
+  config: SupaConfig;
   children: ReactNode;
 }
 
-export function WalletinoProvider({ config, children }: WalletinoProviderProps) {
-  const [contextValue, setContextValue] = useState<WalletinoContextValue | null>(null);
+export function SupaProvider({ config, children }: SupaProviderProps) {
+  const [contextValue, setContextValue] = useState<SupaContextValue | null>(null);
 
   useEffect(() => {
     // Create API client
@@ -88,22 +88,22 @@ export function WalletinoProvider({ config, children }: WalletinoProviderProps) 
       clientId={config.privyClientId}
       config={privyConfig}
     >
-      <WalletinoContext.Provider value={contextValue}>
+      <SupaContext.Provider value={contextValue}>
         {children}
-      </WalletinoContext.Provider>
+      </SupaContext.Provider>
     </PrivyProvider>
   );
 }
 
 /**
- * Hook to access Walletino context
+ * Hook to access Supa context
  * @internal Use specific hooks like useAuth, useCanton, useAPI instead
  */
-export function useWalletinoContext(): WalletinoContextValue {
-  const context = useContext(WalletinoContext);
+export function useSupaContext(): SupaContextValue {
+  const context = useContext(SupaContext);
   
   if (!context) {
-    throw new Error('useWalletinoContext must be used within WalletinoProvider');
+    throw new Error('useSupaContext must be used within SupaProvider');
   }
   
   return context;

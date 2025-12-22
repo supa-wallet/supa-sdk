@@ -1,6 +1,6 @@
-# Walletino SDK Documentation Guide
+# Supa SDK Documentation Guide
 
-Complete guide to Walletino SDK documentation structure and code standards.
+Complete guide to Supa SDK documentation structure and code standards.
 
 ## 📁 Documentation Structure
 
@@ -8,10 +8,10 @@ Complete guide to Walletino SDK documentation structure and code standards.
 /supa-sdk
 ├── README.md                 # Main SDK documentation
 ├── CHANGELOG.md              # Version history and changes
-├── DOCUMENTATION.md          # This file - documentation guide
 │
 ├── /doc                      # Detailed documentation folder
 │   ├── README.md             # Language selector
+│   ├── DOCUMENTATION.md      # This file - documentation guide
 │   │
 │   ├── /en                   # 🇬🇧 English documentation
 │   │   ├── README.md         # English index
@@ -43,7 +43,7 @@ Complete guide to Walletino SDK documentation structure and code standards.
 
 ### Root Level
 
-#### [README.md](./README.md)
+#### [README.md](../README.md)
 Main SDK documentation for end users
 - Features overview
 - Quick start guide
@@ -52,7 +52,7 @@ Main SDK documentation for end users
 - API overview
 - Troubleshooting
 
-#### [CHANGELOG.md](./CHANGELOG.md)
+#### [CHANGELOG.md](../CHANGELOG.md)
 Version history and release notes
 - New features per version
 - Bug fixes
@@ -67,7 +67,7 @@ Meta-documentation explaining the docs structure
 
 ### `/doc` Folder - Multilingual Documentation
 
-#### [doc/README.md](./doc/README.md)
+#### [doc/README.md](./README.md)
 Language selector and main entry point
 - Links to English documentation
 - Links to Russian documentation
@@ -75,16 +75,16 @@ Language selector and main entry point
 
 #### English Documentation (`/doc/en`)
 
-**[doc/en/README.md](./doc/en/README.md)** - English documentation index
+**[doc/en/README.md](./en/README.md)** - English documentation index
 
-**[doc/en/getting-started.md](./doc/en/getting-started.md)** - Complete integration guide
+**[doc/en/getting-started.md](./en/getting-started.md)** - Complete integration guide
 - Prerequisites
 - Step-by-step setup
 - Environment configuration
 - First component creation
 - Common pitfalls
 
-**[doc/en/api-reference.md](./doc/en/api-reference.md)** - Complete API documentation
+**[doc/en/api-reference.md](./en/api-reference.md)** - Complete API documentation
 - All hooks with full signatures
 - All utility functions
 - TypeScript types
@@ -92,7 +92,7 @@ Language selector and main entry point
 - Return value descriptions
 - Usage examples for each method
 
-**[doc/en/canton-integration.md](./doc/en/canton-integration.md)** - Canton Network guide
+**[doc/en/canton-integration.md](./en/canton-integration.md)** - Canton Network guide
 - What is Canton Network
 - Why Stellar is used
 - Key conversion process
@@ -100,14 +100,14 @@ Language selector and main entry point
 - Transaction signing
 - Troubleshooting Canton-specific issues
 
-**[doc/en/examples.md](./doc/en/examples.md)** - Real-world examples
+**[doc/en/examples.md](./en/examples.md)** - Real-world examples
 - Authentication patterns
 - Canton workflows
 - API usage patterns
 - UI components
 - Integration with frameworks
 
-**[doc/en/jsdoc-examples.md](./doc/en/jsdoc-examples.md)** - JSDoc standards
+**[doc/en/jsdoc-examples.md](./en/jsdoc-examples.md)** - JSDoc standards
 - Function documentation format
 - Hook documentation format
 - Type documentation
@@ -116,7 +116,7 @@ Language selector and main entry point
 
 #### Russian Documentation (`/doc/ru`)
 
-**[doc/ru/README.md](./doc/ru/README.md)** - Русский индекс документации
+**[doc/ru/README.md](./ru/README.md)** - Русский индекс документации
 
 Same structure as English documentation, but in Russian:
 - getting-started.md
@@ -130,36 +130,36 @@ Same structure as English documentation, but in Russian:
 ### For New Users
 
 **"How do I get started?"**
-→ [doc/en/getting-started.md](./doc/en/getting-started.md) (English)
-→ [doc/ru/getting-started.md](./doc/ru/getting-started.md) (Русский)
+→ [doc/en/getting-started.md](./en/getting-started.md) (English)
+→ [doc/ru/getting-started.md](./ru/getting-started.md) (Русский)
 
 **"What can this SDK do?"**
-→ [README.md](./README.md) → Features section
+→ [README.md](../README.md) → Features section
 
 **"Show me a complete example"**
-→ [demo/README.md](./demo/README.md) or [doc/en/examples.md](./doc/en/examples.md)
+→ [demo/README.md](../demo/README.md) or [doc/en/examples.md](./en/examples.md)
 
 ### For Developers
 
 **"What hooks are available?"**
-→ [doc/en/api-reference.md](./doc/en/api-reference.md) → Hooks section
+→ [doc/en/api-reference.md](./en/api-reference.md) → Hooks section
 
 **"How do I call backend APIs?"**
-→ [doc/en/api-reference.md](./doc/en/api-reference.md) → useAPI section
+→ [doc/en/api-reference.md](./en/api-reference.md) → useAPI section
 
 **"How do I work with Canton Network?"**
-→ [doc/en/canton-integration.md](./doc/en/canton-integration.md)
+→ [doc/en/canton-integration.md](./en/canton-integration.md)
 
 **"What utilities are available?"**
-→ [doc/en/api-reference.md](./doc/en/api-reference.md) → Utilities section
+→ [doc/en/api-reference.md](./en/api-reference.md) → Utilities section
 
 ### For Contributors
 
 **"How should I document my code?"**
-→ [doc/en/jsdoc-examples.md](./doc/en/jsdoc-examples.md)
+→ [doc/en/jsdoc-examples.md](./en/jsdoc-examples.md)
 
 **"What changed in each version?"**
-→ [CHANGELOG.md](./CHANGELOG.md)
+→ [CHANGELOG.md](../CHANGELOG.md)
 
 **"Where do I add documentation?"**
 → This file (DOCUMENTATION.md) → Code Documentation Standards
@@ -167,11 +167,11 @@ Same structure as English documentation, but in Russian:
 ### For Troubleshooting
 
 **"My code isn't working"**
-→ [doc/en/getting-started.md](./doc/en/getting-started.md) → Troubleshooting section
-→ [README.md](./README.md) → Troubleshooting section
+→ [doc/en/getting-started.md](./en/getting-started.md) → Troubleshooting section
+→ [README.md](../README.md) → Troubleshooting section
 
 **"Canton-specific errors"**
-→ [doc/en/canton-integration.md](./doc/en/canton-integration.md) → Troubleshooting Canton section
+→ [doc/en/canton-integration.md](./en/canton-integration.md) → Troubleshooting Canton section
 
 **"I found a bug"**
 → GitHub Issues (link in README)
@@ -299,14 +299,14 @@ export class MyService {
    - Include @example blocks
 
 2. **Update API Reference**
-   - Add to [doc/api-reference.md](./doc/api-reference.md)
+   - Add to [doc/api-reference.md](./en/api-reference.md)
    - Include full signature and examples
 
 3. **Add Examples**
-   - Add real-world example to [doc/examples.md](./doc/examples.md)
+   - Add real-world example to [doc/examples.md](./en/examples.md)
 
 4. **Update Changelog**
-   - Add feature to [CHANGELOG.md](./CHANGELOG.md)
+   - Add feature to [CHANGELOG.md](../CHANGELOG.md)
 
 5. **Update Main README** (if major feature)
    - Update feature list
@@ -399,23 +399,23 @@ Current documentation coverage:
 
 ### Beginner
 
-1. Read [README.md](./README.md) → Features
-2. Follow [doc/en/getting-started.md](./doc/en/getting-started.md)
-3. Study [demo/src/App.tsx](./demo/src/App.tsx)
-4. Try [doc/en/examples.md](./doc/en/examples.md) → Basic examples
+1. Read [README.md](../README.md) → Features
+2. Follow [doc/en/getting-started.md](./en/getting-started.md)
+3. Study [demo/src/App.tsx](../demo/src/App.tsx)
+4. Try [doc/en/examples.md](./en/examples.md) → Basic examples
 
 ### Intermediate
 
-1. Read [doc/en/api-reference.md](./doc/en/api-reference.md) → All hooks
-2. Read [doc/en/canton-integration.md](./doc/en/canton-integration.md)
-3. Study [doc/en/examples.md](./doc/en/examples.md) → Advanced examples
+1. Read [doc/en/api-reference.md](./en/api-reference.md) → All hooks
+2. Read [doc/en/canton-integration.md](./en/canton-integration.md)
+3. Study [doc/en/examples.md](./en/examples.md) → Advanced examples
 4. Explore SDK source code with JSDoc
 
 ### Advanced
 
-1. Read [doc/en/canton-integration.md](./doc/en/canton-integration.md) → Advanced usage
+1. Read [doc/en/canton-integration.md](./en/canton-integration.md) → Advanced usage
 2. Study service implementations
-3. Read [doc/en/jsdoc-examples.md](./doc/en/jsdoc-examples.md)
+3. Read [doc/en/jsdoc-examples.md](./en/jsdoc-examples.md)
 4. Contribute to SDK
 
 ## 📞 Documentation Support
@@ -428,10 +428,10 @@ For documentation-specific questions:
 
 ---
 
-**Last Updated**: December 19, 2025  
+**Last Updated**: December 2025  
 **SDK Version**: 0.1.0  
 **Documentation Version**: 1.0
 
-**Maintainers**: Walletino Team  
+**Maintainers**: Supa Team  
 **License**: MIT
 

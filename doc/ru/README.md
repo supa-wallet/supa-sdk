@@ -1,13 +1,13 @@
-# Walletino SDK - Русская документация
+# Supa SDK - Русская документация
 
-Полная документация Walletino SDK на русском языке.
+Полная документация Supa SDK на русском языке.
 
 ## 📚 Содержание документации
 
 ### Руководство по началу работы
 **[→ Руководство по началу работы](./getting-started.md)**
 
-Пошаговое руководство по интеграции Walletino SDK в ваш проект:
+Пошаговое руководство по интеграции Supa SDK в ваш проект:
 - Предварительные требования и установка
 - Настройка окружения
 - Конфигурация провайдера
@@ -21,7 +21,7 @@
 - `useAuth` - Хук аутентификации
 - `useCanton` - Операции Canton Network
 - `useAPI` - Доступ к Backend API
-- `useWalletino` - Главный хук SDK
+- `useSupa` - Главный хук SDK
 - Утилиты
 - TypeScript типы
 
@@ -61,17 +61,17 @@
 ## 🚀 Быстрый старт
 
 ```bash
-npm install @walletino/sdk
+npm install @supa/sdk
 ```
 
 ```tsx
-import { WalletinoProvider, useAuth, useCanton } from '@walletino/sdk';
+import { SupaProvider, useAuth, useCanton } from '@supa/sdk';
 
 function App() {
   return (
-    <WalletinoProvider config={{ privyAppId: 'your_app_id' }}>
+    <SupaProvider config={{ privyAppId: 'your_app_id' }}>
       <Dashboard />
-    </WalletinoProvider>
+    </SupaProvider>
   );
 }
 
@@ -113,7 +113,7 @@ function Dashboard() {
 
 - **Документация Privy**: https://docs.privy.io
 - **Canton Network**: https://canton.network
-- **Backend API**: https://stage_api.walletino.fyi/api
+- **Backend API**: https://stage_api.supa.fyi/api
 - **TypeScript**: https://www.typescriptlang.org/docs/
 
 ## 📞 Поддержка

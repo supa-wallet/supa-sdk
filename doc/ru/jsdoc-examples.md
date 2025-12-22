@@ -1,6 +1,6 @@
 # JSDoc Documentation Examples
 
-This file contains JSDoc documentation examples used throughout the Walletino SDK codebase.
+This file contains JSDoc documentation examples used throughout the Supa SDK codebase.
 
 ## 📖 Documentation Standards
 
@@ -122,7 +122,7 @@ export const useAuth = (): UseAuthReturn => {
 
 ```typescript
 /**
- * Main hook for accessing all Walletino SDK features
+ * Main hook for accessing all Supa SDK features
  * Combines authentication, Canton Network, and API functionality
  * 
  * @returns Combined SDK functionality with convenience methods
@@ -131,7 +131,7 @@ export const useAuth = (): UseAuthReturn => {
  * Basic usage
  * ```tsx
  * function Dashboard() {
- *   const { auth, canton, api } = useWalletino();
+ *   const { auth, canton, api } = useSupa();
  * 
  *   if (!auth.authenticated) {
  *     return <button onClick={auth.login}>Login</button>;
@@ -152,7 +152,7 @@ export const useAuth = (): UseAuthReturn => {
  * Using automated onboarding
  * ```tsx
  * function OnboardButton() {
- *   const { onboard, canton } = useWalletino();
+ *   const { onboard, canton } = useSupa();
  * 
  *   return (
  *     <button onClick={onboard}>
@@ -162,7 +162,7 @@ export const useAuth = (): UseAuthReturn => {
  * }
  * ```
  */
-export const useWalletino = (): UseWalletinoReturn => {
+export const useSupa = (): UseSupaReturn => {
   // Implementation
 };
 ```
@@ -301,9 +301,9 @@ export const getFirstStellarWallet = (user: any, wallets: any[]): StellarWallet 
 
 ```typescript
 /**
- * Main Walletino SDK provider component
+ * Main Supa SDK provider component
  * Must wrap your entire application to enable SDK functionality
- * Initializes Privy authentication and Walletino services
+ * Initializes Privy authentication and Supa services
  * 
  * @param props - Provider configuration
  * @param props.config - SDK configuration object
@@ -311,15 +311,15 @@ export const getFirstStellarWallet = (user: any, wallets: any[]): StellarWallet 
  * 
  * @example
  * ```tsx
- * import { WalletinoProvider } from '@walletino/sdk';
+ * import { SupaProvider } from '@supa/sdk';
  * 
  * function App() {
  *   return (
- *     <WalletinoProvider
+ *     <SupaProvider
  *       config={{
  *         privyAppId: process.env.VITE_PRIVY_APP_ID,
  *         privyClientId: process.env.VITE_PRIVY_CLIENT_ID,
- *         apiBaseUrl: 'https://stage_api.walletino.fyi',
+ *         apiBaseUrl: 'https://stage_api.supa.fyi',
  *         appearance: {
  *           theme: 'light',
  *           accentColor: '6366f1',
@@ -328,12 +328,12 @@ export const getFirstStellarWallet = (user: any, wallets: any[]): StellarWallet 
  *       }}
  *     >
  *       <YourApp />
- *     </WalletinoProvider>
+ *     </SupaProvider>
  *   );
  * }
  * ```
  */
-export const WalletinoProvider = ({ config, children }: WalletinoProviderProps) => {
+export const SupaProvider = ({ config, children }: SupaProviderProps) => {
   // Implementation
 };
 ```

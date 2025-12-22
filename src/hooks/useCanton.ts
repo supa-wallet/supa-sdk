@@ -6,11 +6,15 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import { useSignRawHash, useCreateWallet } from '@privy-io/react-auth/extended-chains';
-import { useWalletinoContext } from '../providers/WalletinoProvider';
+import { useSupaContext } from '../providers/SupaProvider';
 import { useAuth } from './useAuth';
 import { getStellarWallets, getPublicKeyBase64, StellarWallet } from '../utils/stellar';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
-import type { CantonSubmitTransactionResponseDto } from '../core/types';
+import type {
+  CantonSubmitTransactionResponseDto,
+  CantonMeResponseDto,
+  CantonActiveContractsResponseDto,
+} from '../core/types';
 
 export interface UseCantonReturn {
   /** First Stellar wallet (primary) */
@@ -28,11 +32,29 @@ export interface UseCantonReturn {
   /** Whether Canton wallet is registered */
   isRegistered: boolean;
   
+  /** Canton user info (partyId and email) */
+  cantonUser: CantonMeResponseDto | null;
+  
+  /** Get Canton user info */
+  getMe: () => Promise<CantonMeResponseDto>;
+  
+  /** Get active contracts with optional filtering */
+  getActiveContracts: (templateIds?: string[]) => Promise<CantonActiveContractsResponseDto>;
+  
   /** Tap devnet faucet */
   tapDevnet: (amount: string) => Promise<CantonSubmitTransactionResponseDto>;
   
   /** Sign hash with Stellar wallet */
   signHash: (hashBase64: string) => Promise<string>;
+  
+  /** Sign text message */
+  signMessage: (message: string) => Promise<string>;
+  
+  /** Prepare and submit transaction */
+  sendTransaction: (
+    commandId: unknown,
+    disclosedContracts?: unknown
+  ) => Promise<CantonSubmitTransactionResponseDto>;
   
   /** Loading state */
   loading: boolean;
@@ -48,7 +70,7 @@ export interface UseCantonReturn {
  * Hook for Canton Network operations
  */
 export function useCanton(): UseCantonReturn {
-  const { cantonService } = useWalletinoContext();
+  const { cantonService } = useSupaContext();
   const { user, authenticated } = useAuth();
   const { wallets } = useWallets();
   const { signRawHash } = useSignRawHash();
@@ -57,6 +79,7 @@ export function useCanton(): UseCantonReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [cantonUser, setCantonUser] = useState<CantonMeResponseDto | null>(null);
 
   // Get Stellar wallets
   const stellarWallets = authenticated ? getStellarWallets(user, wallets) : [];
@@ -222,14 +245,98 @@ export function useCanton(): UseCantonReturn {
     setError(null);
   }, []);
 
+  const getMe = useCallback(async (): Promise<CantonMeResponseDto> => {
+    const user = await cantonService.getMe();
+    setCantonUser(user);
+    return user;
+  }, [cantonService]);
+
+  const getActiveContracts = useCallback(async (templateIds?: string[]): Promise<CantonActiveContractsResponseDto> => {
+    return await cantonService.getActiveContracts(templateIds);
+  }, [cantonService]);
+
+  const signMessage = useCallback(async (message: string): Promise<string> => {
+    if (!stellarWallet) {
+      throw new Error('No Stellar wallet found');
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const signFunction = async (hashHex: string): Promise<string> => {
+        const result = await signRawHash({
+          address: stellarWallet.address,
+          chainType: 'stellar',
+          hash: hashHex as `0x${string}`,
+        });
+        return result.signature;
+      };
+
+      return await cantonService.signMessage(message, signFunction);
+    } catch (err: any) {
+      const error = new Error(`Failed to sign message: ${err.message}`);
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [stellarWallet, signRawHash, cantonService]);
+
+  const sendTransaction = useCallback(async (
+    commandId: unknown,
+    disclosedContracts?: unknown
+  ): Promise<CantonSubmitTransactionResponseDto> => {
+    if (!stellarWallet) {
+      throw new Error('No Stellar wallet found');
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Step 1: Prepare transaction
+      const prepareResponse = await cantonService.prepareTransaction(
+        commandId,
+        disclosedContracts
+      );
+
+      // Step 2: Sign hash
+      const hashHex = base64ToHex(prepareResponse.hash);
+      const signResult = await signRawHash({
+        address: stellarWallet.address,
+        chainType: 'stellar',
+        hash: hashHex as `0x${string}`,
+      });
+
+      // Step 3: Submit signed transaction
+      const signatureBase64 = hexToBase64(signResult.signature);
+      return await cantonService.submitPrepared(
+        prepareResponse.hash,
+        signatureBase64
+      );
+    } catch (err: any) {
+      const error = new Error(`Failed to send transaction: ${err.message}`);
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [stellarWallet, signRawHash, cantonService]);
+
   return {
     stellarWallet,
     stellarWallets,
     createStellarWallet,
     registerCanton,
     isRegistered,
+    cantonUser,
+    getMe,
+    getActiveContracts,
     tapDevnet,
     signHash,
+    signMessage,
+    sendTransaction,
     loading,
     error,
     clearError,

@@ -1,6 +1,6 @@
-# Walletino SDK Demo
+# Supa SDK Demo
 
-Демонстрационное приложение для **Walletino SDK** с примерами интеграции Privy.io и Canton Network.
+Демонстрационное приложение для **Supa SDK** с примерами интеграции Privy.io и Canton Network.
 
 ## 🎯 Что внутри
 
@@ -11,7 +11,7 @@
 - ✅ Регистрация Canton кошелька на backend
 - ✅ Получение тестовых токенов из devnet крана
 - ✅ Подпись транзакций через Privy
-- ✅ Работа с Walletino Backend API
+- ✅ Работа с Supa Backend API
 - 🔍 **Debug Panel** - просмотр всех промежуточных значений (publicKey, hash, signature)
 
 ## 🚀 Быстрый старт
@@ -29,7 +29,7 @@ npm install
 ```env
 VITE_PRIVY_APP_ID=your_privy_app_id
 VITE_PRIVY_CLIENT_ID=your_privy_client_id
-VITE_API_BASE_URL=https://stage_api.walletino.fyi
+VITE_API_BASE_URL=https://stage_api.supa.fyi
 ```
 
 > **Важно**: Получите Privy credentials на https://dashboard.privy.io
@@ -40,7 +40,7 @@ VITE_API_BASE_URL=https://stage_api.walletino.fyi
 npm run dev
 ```
 
-Приложение откроется на http://localhost:5173
+Приложение откроется на http://localhost:6969
 
 ## 📖 Структура проекта
 
@@ -113,14 +113,14 @@ export default defineConfig({
 });
 ```
 
-> **Примечание**: Buffer polyfill встроен в Walletino SDK, дополнительная настройка не требуется.
+> **Примечание**: Buffer polyfill встроен в Supa SDK, дополнительная настройка не требуется.
 
 ## 📝 Примеры использования
 
 ### Базовый вход
 
 ```tsx
-import { useAuth } from '@walletino/sdk';
+import { useAuth } from '@supa/sdk';
 
 function LoginButton() {
   const { login, authenticated, user } = useAuth();
@@ -140,7 +140,7 @@ function LoginButton() {
 ### Регистрация Canton
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
 function RegisterCanton() {
   const { registerCanton, isRegistered, loading, error } = useCanton();
@@ -163,7 +163,7 @@ function RegisterCanton() {
 ### Получение тестовых токенов
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
 function TapDevnet() {
   const { tapDevnet, loading } = useCanton();
@@ -192,7 +192,7 @@ function TapDevnet() {
 
 Убедитесь, что:
 1. `VITE_PRIVY_APP_ID` корректный
-2. Домен `localhost:5173` добавлен в Privy Dashboard
+2. Домен `localhost:6969` добавлен в Privy Dashboard
 3. Используется правильный `VITE_PRIVY_CLIENT_ID`
 
 ### Ошибка "No Stellar wallet found"
@@ -214,14 +214,14 @@ await createStellarWallet();
 
 Если видите CORS ошибки:
 1. Проверьте `VITE_API_BASE_URL`
-2. Убедитесь, что backend API разрешает запросы с `localhost:5173`
+2. Убедитесь, что backend API разрешает запросы с `localhost:6969`
 
 ## 📚 Дополнительные ресурсы
 
 - **Основное README SDK**: `/README.md` в корне проекта
 - **Privy Documentation**: https://docs.privy.io
 - **Canton Network**: https://canton.network
-- **Backend API Docs**: https://stage_api.walletino.fyi/api
+- **Backend API Docs**: https://stage_api.supa.fyi/api
 
 ## 🔄 Workflow для разработчиков
 
@@ -232,7 +232,7 @@ await createStellarWallet();
 npm run dev
 
 # 2. Открыть в браузере
-open http://localhost:5173
+open http://localhost:6969
 
 # 3. Следовать UI:
 #    - Login with Privy
@@ -253,7 +253,7 @@ open http://localhost:5173
 Откройте Console (F12) для просмотра детальных логов:
 
 ```
-[Walletino SDK] ✅ Buffer polyfill initialized
+[Supa SDK] ✅ Buffer polyfill initialized
 [Stellar Utils] 📋 getStellarWallets
 [Converters] 🔑 Converting Privy publicKey to Canton base64
 ...

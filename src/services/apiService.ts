@@ -1,6 +1,6 @@
 /**
  * Backend API Service
- * Provides methods for all Walletino backend endpoints
+ * Provides methods for all Supa backend endpoints
  */
 
 import type { ApiClient } from '../core/client';
@@ -309,4 +309,7 @@ export class ApiService {
     return await this.client.get<any>('/privy/balance');
   }
 }
+
+
+
 

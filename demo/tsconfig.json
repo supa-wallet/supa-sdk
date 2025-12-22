@@ -17,10 +17,13 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@walletino/sdk": ["../src/index.ts"]
+      "@supa/sdk": ["../src/index.ts"]
     }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
+
+
+
 

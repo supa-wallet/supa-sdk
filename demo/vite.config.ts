@@ -9,7 +9,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@walletino/sdk': resolve(__dirname, '../src/index.ts'),
+      '@supa/sdk': resolve(__dirname, '../src/index.ts'),
       // Важно: использовать одну копию React
       'react': resolve(__dirname, './node_modules/react'),
       'react-dom': resolve(__dirname, './node_modules/react-dom'),

@@ -1,6 +1,6 @@
-# Walletino SDK Documentation
+# Supa SDK Documentation
 
-Welcome to Walletino SDK documentation!
+Welcome to Supa SDK documentation!
 
 Documentation is available in multiple languages:
 
@@ -31,26 +31,26 @@ Complete SDK documentation in English:
 ## 🚀 Quick Links
 
 - **GitHub Repository**: [github.com/your-repo](https://github.com/your-repo)
-- **npm Package**: [@walletino/sdk](https://npmjs.com/package/@walletino/sdk)
+- **npm Package**: [@supa/sdk](https://npmjs.com/package/@supa/sdk)
 - **Main README**: [../README.md](../README.md)
 - **Demo Application**: [../demo](../demo)
 
 ## 📦 Installation
 
 ```bash
-npm install @walletino/sdk
+npm install @supa/sdk
 ```
 
 ## 💡 Quick Example
 
 ```tsx
-import { WalletinoProvider, useAuth, useCanton } from '@walletino/sdk';
+import { SupaProvider, useAuth, useCanton } from '@supa/sdk';
 
 function App() {
   return (
-    <WalletinoProvider config={{ privyAppId: 'your_app_id' }}>
+    <SupaProvider config={{ privyAppId: 'your_app_id' }}>
       <Dashboard />
-    </WalletinoProvider>
+    </SupaProvider>
   );
 }
 

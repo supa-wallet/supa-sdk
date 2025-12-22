@@ -1,9 +1,9 @@
 /**
- * Walletino Backend API hook
+ * Supa Backend API hook
  * Provides type-safe access to all backend API endpoints
  */
 
-import { useWalletinoContext } from '../providers/WalletinoProvider';
+import { useSupaContext } from '../providers/SupaProvider';
 import type {
   UserResponseDto,
   UserBalanceResponseDto,
@@ -118,7 +118,7 @@ export interface UseAPIReturn {
 }
 
 /**
- * Hook for accessing Walletino Backend API
+ * Hook for accessing Supa Backend API
  * Provides organized, type-safe access to all backend endpoints
  * All methods automatically include authentication token from Privy
  * 
@@ -174,7 +174,7 @@ export interface UseAPIReturn {
  * ```
  */
 export const useAPI = (): UseAPIReturn => {
-  const { apiService } = useWalletinoContext();
+  const { apiService } = useSupaContext();
 
   return {
     user: {

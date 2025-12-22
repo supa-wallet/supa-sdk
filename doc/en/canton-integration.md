@@ -1,322 +1,331 @@
 # Canton Network Integration
 
-Подробное руководство по интеграции с Canton Network через Walletino SDK.
+Detailed guide for Canton Network integration via Supa SDK.
 
-## 📖 Содержание
+## Table of Contents
 
-- [Что такое Canton Network](#что-такое-canton-network)
-- [Почему Stellar](#почему-stellar)
-- [Архитектура интеграции](#архитектура-интеграции)
-- [Конвертация ключей](#конвертация-ключей)
-- [Регистрация кошелька](#регистрация-кошелька)
-- [Подпись транзакций](#подпись-транзакций)
+- [What is Canton Network](#what-is-canton-network)
+- [Why Stellar](#why-stellar)
+- [Integration Architecture](#integration-architecture)
+- [Key Conversion](#key-conversion)
+- [Wallet Registration](#wallet-registration)
+- [Transaction Signing](#transaction-signing)
 - [Devnet Faucet](#devnet-faucet)
-- [Продвинутое использование](#продвинутое-использование)
+- [Advanced Usage](#advanced-usage)
 
 ---
 
-## Что такое Canton Network
+## What is Canton Network
 
-**Canton Network** - это распределенная сеть для синхронизации данных и выполнения смарт-контрактов. SDK интегрируется с Canton через Walletino Backend API.
+**Canton Network** is a distributed network for data synchronization and smart contract execution. The SDK integrates with Canton through Supa Backend API.
 
-### Ключевые особенности
+### Key Features
 
-- ✅ **Ed25519 подпись** - Canton использует Ed25519 для криптографии
-- ✅ **Base64 формат** - Canton API принимает данные в base64
-- ✅ **Stellar wallets** - Privy использует Stellar для Ed25519 подписи
-- ✅ **Автоматическая конвертация** - SDK автоматически конвертирует форматы
+- **Ed25519 Signing** - Canton uses Ed25519 for cryptography
+- **Base64 Format** - Canton API accepts data in base64
+- **Stellar Wallets** - Privy uses Stellar for Ed25519 signing
+- **Automatic Conversion** - SDK automatically converts formats
 
 ---
 
-## Почему Stellar
+## Why Stellar
 
-Canton Network требует **Ed25519** подпись. Privy.io предоставляет Ed25519 через **Stellar chain type**.
+Canton Network requires **Ed25519** signatures. Privy.io provides Ed25519 through the **Stellar chain type**.
 
 ```
 Canton (Ed25519) ← SDK ← Privy (Stellar = Ed25519)
 ```
 
-### Преимущества Stellar в этом контексте
+### Advantages of Stellar in this Context
 
-1. **Нативная Ed25519** - Stellar использует Ed25519 для всех ключей
-2. **Поддержка Privy** - полная интеграция через `@privy-io/react-auth/extended-chains`
-3. **Raw hash signing** - возможность подписывать произвольные хэши
-4. **Совместимость** - публичные ключи Stellar совместимы с Canton
-
----
-
-## Архитектура интеграции
-
-```
-┌─────────────────┐
-│   Your App      │
-│  (React + SDK)  │
-└────────┬────────┘
-         │ useCanton()
-         ↓
-┌─────────────────┐      ┌──────────────┐
-│  Walletino SDK  │ ←───→│  Privy SDK   │
-│                 │      │  (Stellar)   │
-└────────┬────────┘      └──────────────┘
-         │ API calls
-         ↓
-┌─────────────────┐      ┌──────────────┐
-│ Walletino API   │ ←───→│   Canton     │
-│   (Backend)     │      │   Network    │
-└─────────────────┘      └──────────────┘
-```
-
-### Флоу данных
-
-1. **Ваше приложение** вызывает `registerCanton()`
-2. **SDK** создаёт/получает Stellar кошелёк через Privy
-3. **SDK** конвертирует publicKey (hex → base64)
-4. **SDK** отправляет publicKey в `/canton/register/prepare`
-5. **Backend** возвращает hash для подписи
-6. **SDK** конвертирует hash (base64 → hex)
-7. **Privy** подписывает hash используя Stellar wallet
-8. **SDK** конвертирует signature (hex → base64)
-9. **SDK** отправляет signature в `/canton/register/submit`
-10. **Backend** регистрирует Canton кошелёк
+1. **Native Ed25519** - Stellar uses Ed25519 for all keys
+2. **Privy Support** - full integration via `@privy-io/react-auth/extended-chains`
+3. **Raw Hash Signing** - ability to sign arbitrary hashes
+4. **Compatibility** - Stellar public keys are compatible with Canton
 
 ---
 
-## Конвертация ключей
-
-### Public Key: Privy → Canton
-
-Privy возвращает публичный ключ в **hex** с ведущим `00` байтом:
+## Integration Architecture
 
 ```
-Privy hex:     00e95cb2553361ed95250c74f854814675d971cacdbd5dc3ec5de627fff7b71518
-Length:        66 символов (33 байта)
+┌─────────────────────────────────────────────────────────────┐
+│                      Your Application                       │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              Supa SDK                               │   │
+│  │                                                     │   │
+│  │  useAuth()  useCanton()  useAPI()                 │   │
+│  └──────────────┬────────────────┬──────────────────┬─┘   │
+└─────────────────┼────────────────┼──────────────────┼─────┘
+                  │                │                  │
+         ┌────────▼────────┐  ┌───▼────────┐  ┌─────▼──────┐
+         │  Privy.io       │  │  Stellar   │  │   Supa     │
+         │  Authentication │  │  Wallet    │  │   Backend  │
+         └─────────────────┘  └────────────┘  └────────────┘
+                                     │              │
+                                     │              │
+                              ┌──────▼──────────────▼──────┐
+                              │    Canton Network          │
+                              │    (Ed25519)               │
+                              └────────────────────────────┘
 ```
 
-Canton ожидает публичный ключ в **base64** БЕЗ ведущего `00`:
+### Component Responsibilities
 
-```
-1. Удалить 0x префикс (если есть)
-   00e95cb2553361ed95250c74f854814675d971cacdbd5dc3ec5de627fff7b71518
+1. **Supa SDK** - provides convenient hooks and automatic format conversion
+2. **Privy.io** - authentication and wallet management
+3. **Stellar Wallet** - Ed25519 key generation and signing
+4. **Supa Backend** - Canton Network interface
+5. **Canton Network** - distributed ledger and smart contracts
 
-2. Удалить leading 00 byte
-   e95cb2553361ed95250c74f854814675d971cacdbd5dc3ec5de627fff7b71518
-   Length: 64 символа (32 байта) ✅ Корректная длина Ed25519
+---
 
-3. Конвертировать hex → bytes
-   [0xe9, 0x5c, 0xb2, 0x55, ...]
+## Key Conversion
 
-4. Конвертировать bytes → base64
-   6Vyy...
-```
+Canton Network uses **base64** format for public keys, while Privy returns keys in **hex** format.
 
-SDK делает это автоматически через `privyPublicKeyToCantonBase64()`.
-
-### Пример конвертации вручную
+### Conversion Process
 
 ```typescript
-import { privyPublicKeyToCantonBase64 } from '@walletino/sdk';
+// Privy public key (hex with leading 00)
+const privyPublicKey = "00e95cb2553361ed95250c74f854814675d971cacdbd5dc3ec5de627fff7b71518";
 
-const wallet = {
-  publicKey: '00e95cb2553361ed95250c74f854814675d971cacdbd5dc3ec5de627fff7b71518'
-};
+// Step 1: Remove leading 00
+const cleanHex = "e95cb2553361ed95250c74f854814675d971cacdbd5dc3ec5de627fff7b71518";
 
-const cantonPublicKey = privyPublicKeyToCantonBase64(wallet.publicKey);
-console.log(cantonPublicKey);
-// "6Vyy...RYU=" (base64, 32 байта)
+// Step 2: Convert hex → bytes
+const bytes = new Uint8Array(
+  cleanHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
+);
+
+// Step 3: Convert bytes → base64
+const base64 = Buffer.from(bytes).toString('base64');
+// Result: "6Vyy...Hhg="
 ```
 
-### Hash/Signature конвертация
+### SDK Implementation
 
-**Canton → Privy (для подписи):**
-```
-Canton hash (base64) → hex → Privy signRawHash
+SDK automatically handles this conversion:
+
+```tsx
+import { privyPublicKeyToCantonBase64 } from '@supa/sdk';
+
+const wallet = stellarWallet; // from useCanton()
+const publicKeyBase64 = privyPublicKeyToCantonBase64(wallet.publicKey);
+
+// Ready to send to Canton API
+console.log(publicKeyBase64); // "6Vyy...Hhg="
 ```
 
-**Privy → Canton (после подписи):**
-```
-Privy signature (hex) → base64 → Canton API
-```
+### Hash Conversion
 
-SDK автоматически конвертирует через `base64ToHex()` и `hexToBase64()`.
+Hashes also require conversion between formats:
+
+```tsx
+import { base64ToHex, hexToBase64 } from '@supa/sdk';
+
+// Canton sends hash in base64
+const cantonHash = "EiDjNqHetYYin8ypx87LAmJwzxhBX4rFMi4Z/sSsvdQ7bg==";
+
+// Convert to hex for Privy signing
+const hashHex = base64ToHex(cantonHash);
+// "0x1220e336a1deb58622..."
+
+// After signing, convert signature back to base64 for Canton
+const signatureHex = "0xabcd1234...";
+const signatureBase64 = hexToBase64(signatureHex);
+```
 
 ---
 
-## Регистрация кошелька
+## Wallet Registration
 
-### Автоматическая регистрация
-
-Самый простой способ - использовать `registerCanton()`:
+### Automatic Registration Flow
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
 function RegisterButton() {
-  const { registerCanton, isRegistered, loading, error } = useCanton();
-
-  const handleRegister = async () => {
-    try {
-      // Автоматически:
-      // 1. Создаст Stellar wallet если нет
-      // 2. Получит publicKey и конвертирует в base64
-      // 3. Вызовет /canton/register/prepare
-      // 4. Подпишет hash через Privy
-      // 5. Отправит signature в /canton/register/submit
-      await registerCanton();
-      
-      console.log('✅ Canton wallet registered!');
-    } catch (err) {
-      console.error('❌ Registration failed:', err);
-    }
-  };
+  const { registerCanton, isRegistered, loading } = useCanton();
 
   if (isRegistered) {
-    return <p>Canton wallet is already registered</p>;
+    return <div>Already registered</div>;
   }
 
   return (
-    <button onClick={handleRegister} disabled={loading}>
+    <button onClick={registerCanton} disabled={loading}>
       {loading ? 'Registering...' : 'Register Canton Wallet'}
     </button>
   );
 }
 ```
 
-### Пошаговая регистрация
+### What Happens Under the Hood
 
-Для более тонкого контроля:
+```typescript
+async function registerCanton() {
+  // 1. Check/create Stellar wallet
+  let wallet = stellarWallet;
+  if (!wallet) {
+    wallet = await createStellarWallet();
+  }
 
-```tsx
-import { useCanton } from '@walletino/sdk';
-import { useAuth } from '@walletino/sdk';
-import { getPublicKeyBase64 } from '@walletino/sdk';
+  // 2. Convert public key to base64
+  const publicKey = privyPublicKeyToCantonBase64(wallet.publicKey);
 
-function ManualRegistration() {
-  const { getAccessToken } = useAuth();
-  const { stellarWallet, createStellarWallet } = useCanton();
+  // 3. Call /canton/register/prepare
+  const { hash } = await api.post('/canton/register/prepare', { publicKey });
 
-  const handleManualRegister = async () => {
-    // Шаг 1: Убедиться что есть Stellar кошелёк
-    let wallet = stellarWallet;
-    if (!wallet) {
-      wallet = await createStellarWallet();
-      if (!wallet) throw new Error('Failed to create wallet');
-    }
+  // 4. Convert hash from base64 to hex
+  const hashHex = base64ToHex(hash);
 
-    // Шаг 2: Получить publicKey в base64
-    const publicKey = getPublicKeyBase64(wallet);
-    console.log('Public key (base64):', publicKey);
+  // 5. Sign hash via Privy (Stellar chainType)
+  const { signature } = await signRawHash({
+    address: wallet.address,
+    chainType: 'stellar',
+    hash: hashHex,
+  });
 
-    // Шаг 3: Получить токен для API
-    const token = await getAccessToken();
+  // 6. Convert signature to base64
+  const signatureBase64 = hexToBase64(signature);
 
-    // Шаг 4: Вызвать /canton/register/prepare
-    const prepareResponse = await fetch(
-      'https://stage_api.walletino.fyi/canton/register/prepare',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ publicKey }),
-      }
-    );
-    const { hash } = await prepareResponse.json();
-    console.log('Hash from prepare:', hash);
-
-    // Шаги 5-6: Подпись и submit делаются через useCanton.signHash()
-    // или напрямую через Privy useSignRawHash
-  };
-
-  return <button onClick={handleManualRegister}>Manual Register</button>;
+  // 7. Submit to /canton/register/submit
+  await api.post('/canton/register/submit', { signature: signatureBase64 });
 }
 ```
 
-### Важные моменты
-
-⚠️ **Один кошелёк на пользователя**: Пользователь может иметь только один Canton кошелёк. Повторная регистрация вернёт ошибку.
-
-⚠️ **Stellar кошелёк обязателен**: Canton регистрация требует Stellar кошелёк. SDK автоматически создаст его если нужно.
-
-⚠️ **Токен авторизации**: Все API запросы требуют JWT токен от Privy в заголовке `Authorization: Bearer <token>`.
-
----
-
-## Подпись транзакций
-
-### Подпись произвольного хэша
-
-Canton может запросить подпись любого хэша (например, для транзакций):
+### Manual Registration (Advanced)
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton, useAPI } from '@supa/sdk';
+import { privyPublicKeyToCantonBase64, base64ToHex, hexToBase64 } from '@supa/sdk';
+import { useSignRawHash } from '@privy-io/react-auth/extended-chains';
 
-function SignTransaction() {
-  const { signHash, stellarWallet } = useCanton();
+function ManualRegister() {
+  const { stellarWallet } = useCanton();
+  const api = useAPI();
+  const { signRawHash } = useSignRawHash();
 
-  const handleSign = async () => {
+  const handleRegister = async () => {
     if (!stellarWallet) {
-      alert('No Stellar wallet found');
+      alert('No Stellar wallet');
       return;
     }
 
-    // Хэш от Canton в base64 формате
-    const cantonHash = 'EiDjNqHetYYin8ypx87LAmJwzxhBX4rFMi4Z/sSsvdQ7bg==';
-
     try {
-      // SDK автоматически:
-      // 1. Конвертирует base64 → hex
-      // 2. Подпишет через Privy (Stellar)
-      // 3. Конвертирует signature hex → base64
+      // Prepare
+      const publicKey = privyPublicKeyToCantonBase64(stellarWallet.publicKey);
+      const prepareResponse = await fetch(`${API_URL}/canton/register/prepare`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publicKey }),
+      });
+      const { hash } = await prepareResponse.json();
+
+      // Sign
+      const hashHex = base64ToHex(hash);
+      const result = await signRawHash({
+        address: stellarWallet.address,
+        chainType: 'stellar',
+        hash: hashHex as `0x${string}`,
+      });
+
+      // Submit
+      const signatureBase64 = hexToBase64(result.signature);
+      await fetch(`${API_URL}/canton/register/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signature: signatureBase64 }),
+      });
+
+      alert('Registered successfully!');
+    } catch (err) {
+      console.error('Registration failed:', err);
+    }
+  };
+
+  return <button onClick={handleRegister}>Manual Register</button>;
+}
+```
+
+---
+
+## Transaction Signing
+
+### Sign Arbitrary Hash
+
+Canton Network may require signing arbitrary hashes for transactions.
+
+```tsx
+import { useCanton } from '@supa/sdk';
+
+function SignTransaction() {
+  const { signHash } = useCanton();
+
+  const handleSign = async () => {
+    // Hash from Canton (base64)
+    const cantonHash = "EiDjNqHetYYin8ypx87LAmJwzxhBX4rFMi4Z/sSsvdQ7bg==";
+    
+    try {
+      // SDK automatically handles conversion
       const signature = await signHash(cantonHash);
       
-      console.log('Signature (base64):', signature);
-      // Теперь можно отправить signature в Canton API
+      // signature is in base64, ready for Canton
+      console.log('Signature:', signature);
+      
+      // Send signature to Canton
+      await sendToCantonAPI(signature);
     } catch (err) {
       console.error('Signing failed:', err);
     }
   };
 
-  return <button onClick={handleSign}>Sign Canton Hash</button>;
+  return <button onClick={handleSign}>Sign Transaction</button>;
 }
 ```
 
-### Прямая подпись через Privy
-
-Для максимального контроля:
+### Sign with Additional Data
 
 ```tsx
+import { useCanton } from '@supa/sdk';
+import { base64ToHex, hexToBase64 } from '@supa/sdk';
 import { useSignRawHash } from '@privy-io/react-auth/extended-chains';
-import { useCanton } from '@walletino/sdk';
-import { base64ToHex, hexToBase64 } from '@walletino/sdk';
 
-function DirectSigning() {
-  const { signRawHash } = useSignRawHash();
+function SignWithMetadata() {
   const { stellarWallet } = useCanton();
+  const { signRawHash } = useSignRawHash();
 
-  const handleDirectSign = async () => {
-    const cantonHashBase64 = 'EiDjNq...';
-    
-    // 1. Конвертировать Canton hash (base64) в hex для Privy
-    const hashHex = base64ToHex(cantonHashBase64);
-    console.log('Hash for Privy (hex):', hashHex);
+  const signTransaction = async (txData: any) => {
+    if (!stellarWallet) return;
 
-    // 2. Подписать через Privy
+    // Prepare transaction
+    const response = await fetch('/api/canton/transaction/prepare', {
+      method: 'POST',
+      body: JSON.stringify(txData),
+    });
+    const { hash, metadata } = await response.json();
+
+    // Sign
+    const hashHex = base64ToHex(hash);
     const result = await signRawHash({
-      address: stellarWallet!.address,
+      address: stellarWallet.address,
       chainType: 'stellar',
       hash: hashHex as `0x${string}`,
     });
-    console.log('Signature from Privy (hex):', result.signature);
 
-    // 3. Конвертировать signature обратно в base64 для Canton
-    const signatureBase64 = hexToBase64(result.signature);
-    console.log('Signature for Canton (base64):', signatureBase64);
-
-    return signatureBase64;
+    // Submit
+    const signature = hexToBase64(result.signature);
+    await fetch('/api/canton/transaction/submit', {
+      method: 'POST',
+      body: JSON.stringify({ signature, metadata }),
+    });
   };
 
-  return <button onClick={handleDirectSign}>Direct Sign</button>;
+  return (
+    <button onClick={() => signTransaction({ amount: '100', recipient: 'addr123' })}>
+      Send Transaction
+    </button>
+  );
 }
 ```
 
@@ -324,33 +333,30 @@ function DirectSigning() {
 
 ## Devnet Faucet
 
-Devnet faucet позволяет получить тестовые токены для разработки.
+Canton devnet provides a faucet for test tokens.
 
-### Базовое использование
+### Get Test Tokens
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
-function TapFaucet() {
+function GetTokens() {
   const { tapDevnet, loading, error } = useCanton();
 
   const handleTap = async () => {
     try {
-      // amount в строковом формате
       const result = await tapDevnet('1000');
-      
-      console.log('Transaction result:', result);
-      alert(`✅ Received 1000 test tokens!`);
+      console.log('Tap result:', result);
+      alert('Received 1000 test tokens!');
     } catch (err) {
       console.error('Tap failed:', err);
-      alert(`❌ Error: ${err.message}`);
     }
   };
 
   return (
     <>
       <button onClick={handleTap} disabled={loading}>
-        {loading ? 'Processing...' : 'Get 1000 Test Tokens'}
+        {loading ? 'Getting tokens...' : 'Get 1000 Test Tokens'}
       </button>
       {error && <p style={{ color: 'red' }}>{error.message}</p>}
     </>
@@ -358,230 +364,205 @@ function TapFaucet() {
 }
 ```
 
-### С разными суммами
+### Custom Amount
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 import { useState } from 'react';
 
-function CustomAmountTap() {
+function CustomTap() {
   const { tapDevnet, loading } = useCanton();
   const [amount, setAmount] = useState('1000');
 
   const handleTap = async () => {
-    try {
-      const result = await tapDevnet(amount);
-      console.log(`Received ${amount} tokens:`, result);
-    } catch (err) {
-      console.error('Tap failed:', err);
-    }
+    const result = await tapDevnet(amount);
+    alert(`Received ${amount} tokens!`);
   };
 
   return (
-    <>
+    <div>
       <input
         type="number"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
-        min="1"
-        max="10000"
+        placeholder="Amount"
       />
       <button onClick={handleTap} disabled={loading}>
-        Tap {amount} Tokens
+        Get Tokens
       </button>
-    </>
-  );
-}
-```
-
-### ⚠️ Важно
-
-- **Только для devnet**: Faucet работает только в тестовой сети
-- **Лимиты**: Могут быть ограничения на количество и частоту запросов
-- **Регистрация обязательна**: Нужен зарегистрированный Canton кошелёк
-
----
-
-## Продвинутое использование
-
-### Проверка статуса регистрации
-
-```tsx
-import { useCanton } from '@walletino/sdk';
-import { useEffect } from 'react';
-
-function RegistrationStatus() {
-  const { isRegistered, stellarWallet } = useCanton();
-
-  useEffect(() => {
-    console.log('Registration status:', {
-      hasWallet: !!stellarWallet,
-      isRegistered,
-      walletAddress: stellarWallet?.address,
-    });
-  }, [stellarWallet, isRegistered]);
-
-  return (
-    <div>
-      <p>Stellar Wallet: {stellarWallet ? '✅' : '❌'}</p>
-      <p>Canton Registered: {isRegistered ? '✅' : '❌'}</p>
     </div>
   );
 }
 ```
 
-### Обработка ошибок
+---
+
+## Advanced Usage
+
+### Check Registration Status
 
 ```tsx
-import { useCanton } from '@walletino/sdk';
+import { useCanton, useAPI } from '@supa/sdk';
+import { useEffect, useState } from 'react';
 
-function ErrorHandling() {
-  const { registerCanton, error, clearError } = useCanton();
+function RegistrationStatus() {
+  const { isRegistered } = useCanton();
+  const api = useAPI();
+  const [details, setDetails] = useState(null);
 
-  const handleRegister = async () => {
-    clearError(); // Очистить предыдущие ошибки
+  useEffect(() => {
+    if (isRegistered) {
+      // Load additional details if needed
+      loadCantonDetails();
+    }
+  }, [isRegistered]);
 
+  const loadCantonDetails = async () => {
     try {
-      await registerCanton();
-    } catch (err: any) {
-      // Обработка специфичных ошибок
-      if (err.message.includes('already exists')) {
-        alert('Canton wallet already registered!');
-      } else if (err.message.includes('Stellar wallet')) {
-        alert('Failed to create Stellar wallet. Please try again.');
-      } else {
-        alert(`Error: ${err.message}`);
-      }
+      const data = await fetch('/api/canton/status').then(r => r.json());
+      setDetails(data);
+    } catch (err) {
+      console.error('Failed to load details:', err);
     }
   };
 
   return (
-    <>
-      <button onClick={handleRegister}>Register</button>
-      {error && (
-        <div style={{ color: 'red' }}>
-          <p>{error.message}</p>
-          <button onClick={clearError}>Dismiss</button>
-        </div>
-      )}
-    </>
+    <div>
+      <p>Status: {isRegistered ? 'Registered' : 'Not Registered'}</p>
+      {details && <pre>{JSON.stringify(details, null, 2)}</pre>}
+    </div>
   );
 }
 ```
 
-### Кастомная транзакция Canton
-
-Если нужно отправить собственную транзакцию:
+### Multiple Stellar Wallets
 
 ```tsx
-import { useAuth, useCanton } from '@walletino/sdk';
-import { hexToBase64 } from '@walletino/sdk';
+import { useCanton } from '@supa/sdk';
 
-function CustomCantonTransaction() {
-  const { getAccessToken } = useAuth();
-  const { signHash } = useCanton();
+function MultiWallet() {
+  const { stellarWallets, createStellarWallet } = useCanton();
 
-  const sendCustomTransaction = async (transactionData: any) => {
-    // 1. Подготовить транзакцию на backend
-    const token = await getAccessToken();
-    const prepareResponse = await fetch(
-      'https://stage_api.walletino.fyi/canton/api/prepare-custom',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transactionData),
-      }
-    );
-    const { hash } = await prepareResponse.json();
-
-    // 2. Подписать hash
-    const signature = await signHash(hash);
-
-    // 3. Отправить подписанную транзакцию
-    const submitResponse = await fetch(
-      'https://stage_api.walletino.fyi/canton/api/submit',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ hash, signature }),
-      }
-    );
-
-    return await submitResponse.json();
+  const addWallet = async () => {
+    const newWallet = await createStellarWallet();
+    console.log('Created wallet:', newWallet?.address);
   };
 
-  return <button onClick={() => sendCustomTransaction({ /* ... */ })}>
-    Send Custom Transaction
-  </button>;
+  return (
+    <div>
+      <h3>Your Wallets ({stellarWallets.length})</h3>
+      {stellarWallets.map((wallet, idx) => (
+        <div key={wallet.address}>
+          <span>Wallet {idx + 1}:</span>
+          <code>{wallet.address}</code>
+        </div>
+      ))}
+      <button onClick={addWallet}>Add Wallet</button>
+    </div>
+  );
+}
+```
+
+### Custom Signing Logic
+
+```tsx
+import { useSignRawHash } from '@privy-io/react-auth/extended-chains';
+import { useCanton } from '@supa/sdk';
+import { base64ToHex, hexToBase64 } from '@supa/sdk';
+
+function CustomSigning() {
+  const { stellarWallet } = useCanton();
+  const { signRawHash } = useSignRawHash();
+
+  const signCustomData = async (data: string) => {
+    if (!stellarWallet) return;
+
+    // Create hash from data
+    const encoder = new TextEncoder();
+    const dataBytes = encoder.encode(data);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBytes);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = '0x' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Sign
+    const result = await signRawHash({
+      address: stellarWallet.address,
+      chainType: 'stellar',
+      hash: hashHex as `0x${string}`,
+    });
+
+    return hexToBase64(result.signature);
+  };
+
+  const handleSign = async () => {
+    const signature = await signCustomData('Hello Canton!');
+    console.log('Signature:', signature);
+  };
+
+  return <button onClick={handleSign}>Sign Custom Data</button>;
 }
 ```
 
 ---
 
-## Troubleshooting Canton
+## Troubleshooting
 
 ### "No Stellar wallet found"
 
-**Причина**: Canton требует Stellar кошелёк для Ed25519 подписи.
+**Solution**: Wallet creation might be in progress. Wait or create explicitly:
 
-**Решение**:
 ```tsx
-const { createStellarWallet, stellarWallet } = useCanton();
+const { stellarWallet, createStellarWallet } = useCanton();
 
 if (!stellarWallet) {
   await createStellarWallet();
 }
 ```
 
-### "Canton wallet already exists"
+### "Failed to register Canton wallet"
 
-**Причина**: Пользователь уже зарегистрировал Canton кошелёк.
+**Possible causes**:
+1. Backend API is unavailable
+2. Signature is invalid
+3. Wallet is already registered
 
-**Решение**: Это нормально. Используйте `isRegistered` для проверки:
+**Solution**: Check console for detailed error message.
+
+### "Invalid signature format"
+
+**Solution**: Ensure proper format conversion:
+
 ```tsx
-if (!isRegistered) {
-  await registerCanton();
-} else {
-  console.log('Already registered');
-}
+// Correct
+const hashHex = base64ToHex(cantonHashBase64);
+const signature = await signRawHash({ hash: hashHex as `0x${string}` });
+const signatureBase64 = hexToBase64(signature.signature);
+
+// Incorrect - missing conversion
+const signature = await signRawHash({ hash: cantonHashBase64 }); // Wrong!
 ```
 
-### "Invalid signature"
+### Signature Verification Failed
 
-**Причина**: Некорректная конвертация или подпись не того хэша.
+**Causes**:
+1. Wrong public key sent to Canton
+2. Hash modified between prepare and submit
+3. Different wallet used for signing
 
-**Решение**: Убедитесь что:
-1. Hash конвертируется base64 → hex перед подписью
-2. Signature конвертируется hex → base64 перед отправкой
-3. Используется правильный Stellar кошелёк
-
-### "Public key format error"
-
-**Причина**: Неправильная конвертация publicKey.
-
-**Решение**: Используйте встроенную функцию SDK:
-```tsx
-import { getPublicKeyBase64 } from '@walletino/sdk';
-
-const publicKey = getPublicKeyBase64(stellarWallet);
-```
+**Solution**: Ensure the same wallet is used throughout the process.
 
 ---
 
-## Дополнительные ресурсы
+## Best Practices
 
-- **Canton Network Docs**: https://canton.network
-- **Privy Stellar Integration**: https://docs.privy.io/guide/react/wallets/extended-chains
-- **Ed25519 Specification**: https://ed25519.cr.yp.to
+1. **Always check registration status** before attempting Canton operations
+2. **Handle errors gracefully** - network issues are common
+3. **Cache Stellar wallet** - avoid recreating on every render
+4. **Use TypeScript** - types help prevent format errors
+5. **Test on devnet first** - before moving to production
 
 ---
 
-**Последнее обновление**: Декабрь 2025  
-**Версия SDK**: 0.1.0
-
+**Last Updated**: December 2025  
+**SDK Version**: 0.1.0  
+**Canton Network**: Ed25519 via Stellar

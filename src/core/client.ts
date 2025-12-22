@@ -1,5 +1,5 @@
 /**
- * HTTP Client for Walletino Backend API
+ * HTTP Client for Supa Backend API
  * Handles authentication and API communication
  */
 
@@ -16,7 +16,7 @@ export class ApiClient {
   private getAccessToken?: () => Promise<string | null>;
 
   constructor(config: ClientConfig = {}) {
-    const baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || 'https://stage_api.walletino.fyi';
+    const baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi';
     
     this.client = axios.create({
       baseURL,
@@ -37,12 +37,12 @@ export class ApiClient {
               config.headers.Authorization = `Bearer ${token}`;
             }
           } catch (error) {
-            console.error('[Walletino SDK] ❌ Failed to get access token:', error);
+            console.error('[Supa SDK] ❌ Failed to get access token:', error);
           }
         }
         
         // Log request details
-        console.group(`[Walletino SDK] 📤 REQUEST: ${config.method?.toUpperCase()} ${config.url}`);
+        console.group(`[Supa SDK] 📤 REQUEST: ${config.method?.toUpperCase()} ${config.url}`);
         console.log('Headers:', {
           'Content-Type': config.headers['Content-Type'],
           'Authorization': config.headers.Authorization ? `Bearer ***${String(config.headers.Authorization).slice(-20)}` : 'none'
@@ -60,7 +60,7 @@ export class ApiClient {
     // Response interceptor for error handling
     this.client.interceptors.response.use(
       (response) => {
-        console.group(`[Walletino SDK] 📥 RESPONSE: ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
+        console.group(`[Supa SDK] 📥 RESPONSE: ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
         console.log('Status:', response.status, response.statusText);
         console.log('Response Data:', response.data);
         console.groupEnd();
@@ -68,7 +68,7 @@ export class ApiClient {
       },
       (error: AxiosError<ApiError>) => {
         if (error.response) {
-          console.group(`[Walletino SDK] ❌ ERROR RESPONSE: ${error.response.status} ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
+          console.group(`[Supa SDK] ❌ ERROR RESPONSE: ${error.response.status} ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
           console.error('Status:', error.response.status, error.response.statusText);
           console.error('Request Body:', error.config?.data);
           console.error('Response Data:', error.response.data);
@@ -81,7 +81,7 @@ export class ApiClient {
           };
           return Promise.reject(apiError);
         }
-        console.error('[Walletino SDK] ❌ Network error:', error.message);
+        console.error('[Supa SDK] ❌ Network error:', error.message);
         return Promise.reject({
           statusCode: 0,
           message: error.message || 'Network error',
