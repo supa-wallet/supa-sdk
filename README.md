@@ -1,10 +1,6 @@
 # Supa SDK
 
-Supa SDK allows dApps to integrate with Supa backend and Canton Network. The SDK handles Privy.io authentication, Stellar wallet management, and Canton Network transactions.
-
-## Limitation
-
-Currently, we only support Ed25519 signing via Stellar wallets for Canton Network integration.
+Supa SDK allows applications to seamlessly integrate with Canton Network. 
 
 ## Quick overview
 
@@ -12,14 +8,12 @@ For a quick overview, check out the demo application in `/demo` folder.
 
 ## Key Features
 
-✅ **Privy.io Authentication** - Email, wallet, and social login methods  
-✅ **Stellar Wallet Management** - Ed25519 signing for Canton Network  
-✅ **Canton Network Integration** - Full Canton transaction support  
-✅ **Built-in Confirmation Modals** - User-friendly signing confirmations  
-✅ **Theme Support** - Light/dark mode with Privy design system  
-✅ **Customizable UI** - Modal text, buttons, and display options  
-✅ **TypeScript Support** - Full type definitions included  
-✅ **Backend API Client** - Ready-to-use API methods  
+- Privy.io Authentication - Email, wallet, and social login methods  
+- Canton Wallet Management - Ed25519 signing for Canton Network  
+- Built-in Confirmation Modals 
+- Theme Support - Light/dark mode with Privy design system  
+- Customizable UI - Modal text, buttons, and display options  
+- Fully typed
 
 ## Quick Start
 
@@ -638,83 +632,6 @@ function App() {
 }
 ```
 
-### 5. Security
-
-- Never use `skipModal: true` for user-facing transactions
-- Always validate user input before signing
-- Use `showTechnicalDetails: true` only for debugging/advanced users
-- Implement proper error boundaries
-
-# Development Guide
-
-This section is for SDK development. To use the SDK, follow the Usage Guide above.
-
-## Project Structure
-
-```
-supa-sdk/
-├── src/
-│   ├── components/       # UI components (modals)
-│   │   └── ConfirmationModal.tsx
-│   ├── core/            # Core functionality
-│   │   ├── client.ts    # API client
-│   │   └── types.ts     # Type definitions
-│   ├── hooks/           # React hooks
-│   │   ├── useAuth.ts
-│   │   ├── useCanton.ts
-│   │   ├── useSignMessage.ts
-│   │   ├── useSendTransaction.ts
-│   │   ├── useConfirmModal.ts
-│   │   └── useSignRawHashWithModal.ts
-│   ├── providers/       # Context providers
-│   │   └── SupaProvider.tsx
-│   ├── services/        # Service classes
-│   │   ├── apiService.ts
-│   │   └── cantonService.ts
-│   ├── utils/           # Utility functions
-│   │   ├── converters.ts
-│   │   └── stellar.ts
-│   └── index.ts         # Main export
-├── demo/                # Demo application
-└── doc/                 # Documentation
-```
-
-## Install dependencies
-
-```bash
-npm install
-```
-
-## Run demo application
-
-```bash
-cd demo
-npm install
-npm run dev
-```
-
-## Build SDK
-
-```bash
-npm run build
-```
-
-Output in `/dist`:
-- `index.cjs.js` - CommonJS
-- `index.esm.js` - ES Modules
-
-## Type checking
-
-```bash
-npm run type-check
-```
-
-# Publish
-
-```bash
-npm run build
-npm publish
-```
 
 ## Examples
 
@@ -780,9 +697,6 @@ Yes! Update the `theme` prop in `SupaProvider` config and all modals will automa
 </SupaProvider>
 ```
 
-### What chains are supported?
-
-Currently, only **Stellar (Ed25519)** is supported for Canton Network integration.
 
 ### How do I handle signing errors?
 
