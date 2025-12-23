@@ -14,6 +14,7 @@ export interface SignRawHashModalOptions {
   description?: string;
   confirmText?: string;
   rejectText?: string;
+  infoText?: string;
   /** Custom content to display instead of auto-generated JSON */
   displayHash?: string;
   /** Show technical details (address, chainType, hash) as JSON. Default: false */
@@ -45,6 +46,7 @@ export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
         description = 'You are about to sign the following hash:',
         confirmText = 'Sign',
         rejectText = 'Reject',
+        infoText,
         displayHash,
         showTechnicalDetails = false,
       } = modalOptions || {};
@@ -68,6 +70,7 @@ export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
         description,
         confirmText,
         rejectText,
+        infoText,
       });
 
       if (!confirmed.confirmed) {

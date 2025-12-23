@@ -38,6 +38,7 @@ export interface SignTransactionOptions {
   description?: string;
   confirmText?: string;
   rejectText?: string;
+  infoText?: string;
 }
 
 export interface ModalResult<T = void> {
