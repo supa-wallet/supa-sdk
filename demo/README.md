@@ -14,7 +14,36 @@ This demo showcases:
 - Supa Backend API integration
 - Debug Panel - view all intermediate values (publicKey, hash, signature)
 
+## Important Note
+
+This demo uses **local version** of the SDK via `"@supa/sdk": "file:.."` dependency in `package.json`. This means it loads the SDK from the parent directory, not from npm.
+
 ## Quick Start
+
+### If Starting from Scratch (Full Repo Clone)
+
+```bash
+# 1. Clone the repository (if not done yet)
+git clone <repository-url>
+cd supa-sdk
+
+# 2. Install SDK dependencies and build
+npm install
+npm run build
+
+# 3. Navigate to demo
+cd demo
+
+# 4. Install demo dependencies (will link local SDK)
+npm install
+
+# 5. Setup environment variables (see below)
+
+# 6. Run demo
+npm run dev
+```
+
+### If SDK is Already Built
 
 ### 1. Install Dependencies
 
@@ -222,6 +251,27 @@ If you see CORS errors:
 - **Privy Documentation**: https://docs.privy.io
 - **Canton Network**: https://canton.network
 
+
+## Working with Local SDK
+
+Since this demo uses the local SDK version, when you make changes to the SDK source code:
+
+```bash
+# 1. Go to SDK root directory
+cd ..
+
+# 2. Rebuild the SDK
+npm run build
+
+# 3. Go back to demo
+cd demo
+
+# 4. Restart dev server (if running)
+# Press Ctrl+C to stop, then:
+npm run dev
+```
+
+The demo will automatically use the updated SDK build.
 
 ## Developer Workflow
 

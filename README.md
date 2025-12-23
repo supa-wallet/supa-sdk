@@ -18,12 +18,74 @@ For a quick overview of the code, check out the demo application in the `/demo` 
 
 ## Installation
 
+### From npm (when published)
+
 ```bash
 npm install @supa/sdk
 # or
 yarn add @supa/sdk
 # or
 pnpm add @supa/sdk
+```
+
+### From local repository
+
+If the package is not yet published to npm, you can install it locally:
+
+#### 1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd supa-sdk
+```
+
+#### 2. Install dependencies and build
+
+```bash
+npm install
+npm run build
+```
+
+#### 3. Link to your project
+
+**Option A: Using npm link (recommended)**
+
+In the SDK directory:
+```bash
+npm link
+```
+
+In your project directory:
+```bash
+npm link @supa/sdk
+```
+
+**Option B: Using local path**
+
+In your project's `package.json`, add:
+```json
+{
+  "dependencies": {
+    "@supa/sdk": "file:../path/to/supa-sdk"
+  }
+}
+```
+
+Then run:
+```bash
+npm install
+```
+
+**Option C: Using tarball**
+
+In the SDK directory:
+```bash
+npm pack
+```
+
+This creates a `.tgz` file. In your project:
+```bash
+npm install ../path/to/supa-sdk/supa-sdk-0.1.0.tgz
 ```
 
 ## Quick Start
@@ -305,19 +367,35 @@ import type {
 
 ## How to run demo
 
+### Prerequisites
+
+The demo uses the local version of the SDK (`file:..` dependency), so you need to build the SDK first.
+
 ```bash
-# Install dependencies in the root
+# 1. Install SDK dependencies
 npm install
 
-# Navigate to demo folder
+# 2. Build the SDK
+npm run build
+
+# 3. Navigate to demo folder
 cd demo
 
-# Install demo dependencies
+# 4. Install demo dependencies (includes local SDK)
 npm install
 
-# Run dev server
+# 5. Create .env file with your Privy credentials
+# VITE_PRIVY_APP_ID=your_privy_app_id
+# VITE_PRIVY_CLIENT_ID=your_privy_client_id
+# VITE_API_BASE_URL=https://stage_api.supa.fyi
+
+# 6. Run dev server
 npm run dev
 ```
+
+Visit http://localhost:6969 to see the demo.
+
+> **Note**: If you make changes to the SDK source code, rebuild it with `npm run build` in the root directory, then restart the demo dev server.
 
 The demo application includes:
 - Complete authentication flow
@@ -331,31 +409,57 @@ The demo application includes:
 
 ## Development Guide
 
-This section is only for active SDK development.
+This section is for active SDK development and contribution.
 
-### Install dependencies
+### Setup for Development
 
 ```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd supa-sdk
+
+# 2. Install dependencies
 npm install
-```
 
-### Run dev server
-
-Start the dev server with automatic SDK recompilation:
-
-```bash
-npm run dev
-```
-
-Visit http://localhost:5173 to see the demo application. The SDK will automatically recompile on changes.
-
-### Build the SDK
-
-```bash
+# 3. Build the SDK
 npm run build
 ```
 
-This creates the distribution files in `dist/`:
+### Development Workflow
+
+The demo application in `/demo` folder is already configured to use the local SDK version via `"@supa/sdk": "file:.."` dependency.
+
+#### Option 1: Using Demo (Recommended)
+
+```bash
+# In root directory: build SDK
+npm run build
+
+# Navigate to demo and run
+cd demo
+npm install  # Only needed once
+npm run dev  # Starts demo at http://localhost:6969
+```
+
+After making changes to SDK source:
+1. Rebuild: `npm run build` (in root)
+2. Restart demo dev server
+
+#### Option 2: Watch Mode (Advanced)
+
+For automatic recompilation, you can use watch mode:
+
+```bash
+# Terminal 1: Watch SDK changes
+npm run build -- --watch
+
+# Terminal 2: Run demo
+cd demo && npm run dev
+```
+
+### Build Output
+
+The `npm run build` command creates distribution files in `dist/`:
 - `dist/index.js` - CommonJS bundle
 - `dist/index.esm.js` - ES modules bundle
 - `dist/index.d.ts` - TypeScript definitions

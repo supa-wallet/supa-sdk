@@ -9,7 +9,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@supa/sdk': resolve(__dirname, '../src/index.ts'),
+      // SDK loads from "file:.." dependency in package.json (uses built dist/)
+      // For fast development with SDK sources, use: npm run build -- --watch in root
+      
       // Важно: использовать одну копию React
       'react': resolve(__dirname, './node_modules/react'),
       'react-dom': resolve(__dirname, './node_modules/react-dom'),
