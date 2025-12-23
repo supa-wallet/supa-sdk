@@ -29,7 +29,6 @@ export interface ConfirmModalOptions {
   confirmText?: string;
   rejectText?: string;
   description?: string;
-  infoText?: string;
   icon?: ReactNode;
 }
 
@@ -39,7 +38,6 @@ export interface SignTransactionOptions {
   description?: string;
   confirmText?: string;
   rejectText?: string;
-  infoText?: string;
 }
 
 export interface ModalResult<T = void> {
@@ -53,7 +51,6 @@ export interface SignMessageModalOptions {
   description?: string;
   confirmText?: string;
   rejectText?: string;
-  infoText?: string;
 }
 
 export interface SupaContextValue {

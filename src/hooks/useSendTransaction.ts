@@ -21,7 +21,6 @@ export interface SendTransactionOptions {
   modalDescription?: string;
   modalConfirmText?: string;
   modalRejectText?: string;
-  modalInfoText?: string;
   /** Custom content to display in modal instead of transaction hash */
   modalDisplayContent?: string;
   /** Show technical transaction details (command, contracts, hash) as JSON. Default: false */
@@ -68,7 +67,6 @@ export function useSendTransaction(): UseSendTransactionReturn {
         modalDescription = 'Review and sign the following transaction.',
         modalConfirmText = 'Sign & Send',
         modalRejectText = 'Reject',
-        modalInfoText = 'This transaction will be submitted to the blockchain. Make sure you understand what you are signing.',
         modalDisplayContent,
         showTechnicalDetails = false,
         submitOptions,
@@ -105,7 +103,6 @@ export function useSendTransaction(): UseSendTransactionReturn {
             description: modalDescription,
             confirmText: modalConfirmText,
             rejectText: modalRejectText,
-            infoText: modalInfoText,
             displayHash: displayContent,
             showTechnicalDetails,
           }

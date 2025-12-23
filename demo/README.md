@@ -221,7 +221,7 @@ If you see CORS errors:
 - **Main SDK README**: `/README.md` in project root
 - **Privy Documentation**: https://docs.privy.io
 - **Canton Network**: https://canton.network
-- **Backend API Docs**: https://stage_api.supa.fyi/api
+
 
 ## Developer Workflow
 
@@ -264,7 +264,7 @@ Open Console (F12) to view detailed logs:
 Demo application is a great place to learn the SDK:
 
 1. Read `src/App.tsx` - full integration example
-2. See how hooks work: `useAuth`, `useCanton`, `useAPI`
+2. See how hooks work: `useAuth`, `useCanton`
 3. Study Debug Panel to understand data flow
 4. Experiment with the code!
 

@@ -347,7 +347,6 @@ export interface SignMessageModalProps {
   description?: string;
   confirmText?: string;
   rejectText?: string;
-  infoText?: string;
 }
 
 export function SignMessageModal({
@@ -361,7 +360,6 @@ export function SignMessageModal({
   description = 'You are about to sign the following message:',
   confirmText = 'Sign',
   rejectText = 'Reject',
-  infoText = 'Signing a message proves ownership of your wallet without exposing private keys or making any blockchain transactions.',
 }: SignMessageModalProps) {
   return (
     <ConfirmationModal
@@ -374,7 +372,7 @@ export function SignMessageModal({
       confirmText={confirmText}
       rejectText={rejectText}
       description={description}
-      infoText={infoText}
+      infoText="You are submitting a transaction, please be careful"
       loading={loading}
     />
   );
@@ -391,7 +389,6 @@ export interface SignTransactionModalProps {
   description?: string;
   confirmText?: string;
   rejectText?: string;
-  infoText?: string;
 }
 
 export function SignTransactionModal({
@@ -405,7 +402,6 @@ export function SignTransactionModal({
   description = 'Review and sign the following transaction:',
   confirmText = 'Sign & Send',
   rejectText = 'Reject',
-  infoText = 'This transaction will be submitted to the blockchain. Make sure you understand what you are signing.',
 }: SignTransactionModalProps) {
   return (
     <ConfirmationModal
@@ -418,7 +414,7 @@ export function SignTransactionModal({
       confirmText={confirmText}
       rejectText={rejectText}
       description={description}
-      infoText={infoText}
+      infoText="You are submitting a transaction, please be careful"
       icon={<SendIcon />}
       loading={loading}
     />

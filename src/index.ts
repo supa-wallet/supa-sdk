@@ -85,13 +85,6 @@ export { useCanton } from './hooks/useCanton';
 export type { UseCantonReturn } from './hooks/useCanton';
 
 /**
- * Backend API access hook
- * @see {@link useAPI}
- */
-export { useAPI } from './hooks/useAPI';
-export type { UseAPIReturn } from './hooks/useAPI';
-
-/**
  * Sign message hook with confirmation modal
  * @see {@link useSignMessage}
  */

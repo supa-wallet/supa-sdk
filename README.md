@@ -232,33 +232,7 @@ try {
 
 ---
 
-### 5. Backend API
-
-Use the `useAPI` hook for backend operations:
-
-```tsx
-import { useAPI } from '@supa/sdk';
-
-function UserBalance() {
-  const api = useAPI();
-
-  // User operations
-  const user = await api.user.getCurrent();
-  const balance = await api.user.getBalance();
-
-  // Dialog operations
-  const dialog = await api.dialogs.create('Hello AI!');
-  const dialogs = await api.dialogs.findAll({ page: 1, limit: 10 });
-
-  // SupaPoints operations
-  const points = await api.supaPoints.getBalance();
-  await api.supaPoints.dailyLogin();
-}
-```
-
----
-
-### 6. Advanced Features
+### 5. Advanced Features
 
 #### Custom Modal Options
 
@@ -303,7 +277,6 @@ await sendTransaction(command, contracts, {
 | `useSignMessage` | Enhanced message signing | `signMessage` with custom modals |
 | `useSendTransaction` | Enhanced transactions | `sendTransaction` with custom modals |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |
-| `useAPI` | Backend API | `user`, `dialogs`, `messages`, `supaPoints`, `transactions` |
 
 ## TypeScript Support
 
@@ -317,7 +290,6 @@ import type {
   UseSignMessageReturn,
   UseSendTransactionReturn,
   UseConfirmModalReturn,
-  UseAPIReturn,
   
   // Canton Types
   CantonMeResponseDto,

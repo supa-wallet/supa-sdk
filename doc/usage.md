@@ -474,54 +474,7 @@ function DeleteButton() {
 
 ---
 
-## 6. Backend API
-
-Use the `useAPI` hook for backend operations:
-
-```tsx
-import { useAPI } from '@supa/sdk';
-
-function UserBalance() {
-  const api = useAPI();
-  const [balance, setBalance] = useState(null);
-
-  useEffect(() => {
-    api.user.getBalance().then(setBalance);
-  }, []);
-
-  return <div>Balance: ${balance?.totalUsdBalance.toFixed(2)}</div>;
-}
-```
-
-### Available API Methods
-
-```tsx
-// User
-await api.user.getCurrent();
-await api.user.getBalance();
-
-// Dialogs
-await api.dialogs.create('Hello AI!');
-await api.dialogs.findAll({ page: 1, limit: 10 });
-await api.dialogs.findOne(dialogId);
-await api.dialogs.delete(dialogId);
-
-// Messages
-await api.messages.create(dialogId, 'Message text');
-await api.messages.findAll(dialogId, { page: 1 });
-
-// SupaPoints
-await api.supaPoints.getBalance();
-await api.supaPoints.dailyLogin();
-await api.supaPoints.getHistory();
-
-// Transactions
-await api.transactions.get({ page: 1, limit: 20 });
-```
-
----
-
-## 7. Theming
+## 6. Theming
 
 The SDK automatically inherits the theme from your `SupaProvider` config:
 
@@ -567,7 +520,7 @@ function App() {
 
 ---
 
-## 8. TypeScript Support
+## 7. TypeScript Support
 
 The SDK is fully typed and includes all types for convenient development:
 
@@ -613,7 +566,7 @@ const modal: UseConfirmModalReturn = useConfirmModal();
 
 ---
 
-## 9. Available Hooks
+## 8. Available Hooks
 
 | Hook | Purpose | Key Methods |
 |------|---------|-------------|
@@ -622,12 +575,11 @@ const modal: UseConfirmModalReturn = useConfirmModal();
 | `useSignMessage` | Message signing with modal | `signMessage`, `loading`, `error` |
 | `useSendTransaction` | Transactions with modal | `sendTransaction`, `loading`, `error` |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |
-| `useAPI` | Backend API | `user`, `dialogs`, `messages`, `supaPoints`, `transactions` |
 | `useStellarWallet` | Stellar operations | `stellarWallet`, `stellarWallets`, `createWallet` |
 
 ---
 
-## 10. Utilities
+## 9. Utilities
 
 The SDK exports utilities for advanced usage:
 

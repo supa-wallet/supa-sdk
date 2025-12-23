@@ -148,7 +148,6 @@ export function useCanton(): UseCantonReturn {
           description: 'You are about to sign the following hash.',
           confirmText: 'Sign',
           rejectText: 'Reject',
-          infoText: 'This operation requires your signature to proceed.',
           displayHash: `Hash: ${hashBase64}`,
         }
       );
@@ -207,7 +206,6 @@ export function useCanton(): UseCantonReturn {
             description: 'Sign to register your wallet with Canton Network.',
             confirmText: 'Sign & Register',
             rejectText: 'Cancel',
-            infoText: 'This signature is required to register your wallet with Canton Network. No tokens will be spent.',
             displayHash: 'Canton Wallet Registration',
           }
         );
@@ -260,7 +258,6 @@ export function useCanton(): UseCantonReturn {
             description: `You are requesting ${amount} tokens from the devnet faucet.`,
             confirmText: 'Confirm & Sign',
             rejectText: 'Cancel',
-            infoText: 'This will submit a transaction to receive test tokens from the Canton Network devnet faucet.',
             displayHash: `Request ${amount} Canton tokens from devnet faucet`,
           }
         );
@@ -318,7 +315,6 @@ export function useCanton(): UseCantonReturn {
             description: 'You are about to sign the following message:',
             confirmText: 'Sign',
             rejectText: 'Reject',
-            infoText: 'Signing a message proves ownership of your wallet without exposing private keys.',
             displayHash: message,
           }
         );
@@ -373,7 +369,6 @@ export function useCanton(): UseCantonReturn {
           description: 'Review and sign the following transaction.',
           confirmText: 'Sign & Send',
           rejectText: 'Reject',
-          infoText: 'This transaction will be submitted to the blockchain. Make sure you understand what you are signing.',
           displayHash: `Transaction Hash: ${prepareResponse.hash}`,
         }
       );
