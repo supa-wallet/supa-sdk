@@ -1,30 +1,30 @@
 # Supa SDK Demo
 
-Демонстрационное приложение для **Supa SDK** с примерами интеграции Privy.io и Canton Network.
+Demo application for **Supa SDK** with Privy.io and Canton Network integration examples.
 
-## 🎯 Что внутри
+## What's Inside
 
-Это демо показывает:
+This demo showcases:
 
-- ✅ Вход через Privy (email, кошельки, социальные сети)
-- ✅ Создание Stellar кошелька для Canton Network
-- ✅ Регистрация Canton кошелька на backend
-- ✅ Получение тестовых токенов из devnet крана
-- ✅ Подпись транзакций через Privy
-- ✅ Работа с Supa Backend API
-- 🔍 **Debug Panel** - просмотр всех промежуточных значений (publicKey, hash, signature)
+- Privy authentication (email, wallets, social networks)
+- Stellar wallet creation for Canton Network
+- Canton wallet registration on backend
+- Test tokens from devnet faucet
+- Transaction signing via Privy
+- Supa Backend API integration
+- Debug Panel - view all intermediate values (publicKey, hash, signature)
 
-## 🚀 Быстрый старт
+## Quick Start
 
-### 1. Установка зависимостей
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Настройка переменных окружения
+### 2. Environment Variables Setup
 
-Создайте `.env` файл в папке `demo`:
+Create a `.env` file in the `demo` folder:
 
 ```env
 VITE_PRIVY_APP_ID=your_privy_app_id
@@ -32,92 +32,92 @@ VITE_PRIVY_CLIENT_ID=your_privy_client_id
 VITE_API_BASE_URL=https://stage_api.supa.fyi
 ```
 
-> **Важно**: Получите Privy credentials на https://dashboard.privy.io
+> **Important**: Get Privy credentials at https://dashboard.privy.io
 
-### 3. Запуск
+### 3. Run
 
 ```bash
 npm run dev
 ```
 
-Приложение откроется на http://localhost:6969
+Application will open at http://localhost:6969
 
-## 📖 Структура проекта
+## Project Structure
 
 ```
 /demo
   /src
-    - App.tsx           # Главный компонент с полным примером
-    - main.tsx          # Точка входа
-    - index.css         # Стили
-  - vite.config.ts      # Конфигурация Vite
+    - App.tsx           # Main component with full example
+    - main.tsx          # Entry point
+    - index.css         # Styles
+  - vite.config.ts      # Vite configuration
   - package.json
-  - README.md (этот файл)
+  - README.md (this file)
 ```
 
-## 🎨 Особенности демо
+## Demo Features
 
-### 1. Пошаговая регистрация
+### 1. Step-by-Step Registration
 
-Демо разделено на логические блоки:
+Demo is divided into logical blocks:
 
 ```tsx
-// Шаг 1: Вход через Privy
+// Step 1: Login with Privy
 <button onClick={() => auth.login()}>Login with Privy</button>
 
-// Шаг 2: Регистрация Canton (автоматически создаст Stellar)
+// Step 2: Register Canton (will automatically create Stellar)
 <button onClick={() => canton.registerCanton()}>Register Canton</button>
 
-// Шаг 3: Получение тестовых токенов
+// Step 3: Get test tokens
 <button onClick={() => canton.tapDevnet('1000')}>Tap Devnet</button>
 ```
 
 ### 2. Debug Panel
 
-Debug Panel показывает все промежуточные значения:
+Debug Panel shows all intermediate values:
 
-- **publicKey** (hex от Privy)
-- **publicKey** (base64 для Canton)
-- **JWT Token** от Privy
-- **hash** (от `/canton/register/prepare`)
-- **signature** (после подписи через Privy)
+- **publicKey** (hex from Privy)
+- **publicKey** (base64 for Canton)
+- **JWT Token** from Privy
+- **hash** (from `/canton/register/prepare`)
+- **signature** (after signing via Privy)
 
-Это помогает разработчикам понять, что происходит на каждом шаге.
+This helps developers understand what happens at each step.
 
-### 3. Отдельные тестовые кнопки
+### 3. Separate Test Buttons
 
-Демо включает кнопки для тестирования отдельных шагов:
+Demo includes buttons for testing individual steps:
 
 ```tsx
-// Тестировать только /prepare
+// Test only /prepare
 <button onClick={handleTestPrepareOnly}>
-  🔬 Step 4: Test /prepare ONLY
+  Step 4: Test /prepare ONLY
 </button>
 
-// Тестировать полный флоу prepare → sign → submit
+// Test full flow prepare → sign → submit
 <button onClick={handleTestPrepareSignSubmit}>
-  🚀 Steps 4→5→6: prepare → sign → submit
+  Steps 4→5→6: prepare → sign → submit
 </button>
 ```
 
-## 🔧 Конфигурация Vite
+## Vite Configuration
 
-Demo использует следующую конфигурацию Vite:
+Demo uses the following Vite configuration:
 
 ```typescript
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    include: ['buffer'], // Для совместимости с Privy SDK
+    include: ['buffer'], // For Privy SDK compatibility
   },
 });
 ```
 
-> **Примечание**: Buffer polyfill встроен в Supa SDK, дополнительная настройка не требуется.
+> **Note**: Buffer polyfill is built into Supa SDK, no additional configuration required.
 
-## 📝 Примеры использования
+## Usage Examples
 
-### Базовый вход
+### Basic Login
 
 ```tsx
 import { useAuth } from '@supa/sdk';
@@ -137,7 +137,7 @@ function LoginButton() {
 }
 ```
 
-### Регистрация Canton
+### Canton Registration
 
 ```tsx
 import { useCanton } from '@supa/sdk';
@@ -152,7 +152,7 @@ function RegisterCanton() {
           Register Canton Wallet
         </button>
       ) : (
-        <p>✅ Canton wallet registered!</p>
+        <p>Canton wallet registered!</p>
       )}
       {error && <p style={{ color: 'red' }}>{error.message}</p>}
     </>
@@ -160,7 +160,7 @@ function RegisterCanton() {
 }
 ```
 
-### Получение тестовых токенов
+### Getting Test Tokens
 
 ```tsx
 import { useCanton } from '@supa/sdk';
@@ -172,9 +172,9 @@ function TapDevnet() {
     try {
       const result = await tapDevnet('1000');
       console.log('Tap result:', result);
-      alert('✅ Tokens received!');
+      alert('Tokens received!');
     } catch (err) {
-      alert('❌ Tap failed: ' + err.message);
+      alert('Tap failed: ' + err.message);
     }
   };
 
@@ -186,116 +186,116 @@ function TapDevnet() {
 }
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
-### Ошибка "Privy modal not opening"
+### Error "Privy modal not opening"
 
-Убедитесь, что:
-1. `VITE_PRIVY_APP_ID` корректный
-2. Домен `localhost:6969` добавлен в Privy Dashboard
-3. Используется правильный `VITE_PRIVY_CLIENT_ID`
+Make sure that:
+1. `VITE_PRIVY_APP_ID` is correct
+2. Domain `localhost:6969` is added in Privy Dashboard
+3. Correct `VITE_PRIVY_CLIENT_ID` is used
 
-### Ошибка "No Stellar wallet found"
+### Error "No Stellar wallet found"
 
-Canton wallet требует Stellar wallet. Если wallet не создаётся автоматически:
+Canton wallet requires a Stellar wallet. If wallet is not created automatically:
 
 ```tsx
 const { createStellarWallet } = useCanton();
 await createStellarWallet();
 ```
 
-### Ошибка "Canton wallet already exists"
+### Error "Canton wallet already exists"
 
-Каждый пользователь может иметь только **один** Canton wallet. Для повторного тестирования:
-- Используйте другой email для входа в Privy
-- Или попросите backend удалить существующий Canton wallet
+Each user can have only **one** Canton wallet. For repeated testing:
+- Use a different email for Privy login
+- Or ask backend to delete existing Canton wallet
 
-### CORS ошибки
+### CORS Errors
 
-Если видите CORS ошибки:
-1. Проверьте `VITE_API_BASE_URL`
-2. Убедитесь, что backend API разрешает запросы с `localhost:6969`
+If you see CORS errors:
+1. Check `VITE_API_BASE_URL`
+2. Make sure backend API allows requests from `localhost:6969`
 
-## 📚 Дополнительные ресурсы
+## Additional Resources
 
-- **Основное README SDK**: `/README.md` в корне проекта
+- **Main SDK README**: `/README.md` in project root
 - **Privy Documentation**: https://docs.privy.io
 - **Canton Network**: https://canton.network
 - **Backend API Docs**: https://stage_api.supa.fyi/api
 
-## 🔄 Workflow для разработчиков
+## Developer Workflow
 
-### 1. Тестирование с нуля
+### 1. Testing from Scratch
 
 ```bash
-# 1. Запустить demo
+# 1. Start demo
 npm run dev
 
-# 2. Открыть в браузере
+# 2. Open in browser
 open http://localhost:6969
 
-# 3. Следовать UI:
+# 3. Follow UI:
 #    - Login with Privy
 #    - Register Canton Wallet
 #    - Tap Devnet
-#    - Check Debug Panel для деталей
+#    - Check Debug Panel for details
 ```
 
-### 2. Отладка отдельных шагов
+### 2. Debugging Individual Steps
 
-Используйте Debug Panel кнопки:
+Use Debug Panel buttons:
 
-- **"🔬 Test /prepare ONLY"** - проверить только подготовку транзакции
-- **"🚀 prepare → sign → submit"** - проверить полный флоу регистрации
+- **"Test /prepare ONLY"** - check only transaction preparation
+- **"prepare → sign → submit"** - check full registration flow
 
-### 3. Просмотр логов
+### 3. Viewing Logs
 
-Откройте Console (F12) для просмотра детальных логов:
+Open Console (F12) to view detailed logs:
 
 ```
-[Supa SDK] ✅ Buffer polyfill initialized
-[Stellar Utils] 📋 getStellarWallets
-[Converters] 🔑 Converting Privy publicKey to Canton base64
+[Supa SDK] Buffer polyfill initialized
+[Stellar Utils] getStellarWallets
+[Converters] Converting Privy publicKey to Canton base64
 ...
 ```
 
-## 🎓 Обучение SDK
+## Learning the SDK
 
-Демо приложение - это отличное место для изучения SDK:
+Demo application is a great place to learn the SDK:
 
-1. Прочитайте `src/App.tsx` - полный пример интеграции
-2. Посмотрите как работают хуки: `useAuth`, `useCanton`, `useAPI`
-3. Изучите Debug Panel для понимания потока данных
-4. Экспериментируйте с кодом!
+1. Read `src/App.tsx` - full integration example
+2. See how hooks work: `useAuth`, `useCanton`, `useAPI`
+3. Study Debug Panel to understand data flow
+4. Experiment with the code!
 
-## 💡 Tips & Tricks
+## Tips & Tricks
 
-### Быстрая очистка состояния
+### Quick State Reset
 
-Чтобы сбросить всё:
+To reset everything:
 ```bash
-# Очистить localStorage
+# Clear localStorage
 localStorage.clear();
 
-# Перезагрузить страницу
+# Reload page
 location.reload();
 ```
 
-### Просмотр JWT Token
+### Viewing JWT Token
 
-Debug Panel показывает:
-- Raw JWT token от Privy
+Debug Panel shows:
+- Raw JWT token from Privy
 - Decoded payload (user ID, email, expiration)
 
-### Копирование значений
+### Copying Values
 
-Все значения в Debug Panel можно скопировать для тестирования в Postman/Insomnia.
+All values in Debug Panel can be copied for testing in Postman/Insomnia.
 
 ---
 
-**Версия Demo:** 0.1.0  
+**Demo Version:** 0.1.0  
 **SDK Version:** ^0.1.0  
 **Vite:** 7+  
 **React:** 19+
 
-Удачного кодинга! 🚀
+Happy coding!

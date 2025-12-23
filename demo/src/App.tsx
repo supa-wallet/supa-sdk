@@ -30,9 +30,9 @@ function App() {
 
 function AppWithTheme() {
   const { mode } = useTheme();
-  const privyAppId = import.meta.env.VITE_PRIVY_APP_ID || 'cm9u92yyo01x2jv0nbmeqoptk';
+  const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
   const privyClientId =
-    import.meta.env.VITE_PRIVY_CLIENT_ID || 'WY5iwwJvDRXsGG6KkftbHs3zEzXKeXMJRyfhN87f58y31';
+    import.meta.env.VITE_PRIVY_CLIENT_ID;
 
   return (
     <SupaProvider

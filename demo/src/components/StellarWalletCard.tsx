@@ -24,7 +24,7 @@ export function StellarWalletCard({ address, isRegistered }: StellarWalletCardPr
       <Card>
         <CardHeader>
           <CardTitle>
-            <Wallet /> Stellar Wallet
+            <Wallet /> Wallet
           </CardTitle>
           {isRegistered && <Badge $variant="success">Registered</Badge>}
         </CardHeader>

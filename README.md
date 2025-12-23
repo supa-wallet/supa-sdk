@@ -1,19 +1,30 @@
 # Supa SDK
 
-Supa SDK allows applications to seamlessly integrate with Canton Network. 
+Supa SDK allows dApps to connect to Canton Network with Privy.io authentication and Ed25519 signing via Stellar wallets.
 
 ## Quick overview
 
-For a quick overview, check out the demo application in `/demo` folder.
+For a quick overview of the code, check out the demo application in the `/demo` folder.
 
 ## Key Features
 
-- Privy.io Authentication - Email, wallet, and social login methods  
-- Canton Wallet Management - Ed25519 signing for Canton Network  
-- Built-in Confirmation Modals 
-- Theme Support - Light/dark mode with Privy design system  
-- Customizable UI - Modal text, buttons, and display options  
-- Fully typed
+- **Privy.io Authentication** - Email, wallet, and social login methods  
+- **Canton Network Integration** - Full Canton ledger access with Ed25519 signing
+- **Built-in Confirmation Modals** - User-friendly signing confirmations
+- **Theme Support** - Light/dark mode with customizable appearance
+- **Automatic Polling** - Transaction completion tracking
+- **TypeScript Support** - Full type safety and IntelliSense
+- **React Hooks** - Simple and intuitive API
+
+## Installation
+
+```bash
+npm install @supa/sdk
+# or
+yarn add @supa/sdk
+# or
+pnpm add @supa/sdk
+```
 
 ## Quick Start
 
@@ -30,46 +41,25 @@ function App() {
 
 function MyApp() {
   const { login, authenticated } = useAuth();
-  const { registerCanton, signMessage } = useCanton();
+  const { registerCanton, isRegistered, sendTransaction } = useCanton();
 
   if (!authenticated) {
     return <button onClick={login}>Login</button>;
   }
 
+  if (!isRegistered) {
+    return <button onClick={registerCanton}>Register Canton</button>;
+  }
+
   return (
-    <>
-      <button onClick={registerCanton}>Register Canton</button>
-      <button onClick={() => signMessage('Hello!')}>Sign Message</button>
-    </>
+    <button onClick={() => sendTransaction(command, contracts)}>
+      Send Transaction
+    </button>
   );
 }
 ```
 
 ## Usage guide
-
-To use the Supa SDK, install it from NPM:
-
-```bash
-npm install @supa/sdk
-# or
-yarn add @supa/sdk
-# or
-pnpm add @supa/sdk
-```
-
-Then import it in your dApp:
-
-```tsx
-import { 
-  SupaProvider, 
-  useAuth, 
-  useCanton, 
-  useAPI,
-  useSignMessage,
-  useSendTransaction,
-  useConfirmModal,
-} from '@supa/sdk';
-```
 
 ### 1. Initialize the SDK
 
@@ -82,11 +72,10 @@ function App() {
   return (
     <SupaProvider
       config={{
-        privyAppId: import.meta.env.VITE_PRIVY_APP_ID,
-        privyClientId: import.meta.env.VITE_PRIVY_CLIENT_ID,
-        apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
+        privyAppId: 'your-privy-app-id',
+        apiBaseUrl: 'https://stage_api.supa.fyi', // optional
         appearance: {
-          theme: 'light',
+          theme: 'light', // 'light' or 'dark'
           accentColor: '#6366f1',
         },
         loginMethods: ['email', 'wallet', 'google'],
@@ -98,14 +87,15 @@ function App() {
 }
 ```
 
-The `config` object accepts:
-- `privyAppId`: Your Privy App ID (required)
-- `privyClientId`: Your Privy Client ID (optional)
-- `apiBaseUrl`: Backend API URL (default: `https://stage_api.supa.fyi`)
-- `appearance`: Privy modal appearance (`theme`, `accentColor`, `logo`)
-- `loginMethods`: Array of login methods (`email`, `wallet`, `google`, `twitter`, etc.)
+**Configuration options:**
+- `privyAppId` - Your Privy App ID (required)
+- `apiBaseUrl` - Backend API URL (default: `https://stage_api.supa.fyi`)
+- `appearance` - Theme and styling options
+- `loginMethods` - Array of enabled authentication methods
 
-### 2. Authentication
+---
+
+### 2. Connect to the wallet
 
 Use the `useAuth` hook to manage authentication:
 
@@ -128,173 +118,121 @@ function LoginButton() {
 }
 ```
 
+After successful authentication, `authenticated` becomes `true` and `user` object contains user data.
+
+---
+
 ### 3. Canton Network Operations
 
-Use the `useCanton` hook for Canton Network integration:
+#### Register Canton Wallet
 
 ```tsx
 import { useCanton } from '@supa/sdk';
 
 function CantonWallet() {
-  const { 
-    registerCanton, 
-    isRegistered, 
-    tapDevnet, 
-    signHash,
-    loading 
-  } = useCanton();
+  const { registerCanton, isRegistered, cantonUser, loading } = useCanton();
 
   const handleRegister = async () => {
-    await registerCanton();
-    console.log('Canton wallet registered!');
+    try {
+      await registerCanton();
+      console.log('Canton wallet registered!');
+    } catch (error) {
+      console.error('Registration failed:', error);
+    }
   };
 
-  const handleTap = async () => {
-    const result = await tapDevnet('1000');
-    console.log('Received tokens:', result);
-  };
+  if (!isRegistered) {
+    return <button onClick={handleRegister} disabled={loading}>
+      Register Canton Wallet
+    </button>;
+  }
 
   return (
     <div>
-      {!isRegistered ? (
-        <button onClick={handleRegister} disabled={loading}>
-          Register Canton Wallet
-        </button>
-      ) : (
-        <button onClick={handleTap} disabled={loading}>
-          Get Test Tokens
-        </button>
-      )}
+      <p>Party ID: {cantonUser?.partyId}</p>
+      <p>Email: {cantonUser?.email}</p>
     </div>
   );
 }
 ```
 
-**Note:** All Canton signing operations (`registerCanton`, `tapDevnet`, `signHash`, `signMessage`, `sendTransaction`) automatically show confirmation modals before signing. Users can review and approve/reject each operation.
-
-#### Sign a Hash
+#### Get Active Contracts
 
 ```tsx
-const { signHash } = useCanton();
+const { getActiveContracts } = useCanton();
 
-// Hash in base64 format
-const hashBase64 = 'EiDjNqHetYYin8ypx87LAmJwzxhBX4rFMi4Z/sSsvdQ7bg==';
-const signature = await signHash(hashBase64);
-console.log('Signature (base64):', signature);
+// Get all contracts
+const allContracts = await getActiveContracts();
+
+// Filter by template IDs
+const filteredContracts = await getActiveContracts([
+  'template-id-1',
+  'template-id-2'
+]);
 ```
+
+#### Submit a Transaction
+
+```tsx
+const { sendTransaction } = useCanton();
+
+const command = {
+  // Your Canton command
+};
+
+try {
+  const result = await sendTransaction(command, disclosedContracts, {
+    timeout: 30000,      // completion timeout (ms)
+    pollInterval: 1000,  // polling interval (ms)
+  });
+  console.log('Transaction successful:', result);
+} catch (error) {
+  console.error('Transaction failed:', error);
+}
+```
+
+The SDK automatically:
+1. Prepares the transaction
+2. Shows confirmation modal
+3. Signs with user approval
+4. Submits and polls for completion
 
 #### Sign a Message
 
 ```tsx
 const { signMessage } = useCanton();
 
-const signature = await signMessage('Hello, Canton!');
-console.log('Signature:', signature);
-```
-
-#### Send Transaction
-
-```tsx
-const { sendTransaction } = useCanton();
-
-const result = await sendTransaction(commandId, disclosedContracts);
-console.log('Transaction result:', result);
-```
-
-### 3.1. Message Signing with Custom Modals
-
-Use `useSignMessage` hook for enhanced message signing with customizable confirmation modals:
-
-```tsx
-import { useSignMessage } from '@supa/sdk';
-
-function SignMessageExample() {
-  const { signMessage, loading, error } = useSignMessage();
-
-  const handleSign = async () => {
-    const signature = await signMessage('Hello, Canton!', {
-      // Callbacks
-      onSuccess: (sig) => console.log('Signed:', sig),
-      onRejection: () => console.log('User rejected'),
-      onError: (err) => console.error('Error:', err),
-      
-      // Modal customization
-      title: 'Sign Message',
-      description: 'Please review and sign this message.',
-      confirmText: 'Sign',
-      rejectText: 'Cancel',
-      infoText: 'This proves wallet ownership without spending tokens.',
-      
-      // Display options
-      displayContent: 'Custom message to display',
-      showTechnicalDetails: false, // Show address, chainType, hash as JSON
-      
-      // Skip modal (use with caution)
-      skipModal: false,
-    });
-
-    if (signature) {
-      console.log('Signature:', signature);
-    }
-  };
-
-  return (
-    <button onClick={handleSign} disabled={loading}>
-      {loading ? 'Signing...' : 'Sign Message'}
-    </button>
-  );
+try {
+  const signature = await signMessage('Hello, Canton!');
+  console.log('Signature:', signature);
+} catch (error) {
+  console.error('Signing failed:', error);
 }
 ```
 
-### 3.2. Transaction Sending with Custom Modals
+---
 
-Use `useSendTransaction` hook for enhanced transaction handling:
+### 4. Devnet Operations
+
+Request test tokens from the devnet faucet:
 
 ```tsx
-import { useSendTransaction } from '@supa/sdk';
+const { tapDevnet } = useCanton();
 
-function SendTransactionExample() {
-  const { sendTransaction, loading, error } = useSendTransaction();
-
-  const handleSend = async () => {
-    const result = await sendTransaction(commandId, disclosedContracts, {
-      // Callbacks
-      onSuccess: (result) => console.log('Success:', result),
-      onRejection: () => console.log('User rejected'),
-      onError: (err) => console.error('Error:', err),
-      
-      // Modal customization
-      modalTitle: 'Confirm Payment',
-      modalDescription: 'Review transaction details.',
-      modalConfirmText: 'Pay Now',
-      modalRejectText: 'Cancel',
-      modalInfoText: 'Transaction will be submitted to Canton Network.',
-      
-      // Display options
-      modalDisplayContent: 'Send 100 tokens to Alice',
-      showTechnicalDetails: false, // Show command, contracts, hash as JSON
-      
-      // Canton submit options
-      submitOptions: {
-        timeout: 30000,
-        pollInterval: 1000,
-      },
-    });
-
-    if (result) {
-      console.log('Transaction result:', result);
-    }
-  };
-
-  return (
-    <button onClick={handleSend} disabled={loading}>
-      {loading ? 'Sending...' : 'Send Transaction'}
-    </button>
-  );
+try {
+  const result = await tapDevnet('1000', {
+    timeout: 30000,
+    pollInterval: 1000,
+  });
+  console.log('Tokens received:', result);
+} catch (error) {
+  console.error('Faucet request failed:', error);
 }
 ```
 
-### 4. Backend API
+---
+
+### 5. Backend API
 
 Use the `useAPI` hook for backend operations:
 
@@ -303,424 +241,170 @@ import { useAPI } from '@supa/sdk';
 
 function UserBalance() {
   const api = useAPI();
-  const [balance, setBalance] = useState(null);
 
-  useEffect(() => {
-    api.user.getBalance().then(setBalance);
-  }, []);
+  // User operations
+  const user = await api.user.getCurrent();
+  const balance = await api.user.getBalance();
 
-  return <div>Balance: ${balance?.totalUsdBalance.toFixed(2)}</div>;
+  // Dialog operations
+  const dialog = await api.dialogs.create('Hello AI!');
+  const dialogs = await api.dialogs.findAll({ page: 1, limit: 10 });
+
+  // SupaPoints operations
+  const points = await api.supaPoints.getBalance();
+  await api.supaPoints.dailyLogin();
 }
 ```
 
-Available API methods:
+---
+
+### 6. Advanced Features
+
+#### Custom Modal Options
 
 ```tsx
-// User
-await api.user.getCurrent();
-await api.user.getBalance();
+import { useSignMessage } from '@supa/sdk';
 
-// Dialogs
-await api.dialogs.create('Hello AI!');
-await api.dialogs.findAll({ page: 1, limit: 10 });
-await api.dialogs.findOne(dialogId);
-await api.dialogs.delete(dialogId);
-
-// Messages
-await api.messages.create(dialogId, 'Message text');
-await api.messages.findAll(dialogId, { page: 1 });
-
-// SupaPoints
-await api.supaPoints.getBalance();
-await api.supaPoints.dailyLogin();
-await api.supaPoints.getHistory();
-
-// Transactions
-await api.transactions.get({ page: 1, limit: 20 });
-```
-
-## Confirmation Modals
-
-All signing operations in the SDK use built-in confirmation modals that follow Privy's design system and support light/dark themes.
-
-### Modal Features
-
-- **Automatic Display**: Modals appear before every signing operation
-- **Theme Support**: Automatically adapts to `appearance.theme` in config ('light' or 'dark')
-- **Customizable**: Text, buttons, and display content can be customized
-- **User-Friendly**: Shows readable content by default, technical details optional
-- **Callbacks**: `onSuccess`, `onRejection`, `onError` for handling outcomes
-
-### Modal Customization
-
-All signing hooks accept modal customization options:
-
-```tsx
 const { signMessage } = useSignMessage();
 
 await signMessage('Hello', {
-  // Modal text customization
-  title: 'Custom Title',
-  description: 'Custom description',
-  confirmText: 'Approve',
-  rejectText: 'Decline',
-  infoText: 'Additional information',
-  
-  // Display control
-  displayContent: 'Custom content to show',
-  showTechnicalDetails: true, // Show JSON with technical details
-  
-  // Skip modal (dangerous, use carefully)
-  skipModal: false,
+  title: 'Sign Message',
+  description: 'Please review and sign.',
+  confirmText: 'Sign',
+  rejectText: 'Cancel',
+  onSuccess: (sig) => console.log('Signed:', sig),
+  onRejection: () => console.log('Rejected'),
 });
 ```
 
-### Low-Level Modal Hook
-
-For advanced use cases, use `useSignRawHashWithModal`:
+#### Custom Transaction Modals
 
 ```tsx
-import { useSignRawHashWithModal } from '@supa/sdk';
+import { useSendTransaction } from '@supa/sdk';
 
-function AdvancedSigning() {
-  const { signRawHashWithModal } = useSignRawHashWithModal();
+const { sendTransaction } = useSendTransaction();
 
-  const handleSign = async () => {
-    const result = await signRawHashWithModal(
-      {
-        address: walletAddress,
-        chainType: 'stellar',
-        hash: '0x...',
-      },
-      {
-        title: 'Sign Operation',
-        description: 'Custom description',
-        displayHash: 'Readable content',
-        showTechnicalDetails: false,
-      }
-    );
-
-    if (result) {
-      console.log('Signature:', result.signature);
-    }
-  };
-
-  return <button onClick={handleSign}>Sign</button>;
-}
+await sendTransaction(command, contracts, {
+  modalTitle: 'Confirm Payment',
+  modalDescription: 'Send 100 tokens to Alice',
+  modalConfirmText: 'Pay Now',
+  submitOptions: { timeout: 30000 },
+});
 ```
 
-### Generic Confirmation Modal
-
-Use `useConfirmModal` for custom confirmation dialogs:
-
-```tsx
-import { useConfirmModal } from '@supa/sdk';
-
-function DeleteButton() {
-  const { confirm } = useConfirmModal();
-
-  const handleDelete = async () => {
-    const result = await confirm({
-      title: 'Delete Item',
-      message: 'Are you sure you want to delete this item?',
-      confirmText: 'Delete',
-      rejectText: 'Cancel',
-      infoText: 'This action cannot be undone.',
-    });
-
-    if (result.confirmed) {
-      // User confirmed
-      await deleteItem();
-    }
-  };
-
-  return <button onClick={handleDelete}>Delete</button>;
-}
-```
-
-## Theming
-
-The SDK automatically inherits the theme from your `SupaProvider` config:
-
-```tsx
-<SupaProvider
-  config={{
-    // ... other config
-    appearance: {
-      theme: 'dark', // 'light' or 'dark'
-      accentColor: '#6366f1',
-      logo: 'https://example.com/logo.png',
-    },
-  }}
->
-  <App />
-</SupaProvider>
-```
-
-**Dynamic Theme Switching**: The SDK reacts to theme changes. Update the `theme` prop and all modals will automatically adapt:
-
-```tsx
-import { SupaProvider } from '@supa/sdk';
-
-function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
-  return (
-    <SupaProvider
-      config={{
-        // ... other config
-        appearance: { theme },
-      }}
-    >
-      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-        Toggle Theme
-      </button>
-      <YourApp />
-    </SupaProvider>
-  );
-}
-```
-
-## Utilities
-
-SDK exports utility functions for advanced usage:
-
-```tsx
-import {
-  hexToBase64,
-  base64ToHex,
-  privyPublicKeyToCantonBase64,
-  getStellarWallets,
-} from '@supa/sdk';
-```
-
-## TypeScript
-
-Full TypeScript support with generated types:
-
-```tsx
-import type {
-  // User & Backend Types
-  UserResponseDto,
-  UserBalanceResponseDto,
-  DialogWithMessagesResponseDto,
-  
-  // Canton Types
-  CantonQueryCompletionResponseDto,
-  CantonMeResponseDto,
-  CantonActiveContractsResponseDto,
-  
-  // Wallet Types
-  StellarWallet,
-  
-  // Hook Return Types
-  UseAuthReturn,
-  UseCantonReturn,
-  UseSignMessageReturn,
-  UseSendTransactionReturn,
-  UseConfirmModalReturn,
-  
-  // Modal Option Types
-  SignMessageOptions,
-  SendTransactionOptions,
-  SignRawHashModalOptions,
-  ConfirmModalOptions,
-} from '@supa/sdk';
-```
-
-### Hook Types
-
-All hooks have strongly typed return values:
-
-```tsx
-const auth: UseAuthReturn = useAuth();
-const canton: UseCantonReturn = useCanton();
-const signMsg: UseSignMessageReturn = useSignMessage();
-const sendTx: UseSendTransactionReturn = useSendTransaction();
-const modal: UseConfirmModalReturn = useConfirmModal();
-```
+---
 
 ## Available Hooks
 
 | Hook | Purpose | Key Methods |
 |------|---------|-------------|
 | `useAuth` | Authentication | `login`, `logout`, `authenticated`, `user` |
-| `useCanton` | Canton Network | `registerCanton`, `signHash`, `signMessage`, `sendTransaction`, `tapDevnet` |
-| `useSignMessage` | Message signing with modal | `signMessage`, `loading`, `error` |
-| `useSendTransaction` | Transaction with modal | `sendTransaction`, `loading`, `error` |
+| `useCanton` | Canton Network | `registerCanton`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet` |
+| `useSignMessage` | Enhanced message signing | `signMessage` with custom modals |
+| `useSendTransaction` | Enhanced transactions | `sendTransaction` with custom modals |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |
-| `useSignRawHashWithModal` | Low-level signing | `signRawHashWithModal` |
 | `useAPI` | Backend API | `user`, `dialogs`, `messages`, `supaPoints`, `transactions` |
-| `useWalletino` | Walletino operations | `createWallet`, `getWallet`, `getWallets` |
 
-# API
+## TypeScript Support
 
-See [doc/en/api-reference.md](./doc/en/api-reference.md) for complete API documentation.
-
-## Best Practices
-
-### 1. Error Handling
-
-Always handle errors in signing operations:
+Full TypeScript support with generated types:
 
 ```tsx
-const { signMessage } = useSignMessage();
-
-const handleSign = async () => {
-  try {
-    const signature = await signMessage('Hello', {
-      onError: (error) => {
-        console.error('Signing failed:', error);
-        showToast('Failed to sign message');
-      },
-      onRejection: () => {
-        showToast('Signing cancelled');
-      },
-    });
-  } catch (error) {
-    console.error('Unexpected error:', error);
-  }
-};
+import type {
+  // Hook Return Types
+  UseAuthReturn,
+  UseCantonReturn,
+  UseSignMessageReturn,
+  UseSendTransactionReturn,
+  UseConfirmModalReturn,
+  UseAPIReturn,
+  
+  // Canton Types
+  CantonMeResponseDto,
+  CantonActiveContractsResponseDto,
+  CantonQueryCompletionResponseDto,
+  
+  // Option Types
+  SignMessageOptions,
+  SendTransactionOptions,
+  ConfirmModalOptions,
+} from '@supa/sdk';
 ```
 
-### 2. Loading States
-
-Use loading states to provide feedback:
-
-```tsx
-const { signMessage, loading } = useSignMessage();
-
-return (
-  <button onClick={handleSign} disabled={loading}>
-    {loading ? 'Signing...' : 'Sign Message'}
-  </button>
-);
-```
-
-### 3. Modal Customization
-
-Provide clear context to users:
-
-```tsx
-await sendTransaction(command, contracts, {
-  modalTitle: 'Confirm Payment',
-  modalDescription: 'You are sending 100 USDC to Alice.',
-  modalDisplayContent: 'Payment: 100 USDC → Alice',
-  modalInfoText: 'This transaction cannot be reversed.',
-});
-```
-
-### 4. Theme Integration
-
-Ensure theme changes propagate to SDK:
-
-```tsx
-function App() {
-  const [theme, setTheme] = useState('light');
-
-  return (
-    <SupaProvider
-      config={{
-        privyAppId: 'your-app-id',
-        appearance: { theme }, // Theme updates SDK modals
-      }}
-    >
-      <ThemeToggle onToggle={setTheme} />
-      <YourApp />
-    </SupaProvider>
-  );
-}
-```
-
-
-## Examples
-
-Check out the `/demo` folder for a complete working example with:
-- Authentication flow
-- Canton wallet registration
-- Message signing with modals
-- Transaction sending with modals
-- Theme switching
-- Error handling
-
-To run the demo:
+## How to run demo
 
 ```bash
-cd demo
+# Install dependencies in the root
 npm install
+
+# Navigate to demo folder
+cd demo
+
+# Install demo dependencies
+npm install
+
+# Run dev server
 npm run dev
 ```
 
-## FAQ
+The demo application includes:
+- Complete authentication flow
+- Canton wallet registration
+- Message signing with modals
+- Transaction sending with modals
+- Contract querying
+- Devnet faucet integration
+- Theme switching
+- Error handling
 
-### How do I disable confirmation modals?
+## Development Guide
 
-You can skip modals by passing `skipModal: true` option, but this is **not recommended** for user-facing operations:
+This section is only for active SDK development.
 
-```tsx
-await signMessage('Hello', { skipModal: true });
+### Install dependencies
+
+```bash
+npm install
 ```
 
-### How do I show technical details in modals?
+### Run dev server
 
-Enable `showTechnicalDetails` to display address, chainType, and hash as JSON:
+Start the dev server with automatic SDK recompilation:
 
-```tsx
-await signMessage('Hello', { showTechnicalDetails: true });
+```bash
+npm run dev
 ```
 
-### How do I customize modal text?
+Visit http://localhost:5173 to see the demo application. The SDK will automatically recompile on changes.
 
-All signing hooks accept customization options:
+### Build the SDK
 
-```tsx
-await signMessage('Hello', {
-  title: 'Custom Title',
-  description: 'Custom description',
-  confirmText: 'Approve',
-  rejectText: 'Decline',
-  infoText: 'Additional info',
-});
+```bash
+npm run build
 ```
 
-### Does the SDK support theme switching?
+This creates the distribution files in `dist/`:
+- `dist/index.js` - CommonJS bundle
+- `dist/index.esm.js` - ES modules bundle
+- `dist/index.d.ts` - TypeScript definitions
 
-Yes! Update the `theme` prop in `SupaProvider` config and all modals will automatically adapt:
+## Publish to NPM
 
-```tsx
-<SupaProvider
-  config={{
-    appearance: { theme: 'dark' }, // Changes to 'light' or 'dark'
-  }}
->
-  <App />
-</SupaProvider>
-```
-
-
-### How do I handle signing errors?
-
-Use the error callback and loading state:
-
-```tsx
-const { signMessage, loading, error } = useSignMessage();
-
-await signMessage('Hello', {
-  onError: (err) => console.error(err),
-  onRejection: () => console.log('User cancelled'),
-});
+```bash
+npm run build
+npm publish
 ```
 
 ## Support
 
-- **Documentation**: See `/doc` folder for detailed guides
+- **Demo**: Full working example in `/demo` folder
 - **Issues**: Report bugs on GitHub
-- **Demo**: Full example in `/demo` folder
+- **Examples**: Check out the demo application for complete implementation examples
 
 ---
 
-**Version:** 0.2.0  
+**Version:** 0.1.0  
+**License:** MIT  
 **React:** 18+ / 19  
 **TypeScript:** 5+  
-**Privy SDK:** 3.3.0+  
-**Features:** Authentication, Canton Network, Confirmation Modals, Theme Support
+**Privy SDK:** 3.3.0+

@@ -1,6 +1,6 @@
 import { useCanton } from '@supa/sdk';
 import { useEffect, useRef } from 'react';
-import { User, Mail, Hash, RefreshCw } from 'lucide-react';
+import { User, Mail, Hash, RefreshCw, Key } from 'lucide-react';
 import {
   Card,
   CardHeader,
@@ -17,9 +17,10 @@ import {
   Spinner,
   Alert,
 } from '../ui';
+import { getPublicKeyBase64 } from '@supa/sdk';
 
 export function CantonUserInfo() {
-  const { cantonUser, getMe, isRegistered, loading } = useCanton();
+  const { cantonUser, getMe, isRegistered, loading, stellarWallet } = useCanton();
   const loadedRef = useRef(false);
 
   useEffect(() => {
@@ -93,6 +94,20 @@ export function CantonUserInfo() {
               </WalletAddress>
             </WalletInfo>
           </WalletCard>
+
+          {stellarWallet && (
+            <WalletCard>
+              <WalletIcon>
+                <Key />
+              </WalletIcon>
+              <WalletInfo>
+                <WalletLabel>Public Key (Base64)</WalletLabel>
+                <WalletAddress style={{ fontSize: '0.8125rem', wordBreak: 'break-all' }}>
+                  {getPublicKeyBase64(stellarWallet)}
+                </WalletAddress>
+              </WalletInfo>
+            </WalletCard>
+          )}
 
           <WalletCard>
             <WalletIcon>
