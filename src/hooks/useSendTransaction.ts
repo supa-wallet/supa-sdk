@@ -103,6 +103,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
             description: modalDescription,
             confirmText: modalConfirmText,
             rejectText: modalRejectText,
+            infoText: 'You are submitting a transaction, please be careful',
             displayHash: displayContent,
             showTechnicalDetails,
           }

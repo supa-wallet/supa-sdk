@@ -19,7 +19,6 @@ export interface SignMessageOptions {
   description?: string;
   confirmText?: string;
   rejectText?: string;
-  infoText?: string;
   /** Custom content to display in modal instead of message */
   displayContent?: string;
   /** Show technical details (address, chainType, hash) as JSON. Default: false */
@@ -56,7 +55,6 @@ export function useSignMessage(): UseSignMessageReturn {
         description = 'You are about to sign the following message.',
         confirmText = 'Sign',
         rejectText = 'Reject',
-        infoText = 'Signing a message proves ownership of your wallet without exposing private keys or making any blockchain transactions.',
         displayContent,
         showTechnicalDetails = false,
       } = options || {};
@@ -81,7 +79,7 @@ export function useSignMessage(): UseSignMessageReturn {
               description,
               confirmText,
               rejectText,
-              infoText,
+              infoText: 'Signing a message proves ownership of your wallet without exposing private keys or making any blockchain transactions.',
               displayHash: showTechnicalDetails ? undefined : (displayContent || message),
               showTechnicalDetails,
             }
