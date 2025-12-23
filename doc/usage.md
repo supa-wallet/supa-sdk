@@ -280,7 +280,7 @@ const { signMessage } = useCanton();
 
 try {
   const signature = await signMessage('Hello, Canton!');
-  console.log('Signature (hex):', signature);
+  console.log('Signature:', signature);
 } catch (error) {
   console.error('Signing error:', error);
 }
@@ -288,7 +288,7 @@ try {
 
 **Successful signing:**
 - Modal dialog appears with message text
-- After confirmation, signature is returned in hex format
+- After confirmation, signature is returned
 - Message is hashed using SHA-256 before signing
 
 **Signing rejection:**
@@ -296,23 +296,6 @@ try {
 
 ---
 
-### Sign a Hash
-
-Sign a raw hash directly (base64 format):
-
-```tsx
-const { signHash } = useCanton();
-
-const hashBase64 = 'EiDjNqHetYYin8ypx87LAmJwzxhBX4rFMi4Z/sSsvdQ7bg==';
-try {
-  const signature = await signHash(hashBase64);
-  console.log('Signature (base64):', signature);
-} catch (error) {
-  console.error('Signing error:', error);
-}
-```
-
----
 
 ## 4. Devnet Operations
 
@@ -491,53 +474,6 @@ function DeleteButton() {
 
 ---
 
-### Low-Level Signing
-
-For advanced use cases (e.g., Canton Network integration, custom cryptographic operations), use `useSignRawHashWithModal`:
-
-**Important:** This function expects a raw hash in **HEX format with `0x` prefix**.
-
-```tsx
-import { useSignRawHashWithModal, base64ToHex } from '@supa/sdk';
-
-function AdvancedSigning() {
-  const { signRawHashWithModal } = useSignRawHashWithModal();
-
-  const handleSign = async () => {
-    // Example: Convert base64 hash from Canton Network to hex
-    const hashBase64 = 'SGVsbG8gV29ybGQ='; // from Canton API
-    const hashHex = base64ToHex(hashBase64); // converts to '0x48656c6c6f20576f726c64'
-
-    const result = await signRawHashWithModal(
-      {
-        address: walletAddress,
-        chainType: 'stellar',
-        hash: hashHex, // Must be hex string with 0x prefix
-      },
-      {
-        title: 'Sign Hash',
-        description: 'You are about to sign a raw hash.',
-        displayHash: 'Human-readable description', // Optional: show custom content
-        showTechnicalDetails: false, // Set true to show hash details
-      }
-    );
-
-    if (result) {
-      console.log('Signature:', result.signature);
-    }
-  };
-
-  return <button onClick={handleSign}>Sign</button>;
-}
-```
-
-**Use cases:**
-- Canton Network integration (signs base64 hashes from Canton API)
-- Custom cryptographic operations requiring hash signatures
-- Advanced blockchain interactions
-
----
-
 ## 6. Backend API
 
 Use the `useAPI` hook for backend operations:
@@ -659,7 +595,6 @@ import type {
   // Modal Option Types
   SignMessageOptions,
   SendTransactionOptions,
-  SignRawHashModalOptions,
   ConfirmModalOptions,
 } from '@supa/sdk';
 ```
@@ -683,11 +618,10 @@ const modal: UseConfirmModalReturn = useConfirmModal();
 | Hook | Purpose | Key Methods |
 |------|---------|-------------|
 | `useAuth` | Authentication | `login`, `logout`, `authenticated`, `user` |
-| `useCanton` | Canton Network | `registerCanton`, `signHash`, `signMessage`, `sendTransaction`, `tapDevnet`, `getActiveContracts` |
+| `useCanton` | Canton Network | `registerCanton`, `signMessage`, `sendTransaction`, `tapDevnet`, `getActiveContracts` |
 | `useSignMessage` | Message signing with modal | `signMessage`, `loading`, `error` |
 | `useSendTransaction` | Transactions with modal | `sendTransaction`, `loading`, `error` |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |
-| `useSignRawHashWithModal` | Low-level signing | `signRawHashWithModal` |
 | `useAPI` | Backend API | `user`, `dialogs`, `messages`, `supaPoints`, `transactions` |
 | `useStellarWallet` | Stellar operations | `stellarWallet`, `stellarWallets`, `createWallet` |
 
@@ -699,24 +633,9 @@ The SDK exports utilities for advanced usage:
 
 ```tsx
 import {
-  hexToBase64,
-  base64ToHex,
   privyPublicKeyToCantonBase64,
   getStellarWallets,
 } from '@supa/sdk';
-```
-
-### Format Conversion
-
-```tsx
-// Convert hex to base64
-const base64Hash = hexToBase64('0x1234...');
-
-// Convert base64 to hex
-const hexHash = base64ToHex('EiDjNq...');
-
-// Convert Privy public key to Canton base64 format
-const cantonPublicKey = privyPublicKeyToCantonBase64(privyPublicKey);
 ```
 
 ### Wallet Utilities
