@@ -9,35 +9,17 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      // SDK loads from "file:.." dependency in package.json (uses built dist/)
-      // For fast development with SDK sources, use: npm run build -- --watch in root
-      
-      // Важно: использовать одну копию React
+      // Force single React instance
       'react': resolve(__dirname, './node_modules/react'),
       'react-dom': resolve(__dirname, './node_modules/react-dom'),
-      'react/jsx-runtime': resolve(__dirname, './node_modules/react/jsx-runtime'),
-      // Buffer comes from SDK dependencies
     },
-    dedupe: ['react', 'react-dom', '@privy-io/react-auth'],
+    dedupe: ['react', 'react-dom'],
   },
   optimizeDeps: {
-    include: [
-      '@solana/kit',
-      '@solana-program/memo',
-      '@solana-program/system',
-      '@solana-program/token',
-    ],
     esbuildOptions: {
       define: {
         global: 'globalThis',
       },
     },
   },
-  build: {
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true,
-    },
-  },
 });
-

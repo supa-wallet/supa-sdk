@@ -28,13 +28,21 @@ export default defineConfig({
       fileName: (format) => `index.${format === 'es' ? 'esm' : 'cjs'}.js`,
     },
     rollupOptions: {
-      external: ['react', 'react-dom', '@privy-io/react-auth'],
+      // Externalize React and Solana optional peer deps
+      external: (id) => {
+        if (id === 'react' || id.startsWith('react/')) return true;
+        if (id === 'react-dom' || id.startsWith('react-dom/')) return true;
+        // Solana packages are optional peer deps of Privy
+        if (id.startsWith('@solana-program/') || id.startsWith('@solana/')) return true;
+        return false;
+      },
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
-          '@privy-io/react-auth': 'PrivyReactAuth',
         },
+        // Prevent code splitting for cleaner bundle
+        inlineDynamicImports: true,
       },
     },
   },
