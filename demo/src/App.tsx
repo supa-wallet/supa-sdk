@@ -62,13 +62,6 @@ function Demo() {
     return !canton.stellarWallet ? 1 : !canton.isRegistered ? 2 : 3;
   }, [canton.stellarWallet, canton.isRegistered])
 
-  useEffect(() => {
-    if (!canton.loading && auth.authenticated) {
-      if (currentStep === 1) canton.createStellarWallet();
-      if (currentStep === 2) canton.registerCanton();
-    }
-  }, [currentStep, auth.authenticated])
-
   // Login view
   if (!auth.authenticated) {
     return <LoginScreen onLogin={auth.login} />;

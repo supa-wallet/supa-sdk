@@ -123,7 +123,7 @@ function getAmuletData(item: CantonActiveContractItem): CantonAmuletCreateArgume
 }
 
 export function CantonContracts() {
-  const { getActiveContracts, loading, error } = useCanton();
+  const { getActiveContracts, error } = useCanton();
   const [contracts, setContracts] = useState<CantonActiveContractsResponseDto | null>(null);
   const [templateFilter, setTemplateFilter] = useState('');
   const [isLoading, setIsLoading] = useState(false);

@@ -69,12 +69,11 @@ export class CantonService {
         '/canton/register/prepare',
         { publicKey } as CantonPrepareRegisterRequestDto
       );  
-    } catch (error) {
+    } catch (error: unknown) {
       await new Promise(resolve => setTimeout(resolve, 1500));
+      if (typeof error === 'object' && error !== null && 'message' in error && (error as any).message === "Canton wallet already exists for the user.") return;
       return this.registerCanton(params, errCounter + 1);
     }
-    
-    
 
     const hashBase64 = prepareResponse.hash;
 

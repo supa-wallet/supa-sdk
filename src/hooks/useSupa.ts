@@ -3,6 +3,7 @@
  * Provides unified access to all SDK functionality
  */
 
+import { useEffect, useMemo } from 'react';
 import { useAuth, UseAuthReturn } from './useAuth';
 import { useCanton, UseCantonReturn } from './useCanton';
 import { useAPI, UseAPIReturn } from './useAPI';
@@ -93,6 +94,18 @@ export const useSupa = (): UseSupaReturn => {
       await canton.registerCanton();
     }
   };
+
+  // Automatic onboarding logic
+  const currentStep = useMemo(() => {
+    return !canton.stellarWallet ? 1 : !canton.isRegistered ? 2 : 3;
+  }, [canton.stellarWallet, canton.isRegistered]);
+
+  useEffect(() => {
+    if (!canton.loading && auth.authenticated) {
+      if (currentStep === 1) canton.createStellarWallet();
+      if (currentStep === 2) canton.registerCanton();
+    }
+  }, [currentStep, auth.authenticated, canton.loading]);
 
   return {
     auth,
