@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   define: {
     global: 'globalThis',
@@ -27,6 +27,9 @@ export default defineConfig({
       formats: ['es', 'cjs'],
       fileName: (format) => `index.${format === 'es' ? 'esm' : 'cjs'}.js`,
     },
+    // Production optimizations
+    minify: mode === 'production' ? 'esbuild' : false,
+    sourcemap: mode === 'production' ? false : true,
     rollupOptions: {
       // Externalize React and Solana optional peer deps
       external: (id) => {
@@ -46,7 +49,7 @@ export default defineConfig({
       },
     },
   },
-});
+}));
 
 
 

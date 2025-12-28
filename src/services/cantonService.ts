@@ -58,14 +58,23 @@ export class CantonService {
    * 
    * @param params Registration parameters
    */
-  async registerCanton(params: CantonRegisterParams): Promise<void> {
+  async registerCanton(params: CantonRegisterParams, errCounter = 0): Promise<void> {
+    if (errCounter > 4) throw new Error();
     const { publicKey, signFunction } = params;
     
     // Step 1: Prepare registration - get hash to sign
-    const prepareResponse = await this.client.post<CantonPrepareTransactionResponseDto>(
-      '/canton/register/prepare',
-      { publicKey } as CantonPrepareRegisterRequestDto
-    );
+    let prepareResponse;
+    try {
+      prepareResponse = await this.client.post<CantonPrepareTransactionResponseDto>(
+        '/canton/register/prepare',
+        { publicKey } as CantonPrepareRegisterRequestDto
+      );  
+    } catch (error) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      return this.registerCanton(params, errCounter + 1);
+    }
+    
+    
 
     const hashBase64 = prepareResponse.hash;
 

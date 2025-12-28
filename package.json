@@ -18,6 +18,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.build.json && vite build",
+    "build:prod": "tsc -p tsconfig.build.json && vite build --mode production",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },

@@ -202,11 +202,12 @@ export function useCanton(): UseCantonReturn {
             hash: hashHex as `0x${string}`,
           },
           {
-            title: 'Register Canton Wallet',
-            description: 'Sign to register your wallet with Canton Network.',
-            confirmText: 'Sign & Register',
-            rejectText: 'Cancel',
-            displayHash: 'Canton Wallet Registration',
+            skipModal: true,
+            // title: 'Register Canton Wallet',
+            // description: 'Sign to register your wallet with Canton Network.',
+            // confirmText: 'Sign & Register',
+            // rejectText: 'Cancel',
+            // displayHash: 'Canton Wallet Registration',
           }
         );
         

@@ -1,5 +1,5 @@
 import './types/styled.d.ts';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SupaProvider, useSupa } from '@supa/sdk';
 import {
   LoginScreen,
@@ -58,13 +58,24 @@ function Demo() {
   const { auth, canton } = useSupa();
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
+  const currentStep = useMemo(() => {
+    return !canton.stellarWallet ? 1 : !canton.isRegistered ? 2 : 3;
+  }, [canton.stellarWallet, canton.isRegistered])
+
+  useEffect(() => {
+    if (!canton.loading && auth.authenticated) {
+      if (currentStep === 1) canton.createStellarWallet();
+      if (currentStep === 2) canton.registerCanton();
+    }
+  }, [currentStep, auth.authenticated])
+
   // Login view
   if (!auth.authenticated) {
     return <LoginScreen onLogin={auth.login} />;
   }
 
   // Onboarding flow
-  const currentStep = !canton.stellarWallet ? 1 : !canton.isRegistered ? 2 : 3;
+  
 
   return (
     <AppLayout>
