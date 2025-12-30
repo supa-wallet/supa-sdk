@@ -217,7 +217,7 @@ export class CantonService {
   ): Promise<CantonActiveContractsResponseDto> {
     const params = new URLSearchParams();
     if (templateIds) {
-      templateIds.forEach(id => params.append('templateId', id));
+      templateIds.forEach(id => params.append('templateIds', id));
     }
     
     const queryString = params.toString();
