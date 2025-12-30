@@ -1,4 +1,4 @@
-import { useCanton } from '@supa/sdk';
+import { useCanton } from '@supanovaapp/sdk';
 import { useEffect, useRef } from 'react';
 import { User, Mail, Hash, RefreshCw, Key } from 'lucide-react';
 import {
@@ -17,7 +17,7 @@ import {
   Spinner,
   Alert,
 } from '../ui';
-import { getPublicKeyBase64 } from '@supa/sdk';
+import { getPublicKeyBase64 } from '@supanovaapp/sdk';
 
 export function CantonUserInfo() {
   const { cantonUser, getMe, isRegistered, loading, stellarWallet } = useCanton();

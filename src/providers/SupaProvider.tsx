@@ -16,7 +16,7 @@ export interface SupaConfig {
   privyAppId: string;
   privyClientId?: string;
   apiBaseUrl?: string;
-  nodeIdentifier?: string;
+  nodeIdentifier: string;
   appearance?: {
     theme?: 'light' | 'dark';
     accentColor?: string;

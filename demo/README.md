@@ -14,43 +14,16 @@ This demo showcases:
 - Supa Backend API integration
 - Debug Panel - view all intermediate values (publicKey, hash, signature)
 
-## Important Note
-
-This demo uses **local version** of the SDK via `"@supa/sdk": "file:.."` dependency in `package.json`. This means it loads the SDK from the parent directory, not from npm.
-
 ## Quick Start
 
-### If Starting from Scratch (Full Repo Clone)
+### 1. Install Dependencies
 
 ```bash
-# 1. Clone the repository (if not done yet)
-git clone <repository-url>
-cd supa-sdk
-
-# 2. Install SDK dependencies
+cd demo
 npm install
-
-# 3. Setup environment variables in demo/.env (see below)
-
-# 4. Build, pack and run (one command)
-npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.vite package-lock.json && npm i && npm run dev
 ```
 
-### If SDK is Already Built
-
-### 1. Build SDK, Pack and Install Dependencies
-
-```bash
-cd /Users/userName/Documents/webdev/supa-sdk && npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.vite package-lock.json && npm i && npm run dev
-```
-
-This command:
-1. Builds the SDK
-2. Creates a tarball package
-3. Navigates to demo folder
-4. Cleans old dependencies and cache
-5. Reinstalls dependencies
-6. Starts dev server
+The SDK will be automatically installed from npm as `@supanovaapp/sdk`.
 
 ### 2. Environment Variables Setup
 
@@ -72,6 +45,20 @@ npm run dev
 ```
 
 Application will open at http://localhost:6969
+
+## Development with Local SDK
+
+If you want to test local changes to the SDK before publishing:
+
+```bash
+# From SDK root directory
+npm run build && npm pack
+
+# From demo directory
+cd demo
+npm install ../supa-sdk-0.1.0.tgz
+npm run dev
+```
 
 ## Project Structure
 

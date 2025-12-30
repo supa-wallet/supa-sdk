@@ -8,7 +8,7 @@ import type { ApiError } from './types';
 
 export interface ClientConfig {
   baseURL?: string;
-  nodeIdentifier?: string;
+  nodeIdentifier: string;
   getAccessToken?: () => Promise<string | null>;
 }
 
@@ -17,9 +17,9 @@ export class ApiClient {
   private getAccessToken?: () => Promise<string | null>;
   private nodeIdentifier: string;
 
-  constructor(config: ClientConfig = {}) {
+  constructor(config: ClientConfig = { nodeIdentifier: '' }) {
     const baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi';
-    this.nodeIdentifier = config.nodeIdentifier || 'devnet-0';
+    this.nodeIdentifier = config.nodeIdentifier;
     
     this.client = axios.create({
       baseURL,

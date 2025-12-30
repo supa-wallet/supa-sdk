@@ -1,4 +1,4 @@
-import { useSignMessage } from '@supa/sdk';
+import { useSignMessage } from '@supanovaapp/sdk';
 import { useState } from 'react';
 import { PenTool, AlertTriangle, CheckCircle, Copy, Check } from 'lucide-react';
 import {

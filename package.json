@@ -1,6 +1,6 @@
 {
   "name": "@supanovaapp/sdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "React SDK for Supa Backend + Privy.io integration with Canton Network support",
   "main": "./dist/index.cjs.js",
   "module": "./dist/index.esm.js",
@@ -17,8 +17,8 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.build.json && vite build",
-    "build:prod": "tsc -p tsconfig.build.json && vite build --mode production",
+    "build": "vite build",
+    "build:prod": "vite build --mode production",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },
@@ -49,6 +49,7 @@
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^5.0.4",
     "typescript": "^5.9.3",
-    "vite": "^7.1.11"
+    "vite": "^7.1.11",
+    "vite-plugin-dts": "^4.5.4"
   }
 }

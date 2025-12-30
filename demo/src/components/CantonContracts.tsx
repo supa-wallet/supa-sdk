@@ -1,6 +1,6 @@
-import { useCanton } from '@supa/sdk';
+import { useCanton } from '@supanovaapp/sdk';
 import { useState, useEffect } from 'react';
-import type { CantonActiveContractsResponseDto, CantonActiveContractItem, CantonAmuletCreateArgument } from '@supa/sdk';
+import type { CantonActiveContractsResponseDto, CantonActiveContractItem, CantonAmuletCreateArgument } from '@supanovaapp/sdk';
 import { FileText, Search, X, RefreshCw, Coins, Clock, User } from 'lucide-react';
 import {
   Card,

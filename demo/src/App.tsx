@@ -1,6 +1,6 @@
 import './types/styled.d.ts';
 import { useEffect, useMemo, useState } from 'react';
-import { SupaProvider, useSupa } from '@supa/sdk';
+import { SupaProvider, useSupa } from '@supanovaapp/sdk';
 import {
   LoginScreen,
   OnboardingSteps,

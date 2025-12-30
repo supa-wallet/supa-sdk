@@ -1,6 +1,6 @@
-import { useSendTransaction } from '@supa/sdk';
+import { useSendTransaction } from '@supanovaapp/sdk';
 import { useState } from 'react';
-import type { CantonQueryCompletionResponseDto } from '@supa/sdk';
+import type { CantonQueryCompletionResponseDto } from '@supanovaapp/sdk';
 import { Send, AlertTriangle, CheckCircle } from 'lucide-react';
 import {
   Card,
