@@ -27,29 +27,30 @@ This demo uses **local version** of the SDK via `"@supa/sdk": "file:.."` depende
 git clone <repository-url>
 cd supa-sdk
 
-# 2. Install SDK dependencies and build
-npm install
-npm run build
-
-# 3. Navigate to demo
-cd demo
-
-# 4. Install demo dependencies (will link local SDK)
+# 2. Install SDK dependencies
 npm install
 
-# 5. Setup environment variables (see below)
+# 3. Setup environment variables in demo/.env (see below)
 
-# 6. Run demo
-npm run dev
+# 4. Build, pack and run (one command)
+npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.vite package-lock.json && npm i && npm run dev
 ```
 
 ### If SDK is Already Built
 
-### 1. Install Dependencies
+### 1. Build SDK, Pack and Install Dependencies
 
 ```bash
-npm install
+cd /Users/molodcovdanila/Documents/webdev/supa-sdk && npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.vite package-lock.json && npm i && npm run dev
 ```
+
+This command:
+1. Builds the SDK
+2. Creates a tarball package
+3. Navigates to demo folder
+4. Cleans old dependencies and cache
+5. Reinstalls dependencies
+6. Starts dev server
 
 ### 2. Environment Variables Setup
 
@@ -59,6 +60,7 @@ Create a `.env` file in the `demo` folder:
 VITE_PRIVY_APP_ID=your_privy_app_id
 VITE_PRIVY_CLIENT_ID=your_privy_client_id
 VITE_API_BASE_URL=https://stage_api.supa.fyi
+VITE_CANTON_NODE_ID=nodeId
 ```
 
 > **Important**: Get Privy credentials at https://dashboard.privy.io
@@ -257,21 +259,11 @@ If you see CORS errors:
 Since this demo uses the local SDK version, when you make changes to the SDK source code:
 
 ```bash
-# 1. Go to SDK root directory
-cd ..
-
-# 2. Rebuild the SDK
-npm run build
-
-# 3. Go back to demo
-cd demo
-
-# 4. Restart dev server (if running)
-# Press Ctrl+C to stop, then:
-npm run dev
+# From SDK root directory, run the full command:
+npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.vite package-lock.json && npm i && npm run dev
 ```
 
-The demo will automatically use the updated SDK build.
+This ensures clean rebuild and fresh dependencies.
 
 ## Developer Workflow
 

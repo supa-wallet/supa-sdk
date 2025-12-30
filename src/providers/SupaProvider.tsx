@@ -16,6 +16,7 @@ export interface SupaConfig {
   privyAppId: string;
   privyClientId?: string;
   apiBaseUrl?: string;
+  nodeIdentifier?: string;
   appearance?: {
     theme?: 'light' | 'dark';
     accentColor?: string;
@@ -100,6 +101,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
   useEffect(() => {
     const apiClient = createApiClient({
       baseURL: config.apiBaseUrl,
+      nodeIdentifier: config.nodeIdentifier,
     });
 
     const cantonService = new CantonService(apiClient);

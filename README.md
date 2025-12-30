@@ -136,6 +136,7 @@ function App() {
       config={{
         privyAppId: 'your-privy-app-id',
         apiBaseUrl: 'https://stage_api.supa.fyi', // optional
+        nodeIdentifier: 'nodeId',
         appearance: {
           theme: 'light', // 'light' or 'dark'
           accentColor: '#6366f1',
@@ -152,6 +153,7 @@ function App() {
 **Configuration options:**
 - `privyAppId` - Your Privy App ID (required)
 - `apiBaseUrl` - Backend API URL (default: `https://stage_api.supa.fyi`)
+- `nodeIdentifier` - Canton node identifier (default: `devnet-0`)
 - `appearance` - Theme and styling options
 - `loginMethods` - Array of enabled authentication methods
 
@@ -375,27 +377,22 @@ The demo uses the local version of the SDK (`file:..` dependency), so you need t
 # 1. Install SDK dependencies
 npm install
 
-# 2. Build the SDK
-npm run build
-
-# 3. Navigate to demo folder
-cd demo
-
-# 4. Install demo dependencies (includes local SDK)
-npm install
-
-# 5. Create .env file with your Privy credentials
+# 2. Create .env file in demo folder with your Privy credentials
+# demo/.env:
 # VITE_PRIVY_APP_ID=your_privy_app_id
 # VITE_PRIVY_CLIENT_ID=your_privy_client_id
 # VITE_API_BASE_URL=https://stage_api.supa.fyi
+# VITE_CANTON_NODE_ID=nodeId
 
-# 6. Run dev server
-npm run dev
+# 3. Build SDK, pack and run demo (one command)
+npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.vite package-lock.json && npm i && npm run dev
 ```
+
+This command builds the SDK, creates a tarball, cleans old dependencies/cache, reinstalls and starts the dev server.
 
 Visit http://localhost:6969 to see the demo.
 
-> **Note**: If you make changes to the SDK source code, rebuild it with `npm run build` in the root directory, then restart the demo dev server.
+> **Note**: If you make changes to the SDK source code, run the full command again to rebuild and restart.
 
 The demo application includes:
 - Complete authentication flow
@@ -429,33 +426,18 @@ npm run build
 
 The demo application in `/demo` folder is already configured to use the local SDK version via `"@supa/sdk": "file:.."` dependency.
 
-#### Option 1: Using Demo (Recommended)
+#### Recommended Workflow
 
 ```bash
-# In root directory: build SDK
-npm run build
-
-# Navigate to demo and run
-cd demo
-npm install  # Only needed once
-npm run dev  # Starts demo at http://localhost:6969
+# Build SDK, pack and run demo (from root directory)
+npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.vite package-lock.json && npm i && npm run dev
 ```
 
-After making changes to SDK source:
-1. Rebuild: `npm run build` (in root)
-2. Restart demo dev server
-
-#### Option 2: Watch Mode (Advanced)
-
-For automatic recompilation, you can use watch mode:
-
-```bash
-# Terminal 1: Watch SDK changes
-npm run build -- --watch
-
-# Terminal 2: Run demo
-cd demo && npm run dev
-```
+After making changes to SDK source, run the same command again. This ensures:
+- Clean build of SDK
+- Fresh tarball package
+- Cleared cache and dependencies
+- Proper dev server restart
 
 ### Build Output
 

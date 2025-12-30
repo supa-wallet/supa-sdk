@@ -8,15 +8,18 @@ import type { ApiError } from './types';
 
 export interface ClientConfig {
   baseURL?: string;
+  nodeIdentifier?: string;
   getAccessToken?: () => Promise<string | null>;
 }
 
 export class ApiClient {
   private client: AxiosInstance;
   private getAccessToken?: () => Promise<string | null>;
+  private nodeIdentifier: string;
 
   constructor(config: ClientConfig = {}) {
     const baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi';
+    this.nodeIdentifier = config.nodeIdentifier || 'devnet-0';
     
     this.client = axios.create({
       baseURL,
@@ -27,7 +30,7 @@ export class ApiClient {
 
     this.getAccessToken = config.getAccessToken;
 
-    // Request interceptor to add auth token
+    // Request interceptor to add auth token and Canton node header
     this.client.interceptors.request.use(
       async (config) => {
         if (this.getAccessToken) {
@@ -41,11 +44,17 @@ export class ApiClient {
           }
         }
         
+        // Add X-Canton-Node-Id header for all /canton/... requests
+        if (config.url?.startsWith('/canton/')) {
+          config.headers['X-Canton-Node-Id'] = this.nodeIdentifier;
+        }
+        
         // Log request details
         console.group(`[Supa SDK] 📤 REQUEST: ${config.method?.toUpperCase()} ${config.url}`);
         console.log('Headers:', {
           'Content-Type': config.headers['Content-Type'],
-          'Authorization': config.headers.Authorization ? `Bearer ***${String(config.headers.Authorization).slice(-20)}` : 'none'
+          'Authorization': config.headers.Authorization ? `Bearer ***${String(config.headers.Authorization).slice(-20)}` : 'none',
+          'X-Canton-Node-Id': config.headers['X-Canton-Node-Id'] || 'none'
         });
         if (config.data) {
           console.log('Request Body:', config.data);

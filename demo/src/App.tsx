@@ -40,6 +40,7 @@ function AppWithTheme() {
         privyAppId,
         privyClientId,
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi',
+        nodeIdentifier: import.meta.env.VITE_CANTON_NODE_ID,
         appearance: {
           theme: mode,
         },
