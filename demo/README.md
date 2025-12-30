@@ -41,7 +41,7 @@ npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.
 ### 1. Build SDK, Pack and Install Dependencies
 
 ```bash
-cd /Users/molodcovdanila/Documents/webdev/supa-sdk && npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.vite package-lock.json && npm i && npm run dev
+cd /Users/userName/Documents/webdev/supa-sdk && npm run build && npm pack && cd demo && rm -rf node_modules/@supa node_modules/.vite package-lock.json && npm i && npm run dev
 ```
 
 This command:
