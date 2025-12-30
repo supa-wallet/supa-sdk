@@ -9,7 +9,6 @@ For a quick overview of the code, check out the demo application in the `/demo` 
 ## Key Features
 
 - **Privy.io Authentication** - Email, wallet, and social login methods  
-- **Canton Network Integration** - Full Canton ledger access with Ed25519 signing
 - **Built-in Confirmation Modals** - User-friendly signing confirmations
 - **Theme Support** - Light/dark mode with customizable appearance
 - **Automatic Polling** - Transaction completion tracking
