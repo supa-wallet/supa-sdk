@@ -1,5 +1,5 @@
 {
-  "name": "@supa/sdk",
+  "name": "@supanovaapp/sdk",
   "version": "0.1.0",
   "description": "React SDK for Supa Backend + Privy.io integration with Canton Network support",
   "main": "./dist/index.cjs.js",
@@ -31,7 +31,7 @@
     "react",
     "sdk"
   ],
-  "author": "",
+  "author": "npm@supanova.app",
   "license": "MIT",
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
