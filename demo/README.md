@@ -48,7 +48,7 @@ Application will open at http://localhost:6969
 
 ## Development with Local SDK
 
-If you want to test local changes to the SDK before publishing:
+This demo uses local SDK build via pack file. To rebuild and test:
 
 ```bash
 # From SDK root directory
@@ -56,7 +56,8 @@ npm run build && npm pack
 
 # From demo directory
 cd demo
-npm install ../supa-sdk-0.1.0.tgz
+rm -rf node_modules/@supanovaapp node_modules/.vite package-lock.json
+npm install
 npm run dev
 ```
 
