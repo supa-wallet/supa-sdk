@@ -303,22 +303,6 @@ export function useCanton(): UseCantonReturn {
     setError(null);
   }, []);
 
-  const getMe = useCallback(async (): Promise<CantonMeResponseDto> => {
-    const user = await cantonService.getMe();
-    setCantonUser(user);
-    return user;
-  }, [cantonService]);
-
-  const getActiveContracts = useCallback(async (templateIds?: string[]): Promise<CantonActiveContractsResponseDto> => {
-    return await cantonService.getActiveContracts(templateIds);
-  }, [cantonService]);
-
-  const getBalances = useCallback(async (): Promise<CantonWalletBalancesResponseDto> => {
-    const balances = await cantonService.getBalances();
-    setCantonBalances(balances);
-    return balances;
-  }, [cantonService]);
-
   const setupTransferPreapproval = useCallback(async (): Promise<void> => {
     if (!stellarWallet) {
       throw new Error('No Stellar wallet found');
@@ -367,6 +351,32 @@ export function useCanton(): UseCantonReturn {
       setLoading(false);
     }
   }, [stellarWallet, signRawHashWithModal, cantonService]);
+
+  const getMe = useCallback(async (): Promise<CantonMeResponseDto> => {
+    const user = await cantonService.getMe();
+    setCantonUser(user);
+    
+    // Automatically setup transfer preapproval if not set
+    if (!user.transferPreapprovalSet) {
+      try {
+        await setupTransferPreapproval();
+      } catch (err) {
+        console.warn('Failed to automatically setup transfer preapproval:', err);
+      }
+    }
+    
+    return user;
+  }, [cantonService, setupTransferPreapproval]);
+
+  const getActiveContracts = useCallback(async (templateIds?: string[]): Promise<CantonActiveContractsResponseDto> => {
+    return await cantonService.getActiveContracts(templateIds);
+  }, [cantonService]);
+
+  const getBalances = useCallback(async (): Promise<CantonWalletBalancesResponseDto> => {
+    const balances = await cantonService.getBalances();
+    setCantonBalances(balances);
+    return balances;
+  }, [cantonService]);
 
   const signMessage = useCallback(async (message: string): Promise<string> => {
     if (!stellarWallet) {
