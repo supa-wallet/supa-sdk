@@ -174,13 +174,12 @@ export function CantonBalances() {
         </Card>
       </Section>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
-        <CardHeader>
-          <CardTitle>
-            <Lock /> Locked UTXOs
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Modal open={showModal} onClose={() => setShowModal(false)} title={
+        <>
+          <Lock /> Locked UTXOs
+        </>
+      }>
+        <div>
           {lockedUtxos && lockedUtxos.length > 0 ? (
             lockedUtxos.map((utxo, index) => (
               <UtxoItem key={utxo.contractId}>
@@ -217,7 +216,7 @@ export function CantonBalances() {
           ) : (
             <Text $color="secondary">No locked UTXOs</Text>
           )}
-        </CardContent>
+        </div>
       </Modal>
     </>
   );
