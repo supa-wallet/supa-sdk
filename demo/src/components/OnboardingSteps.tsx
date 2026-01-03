@@ -80,7 +80,7 @@ export function OnboardingSteps({
   onCreateWallet,
   onRegister,
 }: OnboardingStepsProps) {
-  if (currentStep >= 3) {
+  if (currentStep >= 4) {
     return null;
   }
 
@@ -134,12 +134,25 @@ export function OnboardingSteps({
               )}
             </StepIndicator>
 
-            <StepIndicator $completed={currentStep === 3}>
-              <StepNumber $completed={currentStep === 3}>
-                {currentStep === 3 ? (
+            <StepIndicator $completed={currentStep > 3} $active={currentStep === 3}>
+              <StepNumber $completed={currentStep > 3} $active={currentStep === 3}>
+                {currentStep > 3 ? <CheckCircle style={{ width: 18, height: 18 }} /> : '3'}
+              </StepNumber>
+              <StepContent>
+                <StepTitle>Setup Transfer Preapproval</StepTitle>
+                <StepDescription>Enable seamless Canton transfers</StepDescription>
+              </StepContent>
+              {currentStep === 3 && loading && (
+                <Loader2 className="animate-spin" style={{ width: 20, height: 20 }} />
+              )}
+            </StepIndicator>
+
+            <StepIndicator $completed={currentStep === 4}>
+              <StepNumber $completed={currentStep === 4}>
+                {currentStep === 4 ? (
                   <CheckCircle style={{ width: 18, height: 18 }} />
                 ) : (
-                  '3'
+                  '4'
                 )}
               </StepNumber>
               <StepContent>

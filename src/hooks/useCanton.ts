@@ -3,7 +3,7 @@
  * Provides Canton Network operations including registration, tap, and signing
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import { useCreateWallet } from '@privy-io/react-auth/extended-chains';
 import { useSupaContext } from '../providers/SupaProvider';
@@ -16,6 +16,7 @@ import type {
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
   CantonQueryCompletionResponseDto,
+  CantonWalletBalancesResponseDto,
 } from '../core/types';
 import type { CantonSubmitPreparedOptions } from '../services/cantonService';
 
@@ -35,7 +36,7 @@ export interface UseCantonReturn {
   /** Whether Canton wallet is registered */
   isRegistered: boolean;
   
-  /** Canton user info (partyId and email) */
+  /** Canton user info (partyId, email, transferPreapprovalSet) */
   cantonUser: CantonMeResponseDto | null;
   
   /** Get Canton user info */
@@ -43,6 +44,12 @@ export interface UseCantonReturn {
   
   /** Get active contracts with optional filtering */
   getActiveContracts: (templateIds?: string[]) => Promise<CantonActiveContractsResponseDto>;
+  
+  /** Canton wallet balances */
+  cantonBalances: CantonWalletBalancesResponseDto | null;
+  
+  /** Get Canton wallet balances */
+  getBalances: () => Promise<CantonWalletBalancesResponseDto>;
   
   /** Tap devnet faucet */
   tapDevnet: (amount: string, options?: CantonSubmitPreparedOptions) => Promise<CantonQueryCompletionResponseDto>;
@@ -55,10 +62,21 @@ export interface UseCantonReturn {
   
   /** Prepare and submit transaction with polling for completion */
   sendTransaction: (
-    commandId: unknown,
+    commands: unknown,
     disclosedContracts?: unknown,
     options?: CantonSubmitPreparedOptions
   ) => Promise<CantonQueryCompletionResponseDto>;
+  
+  /** Send Canton Coin (Amulet) to another party */
+  sendCantonCoin: (
+    receiverPartyId: string,
+    amount: string,
+    memo?: string,
+    options?: CantonSubmitPreparedOptions
+  ) => Promise<CantonQueryCompletionResponseDto>;
+  
+  /** Setup transfer preapproval (internal, called automatically) */
+  setupTransferPreapproval: () => Promise<void>;
   
   /** Loading state */
   loading: boolean;
@@ -85,10 +103,15 @@ export function useCanton(): UseCantonReturn {
   const [error, setError] = useState<Error | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [cantonUser, setCantonUser] = useState<CantonMeResponseDto | null>(null);
+  const [cantonBalances, setCantonBalances] = useState<CantonWalletBalancesResponseDto | null>(null);
+  
+  // Flag to prevent multiple registration checks
+  const hasCheckedRegistration = useRef(false);
 
-  // Check registration status on mount
+  // Check registration status on mount (once)
   useEffect(() => {
-    if (authenticated && stellarWallet) {
+    if (authenticated && stellarWallet && !hasCheckedRegistration.current) {
+      hasCheckedRegistration.current = true;
       checkRegistration();
     }
   }, [authenticated, stellarWallet]);
@@ -203,11 +226,6 @@ export function useCanton(): UseCantonReturn {
           },
           {
             skipModal: true,
-            // title: 'Register Canton Wallet',
-            // description: 'Sign to register your wallet with Canton Network.',
-            // confirmText: 'Sign & Register',
-            // rejectText: 'Cancel',
-            // displayHash: 'Canton Wallet Registration',
           }
         );
         
@@ -295,6 +313,61 @@ export function useCanton(): UseCantonReturn {
     return await cantonService.getActiveContracts(templateIds);
   }, [cantonService]);
 
+  const getBalances = useCallback(async (): Promise<CantonWalletBalancesResponseDto> => {
+    const balances = await cantonService.getBalances();
+    setCantonBalances(balances);
+    return balances;
+  }, [cantonService]);
+
+  const setupTransferPreapproval = useCallback(async (): Promise<void> => {
+    if (!stellarWallet) {
+      throw new Error('No Stellar wallet found');
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Step 1: Prepare transfer preapproval
+      const prepareResponse = await cantonService.prepareTransferPreapproval();
+
+      // Step 2: Sign hash with modal (skipModal for automatic flow)
+      const hashHex = base64ToHex(prepareResponse.hash);
+      const signResult = await signRawHashWithModal(
+        {
+          address: stellarWallet.address,
+          chainType: 'stellar',
+          hash: hashHex as `0x${string}`,
+        },
+        {
+          skipModal: true,
+        }
+      );
+
+      if (!signResult) {
+        throw new Error('User rejected transfer preapproval signature');
+      }
+
+      // Step 3: Submit signed preapproval
+      const signatureBase64 = hexToBase64(signResult.signature);
+      await cantonService.submitPreparedAndWait(
+        prepareResponse.hash,
+        signatureBase64
+      );
+
+      // Update user info to reflect new preapproval status
+      const user = await cantonService.getMe();
+      setCantonUser(user);
+      setIsRegistered(user.transferPreapprovalSet);
+    } catch (err: any) {
+      const error = new Error(`Failed to setup transfer preapproval: ${err.message}`);
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [stellarWallet, signRawHashWithModal, cantonService]);
+
   const signMessage = useCallback(async (message: string): Promise<string> => {
     if (!stellarWallet) {
       throw new Error('No Stellar wallet found');
@@ -338,7 +411,7 @@ export function useCanton(): UseCantonReturn {
   }, [stellarWallet, signRawHashWithModal, cantonService]);
 
   const sendTransaction = useCallback(async (
-    commandId: unknown,
+    commands: unknown,
     disclosedContracts?: unknown,
     options?: CantonSubmitPreparedOptions
   ): Promise<CantonQueryCompletionResponseDto> => {
@@ -352,7 +425,7 @@ export function useCanton(): UseCantonReturn {
     try {
       // Step 1: Prepare transaction
       const prepareResponse = await cantonService.prepareTransaction(
-        commandId,
+        commands,
         disclosedContracts
       );
 
@@ -394,6 +467,80 @@ export function useCanton(): UseCantonReturn {
     }
   }, [stellarWallet, signRawHashWithModal, cantonService]);
 
+  const sendCantonCoin = useCallback(async (
+    receiverPartyId: string,
+    amount: string,
+    memo?: string,
+    options?: CantonSubmitPreparedOptions
+  ): Promise<CantonQueryCompletionResponseDto> => {
+    if (!stellarWallet) {
+      throw new Error('No Stellar wallet found');
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Step 1: Prepare Amulet transfer (includes validation)
+      const prepareResponse = await cantonService.prepareAmuletTransfer({
+        receiverPartyId,
+        amount,
+        memo,
+      });
+
+      // Step 2: Sign hash with modal
+      const hashHex = base64ToHex(prepareResponse.hash);
+      const signResult = await signRawHashWithModal(
+        {
+          address: stellarWallet.address,
+          chainType: 'stellar',
+          hash: hashHex as `0x${string}`,
+        },
+        {
+          title: 'Send Canton Coin',
+          description: `You are sending ${amount} Canton Coin${memo ? ` (${memo})` : ''}.`,
+          confirmText: 'Confirm & Sign',
+          rejectText: 'Cancel',
+          displayHash: `Sending ${amount} CC to ${receiverPartyId.slice(0, 20)}...`,
+        }
+      );
+
+      if (!signResult) {
+        throw new Error('User rejected transfer');
+      }
+
+      // Step 3: Submit signed transaction and wait for completion
+      const signatureBase64 = hexToBase64(signResult.signature);
+      const result = await cantonService.submitPreparedAndWait(
+        prepareResponse.hash,
+        signatureBase64,
+        options
+      );
+
+      // Refresh balances after successful transfer
+      await getBalances().catch(() => {
+        // Ignore balance refresh errors
+      });
+
+      return result;
+    } catch (err: any) {
+      // Special handling for preapproval error
+      if (err.message?.includes('CantonTransferOnlySupportedForWalletsWithPreapprovedTransfers')) {
+        const error = new Error(
+          'Transfer preapproval required. The receiver wallet must have transfer preapproval enabled.'
+        );
+        setError(error);
+        throw error;
+      }
+      
+      const error = new Error(`Failed to send Canton Coin: ${err.message}`);
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [stellarWallet, signRawHashWithModal, cantonService, getBalances]);
+
   return {
     stellarWallet,
     stellarWallets,
@@ -403,10 +550,14 @@ export function useCanton(): UseCantonReturn {
     cantonUser,
     getMe,
     getActiveContracts,
+    cantonBalances,
+    getBalances,
     tapDevnet,
     signHash,
     signMessage,
     sendTransaction,
+    sendCantonCoin,
+    setupTransferPreapproval,
     loading,
     error,
     clearError,

@@ -14,6 +14,8 @@ import type {
   CantonActiveContractsResponseDto,
   CantonPrepareTransactionRequestDto,
   CantonQueryCompletionResponseDto,
+  CantonWalletBalancesResponseDto,
+  CantonPrepareAmuletTransferRequestDto,
 } from '../core/types';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 
@@ -23,6 +25,8 @@ export type {
   CantonActiveContractsResponseDto,
   CantonPrepareTransactionResponseDto,
   CantonQueryCompletionResponseDto,
+  CantonWalletBalancesResponseDto,
+  CantonPrepareAmuletTransferRequestDto,
 };
 
 export interface CantonRegisterParams {
@@ -59,7 +63,7 @@ export class CantonService {
    * @param params Registration parameters
    */
   async registerCanton(params: CantonRegisterParams, errCounter = 0): Promise<void> {
-    if (errCounter > 4) throw new Error();
+    if (errCounter > 4) throw new Error('Failed to register Canton wallet after multiple attempts');
     const { publicKey, signFunction } = params;
     
     // Step 1: Prepare registration - get hash to sign
@@ -71,7 +75,16 @@ export class CantonService {
       );  
     } catch (error: unknown) {
       await new Promise(resolve => setTimeout(resolve, 1500));
-      if (typeof error === 'object' && error !== null && 'message' in error && (error as any).message === "Canton wallet already exists for the user.") return;
+      console.log('error', error);
+      
+      // If wallet already exists, it's OK - user is already registered
+      if (typeof error === 'object' && error !== null && 'message' in error && 
+          (error as any).message === "Canton wallet already exists for the user.") {
+        // Wallet exists, nothing more to do here
+        return;
+      }
+      
+      // Retry for other errors
       return this.registerCanton(params, errCounter + 1);
     }
 
@@ -254,23 +267,22 @@ export class CantonService {
 
   /**
    * Prepare Canton transaction
-   * @param commandId Command or array of commands
+   * @param commands Command or array of commands
    * @param disclosedContracts Optional disclosed contracts
    */
   async prepareTransaction(
-    commandId: unknown,
+    commands: unknown,
     disclosedContracts?: unknown
   ): Promise<CantonPrepareTransactionResponseDto> {
     return await this.client.post<CantonPrepareTransactionResponseDto>(
       '/canton/api/prepare_transaction',
-      { commandId, disclosedContracts } as CantonPrepareTransactionRequestDto
+      { commands, disclosedContracts } as CantonPrepareTransactionRequestDto
     );
   }
 
   /**
    * Check if user has Canton wallet registered
-   * This is inferred - if registration succeeds, user has wallet
-   * If it fails with 409 or similar, wallet already exists
+   * This is inferred - if /me succeeds, user has wallet
    */
   async checkRegistrationStatus(): Promise<boolean> {
     try {
@@ -279,6 +291,51 @@ export class CantonService {
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * Prepare transfer preapproval
+   * Flow: prepare -> sign -> submit
+   * No request body required
+   */
+  async prepareTransferPreapproval(): Promise<CantonPrepareTransactionResponseDto> {
+    return await this.client.post<CantonPrepareTransactionResponseDto>(
+      '/canton/api/prepare_transfer_preapproval',
+      {}
+    );
+  }
+
+  /**
+   * Get Canton wallet balances
+   * Returns balances for all tokens grouped by instrument ID
+   * Includes unlocked and locked UTXOs
+   */
+  async getBalances(): Promise<CantonWalletBalancesResponseDto> {
+    return await this.client.get<CantonWalletBalancesResponseDto>(
+      '/canton/api/balances'
+    );
+  }
+
+  /**
+   * Prepare Amulet (Canton Coin) transfer
+   * @param params Transfer parameters (receiverPartyId, amount, memo)
+   * @throws Error if amount has more than 10 decimal places
+   */
+  async prepareAmuletTransfer(
+    params: CantonPrepareAmuletTransferRequestDto
+  ): Promise<CantonPrepareTransactionResponseDto> {
+    // Validate decimal places (max 10)
+    const decimalParts = params.amount.split('.');
+    if (decimalParts.length > 1 && decimalParts[1].length > 10) {
+      throw new Error(
+        `Amount cannot have more than 10 decimal places. Got: ${decimalParts[1].length}`
+      );
+    }
+
+    return await this.client.post<CantonPrepareTransactionResponseDto>(
+      '/canton/api/prepare_amulet_transfer',
+      params
+    );
   }
 }
 

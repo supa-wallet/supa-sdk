@@ -31,7 +31,7 @@ export interface SendTransactionOptions {
 export interface UseSendTransactionReturn {
   /** Sign and send a Canton transaction with confirmation modal */
   sendTransaction: (
-    commandId: unknown,
+    commands: unknown,
     disclosedContracts?: unknown,
     options?: SendTransactionOptions
   ) => Promise<CantonQueryCompletionResponseDto | null>;
@@ -54,7 +54,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
 
   const sendTransaction = useCallback(
     async (
-      commandId: unknown,
+      commands: unknown,
       disclosedContracts?: unknown,
       options?: SendTransactionOptions
     ): Promise<CantonQueryCompletionResponseDto | null> => {
@@ -84,7 +84,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
 
       try {
         // Step 1: Prepare transaction
-        const prepareResponse = await cantonService.prepareTransaction(commandId, disclosedContracts);
+        const prepareResponse = await cantonService.prepareTransaction(commands, disclosedContracts);
 
         // Step 2: Determine modal display content
         const displayContent = modalDisplayContent 

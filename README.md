@@ -152,7 +152,7 @@ function App() {
 **Configuration options:**
 - `privyAppId` - Your Privy App ID (required)
 - `apiBaseUrl` - Backend API URL (default: `https://stage_api.supa.fyi`)
-- `nodeIdentifier` - Canton node identifier (default: `devnet-0`)
+- `nodeIdentifier` - Canton node identifier
 - `appearance` - Theme and styling options
 - `loginMethods` - Array of enabled authentication methods
 
@@ -234,17 +234,81 @@ const filteredContracts = await getActiveContracts([
 ]);
 ```
 
+#### Get Canton Balances
+
+```tsx
+const { getBalances, cantonBalances } = useCanton();
+
+// Fetch balances
+try {
+  const balances = await getBalances();
+  
+  // Find Canton Coin token
+  const cantonCoin = balances.tokens.find(
+    token => token.instrumentId.id === 'Amulet'
+  );
+  
+  if (cantonCoin) {
+    console.log('Unlocked balance:', cantonCoin.totalUnlockedBalance);
+    console.log('Locked balance:', cantonCoin.totalLockedBalance);
+    console.log('Total balance:', cantonCoin.totalBalance);
+    
+    // Access locked UTXOs for details
+    cantonCoin.lockedUtxos.forEach(utxo => {
+      console.log('Locked amount:', utxo.amount);
+      console.log('Expires at:', utxo.lock.expiresAt);
+      console.log('Context:', utxo.lock.context);
+    });
+  }
+} catch (error) {
+  console.error('Failed to load balances:', error);
+}
+
+// Or use the cached state
+if (cantonBalances) {
+  console.log('Cached balances:', cantonBalances);
+}
+```
+
+#### Send Canton Coin
+
+```tsx
+const { sendCantonCoin } = useCanton();
+
+try {
+  const result = await sendCantonCoin(
+    'receiver-party::1220abc123...',  // Receiver Party ID
+    '100.5',                           // Amount (max 10 decimal places)
+    'Payment for services',            // Optional memo
+    {
+      timeout: 30000,      // completion timeout (ms)
+      pollInterval: 1000,  // polling interval (ms)
+    }
+  );
+  console.log('Canton Coin sent successfully:', result);
+} catch (error) {
+  // Special handling for preapproval errors
+  if (error.message.includes('preapproval')) {
+    console.error('Receiver must have transfer preapproval enabled');
+  } else {
+    console.error('Transfer failed:', error);
+  }
+}
+```
+
+**Note**: The amount cannot have more than 10 decimal places. Transfers are only supported to wallets with preapproved transfers enabled.
+
 #### Submit a Transaction
 
 ```tsx
 const { sendTransaction } = useCanton();
 
-const command = {
-  // Your Canton command
+const commands = {
+  // Your Canton command(s)
 };
 
 try {
-  const result = await sendTransaction(command, disclosedContracts, {
+  const result = await sendTransaction(commands, disclosedContracts, {
     timeout: 30000,      // completion timeout (ms)
     pollInterval: 1000,  // polling interval (ms)
   });
@@ -336,7 +400,7 @@ await sendTransaction(command, contracts, {
 | Hook | Purpose | Key Methods |
 |------|---------|-------------|
 | `useAuth` | Authentication | `login`, `logout`, `authenticated`, `user` |
-| `useCanton` | Canton Network | `registerCanton`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet` |
+| `useCanton` | Canton Network | `registerCanton`, `getBalances`, `sendCantonCoin`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet` |
 | `useSignMessage` | Enhanced message signing | `signMessage` with custom modals |
 | `useSendTransaction` | Enhanced transactions | `sendTransaction` with custom modals |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |
@@ -358,11 +422,18 @@ import type {
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
   CantonQueryCompletionResponseDto,
+  CantonWalletBalancesResponseDto,
+  CantonTokenBalanceDto,
+  CantonInstrumentIdDto,
+  CantonLockedUtxoDto,
+  CantonUnlockedUtxoDto,
+  CantonPrepareAmuletTransferRequestDto,
   
   // Option Types
   SignMessageOptions,
   SendTransactionOptions,
   ConfirmModalOptions,
+  CantonSubmitPreparedOptions,
 } from '@supa/sdk';
 ```
 
@@ -395,7 +466,9 @@ Visit http://localhost:6969 to see the demo.
 
 The demo application includes:
 - Complete authentication flow
-- Canton wallet registration
+- Canton wallet registration with automatic transfer preapproval
+- Canton balance display with locked/unlocked UTXO details
+- Canton Coin sending with validation
 - Message signing with modals
 - Transaction sending with modals
 - Contract querying

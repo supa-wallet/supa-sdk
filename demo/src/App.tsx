@@ -8,6 +8,8 @@ import {
   DevnetFaucet,
   CantonOperationsTabs,
   AppHeader,
+  CantonBalances,
+  SendCantonCoin,
 } from './components';
 import {
   GlobalStyles,
@@ -60,8 +62,11 @@ function Demo() {
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
   const currentStep = useMemo(() => {
-    return !canton.stellarWallet ? 1 : !canton.isRegistered ? 2 : 3;
-  }, [canton.stellarWallet, canton.isRegistered])
+    if (!canton.stellarWallet) return 1;
+    if (!canton.isRegistered) return 2;
+    if (canton.cantonUser && !canton.cantonUser.transferPreapprovalSet) return 3;
+    return 4;
+  }, [canton.stellarWallet, canton.isRegistered, canton.cantonUser])
 
   // Login view
   if (!auth.authenticated) {
@@ -98,7 +103,9 @@ function Demo() {
 
         {canton.isRegistered && (
           <>
+            <CantonBalances />
             <DevnetFaucet onTap={canton.tapDevnet} />
+            <SendCantonCoin />
             <Divider />
             <CantonOperationsTabs showTechnicalDetails={showTechnicalDetails} />
           </>

@@ -65,6 +65,10 @@ export interface CantonMeResponseDto {
   partyId: string;
   /** User email (can be null if not set) */
   email: string | null;
+  /** Indicates whether the transfer preapproval is set and NOT EXPIRED for the party */
+  transferPreapprovalSet: boolean;
+  /** Transfer preapproval expiration date (ISO 8601, can be null) */
+  transferPreapprovalExpiresAt: string | null;
 }
 
 // ============= Canton Active Contracts Types =============
@@ -162,9 +166,101 @@ export interface CantonActiveContract {
 
 export interface CantonPrepareTransactionRequestDto {
   /** Command or array of commands */
-  commandId: unknown;
+  commands: unknown;
   /** Optional disclosed contracts */
   disclosedContracts?: unknown;
+}
+
+// ============= Canton Balances Types =============
+
+/** Canton instrument/token identifier */
+export interface CantonInstrumentIdDto {
+  /** DSO party ID (instrument administrator) */
+  admin: string;
+  /** Token identifier (e.g., "Amulet" for Canton Coin) */
+  id: string;
+}
+
+/** UTXO metadata including creation info and demurrage rate */
+export interface CantonUtxoMetadataDto {
+  /** Round number when the UTXO was created */
+  createdInRound: string;
+  /** Demurrage rate per round (balance decrease rate for Canton Coin) */
+  demurrageRate: string;
+}
+
+/** Unlocked UTXO */
+export interface CantonUnlockedUtxoDto {
+  /** Contract ID of the UTXO */
+  contractId: string;
+  /** Amount as decimal string */
+  amount: string;
+  /** UTXO metadata including creation info and demurrage rate */
+  metadata: CantonUtxoMetadataDto;
+}
+
+/** Lock information for locked UTXO */
+export interface CantonHoldingLockDto {
+  /** Party IDs holding the lock */
+  holders: string[];
+  /** Lock expiration timestamp (ISO 8601, can be null) */
+  expiresAt: string | null;
+  /** Relative expiration duration (can be null) */
+  expiresAfter: Record<string, unknown> | null;
+  /** Context describing why the UTXO is locked (can be null) */
+  context: string | null;
+}
+
+/** Locked UTXO with lock information */
+export interface CantonLockedUtxoDto {
+  /** Contract ID of the locked UTXO */
+  contractId: string;
+  /** Locked amount as decimal string */
+  amount: string;
+  /** Lock information including holders, expiration, and context */
+  lock: CantonHoldingLockDto;
+  /** UTXO metadata including creation info and demurrage rate */
+  metadata: CantonUtxoMetadataDto;
+}
+
+/** Token balance with unlocked and locked UTXOs */
+export interface CantonTokenBalanceDto {
+  /** Unique identifier for this token type */
+  instrumentId: CantonInstrumentIdDto;
+  /** Total unlocked balance as decimal string */
+  totalUnlockedBalance: string;
+  /** Total locked balance as decimal string */
+  totalLockedBalance: string;
+  /** Total balance (unlocked + locked) as decimal string */
+  totalBalance: string;
+  /** Number of unlocked UTXOs */
+  unlockedUtxoCount: number;
+  /** Number of locked UTXOs */
+  lockedUtxoCount: number;
+  /** List of unlocked UTXOs */
+  unlockedUtxos: CantonUnlockedUtxoDto[];
+  /** List of locked UTXOs */
+  lockedUtxos: CantonLockedUtxoDto[];
+}
+
+/** Canton wallet balances response */
+export interface CantonWalletBalancesResponseDto {
+  /** Party ID of the wallet owner */
+  partyId: string;
+  /** Token balances grouped by instrument ID */
+  tokens: CantonTokenBalanceDto[];
+  /** Timestamp when balances were fetched (ISO 8601) */
+  fetchedAt: string;
+}
+
+/** Request for preparing Amulet (Canton Coin) transfer */
+export interface CantonPrepareAmuletTransferRequestDto {
+  /** Canton party ID of the receiver wallet */
+  receiverPartyId: string;
+  /** Amount of Amulet to transfer (decimal string with max 10 decimal places) */
+  amount: string;
+  /** Optional memo for the transfer */
+  memo?: string;
 }
 
 // ============= User Types =============

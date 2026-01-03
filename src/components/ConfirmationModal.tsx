@@ -198,7 +198,7 @@ export interface ConfirmationModalProps {
 }
 
 export function ConfirmationModal({
-  open,
+  open = false,
   onClose,
   onConfirm,
   onReject,

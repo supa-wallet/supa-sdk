@@ -8,3 +8,5 @@ export { StellarWalletCard } from './StellarWalletCard';
 export { DevnetFaucet } from './DevnetFaucet';
 export { CantonOperationsTabs } from './CantonOperationsTabs';
 export { AppHeader } from './AppHeader';
+export { CantonBalances } from './CantonBalances';
+export { SendCantonCoin } from './SendCantonCoin';
