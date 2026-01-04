@@ -73,8 +73,7 @@ export class CantonService {
         '/canton/register/prepare',
         { publicKey } as CantonPrepareRegisterRequestDto
       );  
-    } catch (error: unknown) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+    } catch (error: any) {
       console.log('error', error);
       
       // If wallet already exists, it's OK - user is already registered
@@ -84,7 +83,14 @@ export class CantonService {
         return;
       }
       
-      // Retry for other errors
+      // Don't retry for mainnet access errors - these are permission issues
+      if (error?.error === 'CantonMainnetNodeNotEnabledForThisUser' || 
+          error?.message?.includes('enable mainnet node access')) {
+        throw error;
+      }
+      
+      // Retry for other errors after delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
       return this.registerCanton(params, errCounter + 1);
     }
 

@@ -38,3 +38,4 @@ pnpm-debug.log*
 # Local files
 .claude/
 
+./supa-tg
