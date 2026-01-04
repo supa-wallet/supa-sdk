@@ -51,7 +51,22 @@ export interface CantonSubmitPreparedOptions {
 }
 
 export class CantonService {
+  private meCache: CantonMeResponseDto | null = null;
+  private meCacheTimestamp: number = 0;
+  private mePendingPromise: Promise<CantonMeResponseDto> | null = null;
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
+
   constructor(private client: ApiClient) {}
+
+  /**
+   * Инвалидация кеша /me
+   * Вызывается после операций регистрации/изменения пользователя
+   */
+  private invalidateMeCache(): void {
+    this.meCache = null;
+    this.meCacheTimestamp = 0;
+    this.mePendingPromise = null;
+  }
 
   /**
    * Register Canton wallet
@@ -113,6 +128,9 @@ export class CantonService {
         signature: signatureBase64,
       } as CantonSubmitRegisterRequestDto
     );
+
+    // Инвалидируем кеш после успешной регистрации
+    this.invalidateMeCache();
   }
 
   /**
@@ -208,6 +226,8 @@ export class CantonService {
       const completionResponse = await this.queryCompletion(submissionId);
       
       if (completionResponse.status === 'completed') {
+        // Инвалидируем кеш после успешной транзакции
+        this.invalidateMeCache();
         return completionResponse;
       }
       
@@ -221,9 +241,37 @@ export class CantonService {
   /**
    * Get current Canton user info (partyId and email)
    * Only works after registration
+   * С мемоизацией на 5 минут и дедупликацией одновременных запросов
    */
-  async getMe(): Promise<CantonMeResponseDto> {
-    return await this.client.get<CantonMeResponseDto>('/canton/api/me');
+  async getMe(force: boolean = false): Promise<CantonMeResponseDto> {
+    const now = Date.now();
+    
+    // Если кеш актуален и не требуется принудительное обновление
+    if (!force && this.meCache && (now - this.meCacheTimestamp) < this.CACHE_TTL) {
+      return this.meCache;
+    }
+
+    // Если запрос уже выполняется, возвращаем тот же промис
+    if (this.mePendingPromise) {
+      return this.mePendingPromise;
+    }
+
+    // Создаём промис для загрузки данных
+    this.mePendingPromise = this.client.get<CantonMeResponseDto>('/canton/api/me')
+      .then((data) => {
+        // Обновляем кеш
+        this.meCache = data;
+        this.meCacheTimestamp = Date.now();
+        this.mePendingPromise = null;
+        return data;
+      })
+      .catch((error) => {
+        // Сбрасываем pending при ошибке
+        this.mePendingPromise = null;
+        throw error;
+      });
+    
+    return this.mePendingPromise;
   }
 
   /**
@@ -305,10 +353,13 @@ export class CantonService {
    * No request body required
    */
   async prepareTransferPreapproval(): Promise<CantonPrepareTransactionResponseDto> {
-    return await this.client.post<CantonPrepareTransactionResponseDto>(
+    const result = await this.client.post<CantonPrepareTransactionResponseDto>(
       '/canton/api/prepare_transfer_preapproval',
       {}
     );
+    // Инвалидируем кеш после preapproval
+    this.invalidateMeCache();
+    return result;
   }
 
   /**
@@ -338,10 +389,29 @@ export class CantonService {
       );
     }
 
-    return await this.client.post<CantonPrepareTransactionResponseDto>(
+    const result = await this.client.post<CantonPrepareTransactionResponseDto>(
       '/canton/api/prepare_amulet_transfer',
       params
     );
+    
+    // Инвалидируем кеш после подготовки трансфера
+    this.invalidateMeCache();
+    return result;
   }
+}
+
+// Singleton instance
+let cantonServiceInstance: CantonService | null = null;
+
+export function createCantonService(client: ApiClient): CantonService {
+  cantonServiceInstance = new CantonService(client);
+  return cantonServiceInstance;
+}
+
+export function getCantonService(): CantonService {
+  if (!cantonServiceInstance) {
+    throw new Error('CantonService not initialized. Call createCantonService first or use SDK within SupaProvider.');
+  }
+  return cantonServiceInstance;
 }
 

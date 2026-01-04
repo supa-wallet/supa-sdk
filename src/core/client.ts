@@ -12,10 +12,17 @@ export interface ClientConfig {
   getAccessToken?: () => Promise<string | null>;
 }
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
 export class ApiClient {
   private client: AxiosInstance;
   private getAccessToken?: () => Promise<string | null>;
   private nodeIdentifier: string;
+  private cache: Map<string, CacheEntry<any>> = new Map();
+  private cacheTTL: number = 5 * 60 * 1000; // 5 minutes default TTL
 
   constructor(config: ClientConfig = { nodeIdentifier: '' }) {
     const baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi';

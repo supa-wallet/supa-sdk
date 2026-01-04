@@ -108,6 +108,9 @@ export function useCanton(): UseCantonReturn {
   // Flag to prevent multiple registration checks
   const hasCheckedRegistration = useRef(false);
   
+  // Flag to track if getMe was auto-called
+  const hasFetchedCantonUser = useRef(false);
+  
   // Promise to prevent multiple transfer preapproval setups
   const preapprovalPromise = useRef<Promise<void> | null>(null);
   
@@ -130,6 +133,50 @@ export function useCanton(): UseCantonReturn {
       checkRegistration();
     }
   }, [authenticated, stellarWallet]);
+
+  // Auto-fetch Canton user info after registration
+  useEffect(() => {
+    if (authenticated && stellarWallet && isRegistered && !hasFetchedCantonUser.current) {
+      hasFetchedCantonUser.current = true;
+      console.log('[Supa SDK] 🔍 Auto-fetching Canton user info...');
+      
+      const fetchUserInfo = async () => {
+        try {
+          const user = await cantonService.getMe();
+          setCantonUser(user);
+          
+          console.log('[Supa SDK] Canton user info:', {
+            transferPreapprovalSet: user.transferPreapprovalSet,
+            preapprovalAttempted: preapprovalAttempted.current,
+            preapprovalPromise: !!preapprovalPromise.current,
+            stellarWallet: !!stellarWallet,
+          });
+          
+          // Automatically setup transfer preapproval in background if not set and not attempted yet
+          if (!user.transferPreapprovalSet && !preapprovalAttempted.current && !preapprovalPromise.current && stellarWallet) {
+            console.log('[Supa SDK] 🔄 Starting automatic transfer preapproval setup...');
+            preapprovalAttempted.current = true;
+            
+            // Run in background without blocking
+            setupTransferPreapproval().catch(err => {
+              console.warn('[Supa SDK] ❌ Failed to automatically setup transfer preapproval:', err);
+            });
+          } else {
+            console.log('[Supa SDK] ⏭️ Skipping preapproval setup. Reasons:', {
+              transferPreapprovalAlreadySet: user.transferPreapprovalSet,
+              alreadyAttempted: preapprovalAttempted.current,
+              promiseInProgress: !!preapprovalPromise.current,
+              noStellarWallet: !stellarWallet,
+            });
+          }
+        } catch (err) {
+          console.error('[Supa SDK] Failed to fetch Canton user info:', err);
+        }
+      };
+      
+      fetchUserInfo();
+    }
+  }, [authenticated, stellarWallet, isRegistered, cantonService]);
 
   const checkRegistration = async () => {
     try {
@@ -351,7 +398,7 @@ export function useCanton(): UseCantonReturn {
         // Step 1: Prepare transfer preapproval
         const prepareResponse = await cantonService.prepareTransferPreapproval();
 
-        // Step 2: Sign hash with modal (skipModal for automatic flow)
+        // Step 2: Sign hash automatically without modal (background flow)
         const hashHex = base64ToHex(prepareResponse.hash);
         const signResult = await signRawHashWithModal(
           {
@@ -404,12 +451,22 @@ export function useCanton(): UseCantonReturn {
         const user = await cantonService.getMe();
         setCantonUser(user);
         
-        // Automatically setup transfer preapproval if not set and not attempted yet
-        if (!user.transferPreapprovalSet && !preapprovalAttempted.current && !preapprovalPromise.current) {
+        console.log('[Supa SDK] Canton user info:', {
+          transferPreapprovalSet: user.transferPreapprovalSet,
+          preapprovalAttempted: preapprovalAttempted.current,
+          preapprovalPromise: !!preapprovalPromise.current,
+          stellarWallet: !!stellarWallet,
+        });
+        
+        // Automatically setup transfer preapproval in background if not set and not attempted yet
+        if (!user.transferPreapprovalSet && !preapprovalAttempted.current && !preapprovalPromise.current && stellarWallet) {
+          console.log('[Supa SDK] 🔄 Starting automatic transfer preapproval setup...');
           // Run in background without blocking the return
           setupTransferPreapproval().catch(err => {
-            console.warn('Failed to automatically setup transfer preapproval:', err);
+            console.warn('[Supa SDK] ❌ Failed to automatically setup transfer preapproval:', err);
           });
+        } else {
+          console.log('[Supa SDK] ⏭️ Skipping preapproval setup');
         }
         
         return user;
@@ -423,7 +480,7 @@ export function useCanton(): UseCantonReturn {
 
     getMePromise.current = promise;
     return promise;
-  }, [cantonService, setupTransferPreapproval]);
+  }, [cantonService, setupTransferPreapproval, stellarWallet]);
 
   const getActiveContracts = useCallback(async (templateIds?: string[]): Promise<CantonActiveContractsResponseDto> => {
     return await cantonService.getActiveContracts(templateIds);

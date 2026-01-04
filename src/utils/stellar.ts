@@ -94,7 +94,7 @@ export const getPublicKeyBase64 = (wallet: StellarWallet | any): string => {
   }
   
   if (!publicKey) {
-    throw new Error('Public key not found in wallet. Make sure you have a Stellar wallet created in Privy.');
+    throw new Error('Public key not found in wallet. Stellar wallet is still being created. Please wait...');
   }
 
   // Validate publicKey format

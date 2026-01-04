@@ -160,14 +160,14 @@ export * from './utils/stellar';
  * Canton Network service for direct API access (advanced usage)
  * @see {@link CantonService}
  */
-export { CantonService } from './services/cantonService';
+export { CantonService, getCantonService } from './services/cantonService';
 export type { CantonRegisterParams, CantonTapParams, CantonSubmitPreparedOptions } from './services/cantonService';
 
 /**
  * Backend API service for direct access (advanced usage)
  * @see {@link ApiService}
  */
-export { ApiService } from './services/apiService';
+export { ApiService, getApiService } from './services/apiService';
 
 // ===== Advanced: HTTP Client =====
 /**

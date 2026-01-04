@@ -3,8 +3,8 @@ import { PrivyProvider, PrivyClientConfig } from '@privy-io/react-auth';
 import { SmartWalletsProvider } from '@privy-io/react-auth/smart-wallets';
 import { Buffer } from 'buffer';
 import { createApiClient, ApiClient } from '../core/client';
-import { CantonService } from '../services/cantonService';
-import { ApiService } from '../services/apiService';
+import { CantonService, createCantonService } from '../services/cantonService';
+import { ApiService, createApiService } from '../services/apiService';
 import { ConfirmationModal, SignMessageModal, SignTransactionModal } from '../components/ConfirmationModal';
 
 // Initialize Buffer polyfill for browser (required by Privy SDK)
@@ -23,7 +23,7 @@ export interface SupaConfig {
     accentColor?: string;
     logo?: string;
   };
-  loginMethods?: Array<'email' | 'wallet' | 'google' | 'twitter' | 'discord' | 'github' | 'linkedin'>;
+  loginMethods?: Array<'email' | 'wallet' | 'google' | 'twitter' | 'discord' | 'github' | 'linkedin' | 'telegram'>;
   smartWallets?: {
     enabled?: boolean;
     paymasterContext?: {
@@ -39,6 +39,10 @@ export interface SupaConfig {
       };
     };
   };
+  /** Default chain for smart wallets and transactions */
+  defaultChain?: any;
+  /** Supported chains for the app */
+  supportedChains?: any[];
 }
 export interface ConfirmModalOptions {
   title?: string;
@@ -120,8 +124,8 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
       nodeIdentifier: config.nodeIdentifier,
     });
 
-    const cantonService = new CantonService(apiClient);
-    const apiService = new ApiService(apiClient);
+    const cantonService = createCantonService(apiClient);
+    const apiService = createApiService(apiClient);
 
     setServices({ apiClient, cantonService, apiService });
   }, [config]);
@@ -170,10 +174,12 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
   const theme = config.appearance?.theme || 'light';
   const themeClass = theme === 'dark' ? 'privy-dark' : 'privy-light';
 
-  // Privy configuration
+  // Privy configuration - following official example structure
   const privyConfig: PrivyClientConfig = {
     embeddedWallets: {
-      showWalletUIs: true,
+      ethereum: {
+        createOnLogin: 'users-without-wallets',
+      },
     },
     appearance: {
       theme,
@@ -181,6 +187,8 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
       logo: config.appearance?.logo,
     },
     loginMethods: config.loginMethods || ['email', 'wallet'],
+    defaultChain: config.defaultChain,
+    supportedChains: config.supportedChains,
   };
 
   const contextValue: SupaContextValue = {

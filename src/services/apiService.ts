@@ -43,16 +43,86 @@ import type {
 } from '../core/types';
 
 export class ApiService {
+  private userMeCache: UserResponseDto | null = null;
+  private userMeCacheTimestamp: number = 0;
+  private userMePendingPromise: Promise<UserResponseDto> | null = null;
+  
+  private supaPointsBalanceCache: SupaPointsBalanceResponseDto | null = null;
+  private supaPointsBalanceCacheTimestamp: number = 0;
+  private supaPointsBalancePendingPromise: Promise<SupaPointsBalanceResponseDto> | null = null;
+  
+  private privyBalanceCache: any | null = null;
+  private privyBalanceCacheTimestamp: number = 0;
+  private privyBalancePendingPromise: Promise<any> | null = null;
+  
+  private readonly USER_CACHE_TTL = 5 * 60 * 1000; // 5 минут
+
   constructor(private client: ApiClient) {}
+
+  /**
+   * Инвалидация кеша /user/me
+   * Вызывается после операций, изменяющих данные пользователя
+   */
+  private invalidateUserCache(): void {
+    this.userMeCache = null;
+    this.userMeCacheTimestamp = 0;
+    this.userMePendingPromise = null;
+  }
+
+  /**
+   * Инвалидация кеша /supa_points/balance
+   */
+  private invalidateSupaPointsCache(): void {
+    this.supaPointsBalanceCache = null;
+    this.supaPointsBalanceCacheTimestamp = 0;
+    this.supaPointsBalancePendingPromise = null;
+  }
+
+  /**
+   * Инвалидация кеша /privy/balance
+   */
+  private invalidatePrivyBalanceCache(): void {
+    this.privyBalanceCache = null;
+    this.privyBalanceCacheTimestamp = 0;
+    this.privyBalancePendingPromise = null;
+  }
 
   // ============= User Methods =============
 
   /**
    * Get current user information
    * GET /user/me
+   * С мемоизацией на 5 минут и дедупликацией одновременных запросов
    */
-  async getCurrentUser(): Promise<UserResponseDto> {
-    return await this.client.get<UserResponseDto>('/user/me');
+  async getCurrentUser(force: boolean = false): Promise<UserResponseDto> {
+    const now = Date.now();
+    
+    // Если кеш актуален и не требуется принудительное обновление
+    if (!force && this.userMeCache && (now - this.userMeCacheTimestamp) < this.USER_CACHE_TTL) {
+      return this.userMeCache;
+    }
+
+    // Если запрос уже выполняется, возвращаем тот же промис
+    if (this.userMePendingPromise) {
+      return this.userMePendingPromise;
+    }
+
+    // Создаём промис для загрузки данных
+    this.userMePendingPromise = this.client.get<UserResponseDto>('/user/me')
+      .then((data) => {
+        // Обновляем кеш
+        this.userMeCache = data;
+        this.userMeCacheTimestamp = Date.now();
+        this.userMePendingPromise = null;
+        return data;
+      })
+      .catch((error) => {
+        // Сбрасываем pending при ошибке
+        this.userMePendingPromise = null;
+        throw error;
+      });
+    
+    return this.userMePendingPromise;
   }
 
   /**
@@ -263,9 +333,37 @@ export class ApiService {
   /**
    * Get SupaPoints balance
    * GET /supa_points/balance
+   * С мемоизацией на 5 минут и дедупликацией одновременных запросов
    */
-  async getSupaPointsBalance(): Promise<SupaPointsBalanceResponseDto> {
-    return await this.client.get<SupaPointsBalanceResponseDto>('/supa_points/balance');
+  async getSupaPointsBalance(force: boolean = false): Promise<SupaPointsBalanceResponseDto> {
+    const now = Date.now();
+    
+    // Если кеш актуален и не требуется принудительное обновление
+    if (!force && this.supaPointsBalanceCache && (now - this.supaPointsBalanceCacheTimestamp) < this.USER_CACHE_TTL) {
+      return this.supaPointsBalanceCache;
+    }
+
+    // Если запрос уже выполняется, возвращаем тот же промис
+    if (this.supaPointsBalancePendingPromise) {
+      return this.supaPointsBalancePendingPromise;
+    }
+
+    // Создаём промис для загрузки данных
+    this.supaPointsBalancePendingPromise = this.client.get<SupaPointsBalanceResponseDto>('/supa_points/balance')
+      .then((data) => {
+        // Обновляем кеш
+        this.supaPointsBalanceCache = data;
+        this.supaPointsBalanceCacheTimestamp = Date.now();
+        this.supaPointsBalancePendingPromise = null;
+        return data;
+      })
+      .catch((error) => {
+        // Сбрасываем pending при ошибке
+        this.supaPointsBalancePendingPromise = null;
+        throw error;
+      });
+    
+    return this.supaPointsBalancePendingPromise;
   }
 
   /**
@@ -286,7 +384,10 @@ export class ApiService {
    * POST /supa_points/daily_login
    */
   async dailyLogin(): Promise<DailyLoginResponseDto> {
-    return await this.client.post<DailyLoginResponseDto>('/supa_points/daily_login');
+    const result = await this.client.post<DailyLoginResponseDto>('/supa_points/daily_login');
+    // Инвалидируем кеш баланса после начисления
+    this.invalidateSupaPointsCache();
+    return result;
   }
 
   // ============= Paymaster Methods =============
@@ -304,12 +405,52 @@ export class ApiService {
   /**
    * Get Privy balance
    * GET /privy/balance
+   * С мемоизацией на 5 минут и дедупликацией одновременных запросов
    */
-  async getPrivyBalance(): Promise<any> {
-    return await this.client.get<any>('/privy/balance');
+  async getPrivyBalance(force: boolean = false): Promise<any> {
+    const now = Date.now();
+    
+    // Если кеш актуален и не требуется принудительное обновление
+    if (!force && this.privyBalanceCache && (now - this.privyBalanceCacheTimestamp) < this.USER_CACHE_TTL) {
+      return this.privyBalanceCache;
+    }
+
+    // Если запрос уже выполняется, возвращаем тот же промис
+    if (this.privyBalancePendingPromise) {
+      return this.privyBalancePendingPromise;
+    }
+
+    // Создаём промис для загрузки данных
+    this.privyBalancePendingPromise = this.client.get<any>('/privy/balance')
+      .then((data) => {
+        // Обновляем кеш
+        this.privyBalanceCache = data;
+        this.privyBalanceCacheTimestamp = Date.now();
+        this.privyBalancePendingPromise = null;
+        return data;
+      })
+      .catch((error) => {
+        // Сбрасываем pending при ошибке
+        this.privyBalancePendingPromise = null;
+        throw error;
+      });
+    
+    return this.privyBalancePendingPromise;
   }
 }
 
+// Singleton instance
+let apiServiceInstance: ApiService | null = null;
 
+export function createApiService(client: ApiClient): ApiService {
+  apiServiceInstance = new ApiService(client);
+  return apiServiceInstance;
+}
 
+export function getApiService(): ApiService {
+  if (!apiServiceInstance) {
+    throw new Error('ApiService not initialized. Call createApiService first or use SDK within SupaProvider.');
+  }
+  return apiServiceInstance;
+}
 
