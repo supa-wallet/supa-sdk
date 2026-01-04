@@ -9,6 +9,7 @@ For a quick overview of the code, check out the demo application in the `/demo` 
 ## Key Features
 
 - **Privy.io Authentication** - Email, wallet, and social login methods  
+- **EVM Smart Wallets** - Support for Privy Smart Wallets with gas sponsorship
 - **Built-in Confirmation Modals** - User-friendly signing confirmations
 - **Theme Support** - Light/dark mode with customizable appearance
 - **Automatic Polling** - Transaction completion tracking
@@ -25,6 +26,12 @@ npm install @supa/sdk
 yarn add @supa/sdk
 # or
 pnpm add @supa/sdk
+```
+
+#### Optional: For Smart Wallets support
+
+```bash
+npm install permissionless viem
 ```
 
 ### From local repository
@@ -528,8 +535,37 @@ npm publish
 ## Support
 
 - **Demo**: Full working example in `/demo` folder
+- **Documentation**: 
+  - [Smart Wallets Guide](./doc/smart-wallets.md)
+  - [Usage Guide](./doc/usage.md)
 - **Issues**: Report bugs on GitHub
 - **Examples**: Check out the demo application for complete implementation examples
+
+## Advanced Features
+
+### EVM Smart Wallets
+
+Supa SDK supports Privy Smart Wallets for EVM chains with gas sponsorship capabilities.
+
+```tsx
+<SupaProvider
+  config={{
+    privyAppId: 'your-app-id',
+    nodeIdentifier: 'node',
+    smartWallets: {
+      enabled: true,
+      paymasterContext: {
+        mode: 'SPONSORED',
+        // ... paymaster configuration
+      }
+    }
+  }}
+>
+  <YourApp />
+</SupaProvider>
+```
+
+See [Smart Wallets documentation](./doc/smart-wallets.md) for detailed setup and usage.
 
 ---
 

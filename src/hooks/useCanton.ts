@@ -107,6 +107,21 @@ export function useCanton(): UseCantonReturn {
   
   // Flag to prevent multiple registration checks
   const hasCheckedRegistration = useRef(false);
+  
+  // Promise to prevent multiple transfer preapproval setups
+  const preapprovalPromise = useRef<Promise<void> | null>(null);
+  
+  // Flag to track if preapproval was already attempted this session
+  const preapprovalAttempted = useRef(false);
+  
+  // Promise to prevent multiple registration attempts
+  const registrationPromise = useRef<Promise<void> | null>(null);
+  
+  // Promise to prevent multiple getMe calls
+  const getMePromise = useRef<Promise<CantonMeResponseDto> | null>(null);
+  
+  // Promise to prevent multiple getBalances calls
+  const getBalancesPromise = useRef<Promise<CantonWalletBalancesResponseDto> | null>(null);
 
   // Check registration status on mount (once)
   useEffect(() => {
@@ -187,69 +202,80 @@ export function useCanton(): UseCantonReturn {
   }, [stellarWallet, signRawHashWithModal]);
 
   const registerCanton = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    // If registration is already in progress, return the existing promise
+    if (registrationPromise.current) {
+      return registrationPromise.current;
+    }
 
-    try {
-      // Ensure Stellar wallet exists
-      let wallet: StellarWallet | null = stellarWallet;
-      
-      if (!wallet) {
-        const createdWallet = await createStellarWallet();
-        
-        if (createdWallet) {
-          wallet = createdWallet;
-        } else {
-          // Wait a bit for React state to update and try again
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-          // Try to get wallet from updated state
-          const freshWallets = getStellarWallets(user, wallets);
-          wallet = freshWallets[0] || null;
-        }
+    const promise = (async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Ensure Stellar wallet exists
+        let wallet: StellarWallet | null = stellarWallet;
         
         if (!wallet) {
-          throw new Error('Failed to create Stellar wallet. Please try again.');
-        }
-      }
-
-      // Get public key in base64
-      const publicKey = getPublicKeyBase64(wallet);
-
-      // Create sign function that uses modal wrapper
-      const signFunction = async (hashHex: string): Promise<string> => {
-        const result = await signRawHashWithModal(
-          {
-            address: wallet!.address,
-            chainType: 'stellar',
-            hash: hashHex as `0x${string}`,
-          },
-          {
-            skipModal: true,
+          const createdWallet = await createStellarWallet();
+          
+          if (createdWallet) {
+            wallet = createdWallet;
+          } else {
+            // Wait a bit for React state to update and try again
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Try to get wallet from updated state
+            const freshWallets = getStellarWallets(user, wallets);
+            wallet = freshWallets[0] || null;
           }
-        );
-        
-        if (!result) {
-          throw new Error('User rejected signature');
+          
+          if (!wallet) {
+            throw new Error('Failed to create Stellar wallet. Please try again.');
+          }
         }
-        
-        return result.signature;
-      };
 
-      // Register Canton wallet
-      await cantonService.registerCanton({
-        publicKey,
-        signFunction,
-      });
+        // Get public key in base64
+        const publicKey = getPublicKeyBase64(wallet);
 
-      setIsRegistered(true);
-    } catch (err: any) {
-      const error = new Error(`Failed to register Canton wallet: ${err.message}`);
-      setError(error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+        // Create sign function that uses modal wrapper
+        const signFunction = async (hashHex: string): Promise<string> => {
+          const result = await signRawHashWithModal(
+            {
+              address: wallet!.address,
+              chainType: 'stellar',
+              hash: hashHex as `0x${string}`,
+            },
+            {
+              skipModal: true,
+            }
+          );
+          
+          if (!result) {
+            throw new Error('User rejected signature');
+          }
+          
+          return result.signature;
+        };
+
+        // Register Canton wallet
+        await cantonService.registerCanton({
+          publicKey,
+          signFunction,
+        });
+
+        setIsRegistered(true);
+      } catch (err: any) {
+        const error = new Error(`Failed to register Canton wallet: ${err.message}`);
+        setError(error);
+        throw error;
+      } finally {
+        setLoading(false);
+        registrationPromise.current = null;
+      }
+    })();
+
+    registrationPromise.current = promise;
+    return promise;
   }, [stellarWallet, createStellarWallet, user, wallets, signRawHashWithModal, cantonService]);
 
   const tapDevnet = useCallback(async (
@@ -308,64 +334,95 @@ export function useCanton(): UseCantonReturn {
       throw new Error('No Stellar wallet found');
     }
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Step 1: Prepare transfer preapproval
-      const prepareResponse = await cantonService.prepareTransferPreapproval();
-
-      // Step 2: Sign hash with modal (skipModal for automatic flow)
-      const hashHex = base64ToHex(prepareResponse.hash);
-      const signResult = await signRawHashWithModal(
-        {
-          address: stellarWallet.address,
-          chainType: 'stellar',
-          hash: hashHex as `0x${string}`,
-        },
-        {
-          skipModal: true,
-        }
-      );
-
-      if (!signResult) {
-        throw new Error('User rejected transfer preapproval signature');
-      }
-
-      // Step 3: Submit signed preapproval
-      const signatureBase64 = hexToBase64(signResult.signature);
-      await cantonService.submitPreparedAndWait(
-        prepareResponse.hash,
-        signatureBase64
-      );
-
-      // Update user info to reflect new preapproval status
-      const user = await cantonService.getMe();
-      setCantonUser(user);
-      setIsRegistered(user.transferPreapprovalSet);
-    } catch (err: any) {
-      const error = new Error(`Failed to setup transfer preapproval: ${err.message}`);
-      setError(error);
-      throw error;
-    } finally {
-      setLoading(false);
+    // If already in progress, return the existing promise
+    if (preapprovalPromise.current) {
+      return preapprovalPromise.current;
     }
+
+    // Mark as attempted
+    preapprovalAttempted.current = true;
+
+    // Create a new promise for this setup attempt
+    const promise = (async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Step 1: Prepare transfer preapproval
+        const prepareResponse = await cantonService.prepareTransferPreapproval();
+
+        // Step 2: Sign hash with modal (skipModal for automatic flow)
+        const hashHex = base64ToHex(prepareResponse.hash);
+        const signResult = await signRawHashWithModal(
+          {
+            address: stellarWallet.address,
+            chainType: 'stellar',
+            hash: hashHex as `0x${string}`,
+          },
+          {
+            skipModal: true,
+          }
+        );
+
+        if (!signResult) {
+          throw new Error('User rejected transfer preapproval signature');
+        }
+
+        // Step 3: Submit signed preapproval and wait for completion with polling
+        const signatureBase64 = hexToBase64(signResult.signature);
+        await cantonService.submitPreparedAndWait(
+          prepareResponse.hash,
+          signatureBase64
+        );
+
+        // Update user info to reflect new preapproval status
+        const user = await cantonService.getMe();
+        setCantonUser(user);
+        setIsRegistered(user.transferPreapprovalSet);
+      } catch (err: any) {
+        const error = new Error(`Failed to setup transfer preapproval: ${err.message}`);
+        setError(error);
+        throw error;
+      } finally {
+        setLoading(false);
+        preapprovalPromise.current = null;
+      }
+    })();
+
+    preapprovalPromise.current = promise;
+    return promise;
   }, [stellarWallet, signRawHashWithModal, cantonService]);
 
   const getMe = useCallback(async (): Promise<CantonMeResponseDto> => {
-    const user = await cantonService.getMe();
-    setCantonUser(user);
-    
-    // Automatically setup transfer preapproval if not set
-    if (!user.transferPreapprovalSet) {
-      try {
-        await setupTransferPreapproval();
-      } catch (err) {
-        console.warn('Failed to automatically setup transfer preapproval:', err);
-      }
+    // If getMe is already in progress, return the existing promise
+    if (getMePromise.current) {
+      return getMePromise.current;
     }
-    
-    return user;
+
+    const promise = (async () => {
+      try {
+        const user = await cantonService.getMe();
+        setCantonUser(user);
+        
+        // Automatically setup transfer preapproval if not set and not attempted yet
+        if (!user.transferPreapprovalSet && !preapprovalAttempted.current && !preapprovalPromise.current) {
+          // Run in background without blocking the return
+          setupTransferPreapproval().catch(err => {
+            console.warn('Failed to automatically setup transfer preapproval:', err);
+          });
+        }
+        
+        return user;
+      } finally {
+        // Clear promise after a short delay to allow reuse
+        setTimeout(() => {
+          getMePromise.current = null;
+        }, 100);
+      }
+    })();
+
+    getMePromise.current = promise;
+    return promise;
   }, [cantonService, setupTransferPreapproval]);
 
   const getActiveContracts = useCallback(async (templateIds?: string[]): Promise<CantonActiveContractsResponseDto> => {
@@ -373,9 +430,26 @@ export function useCanton(): UseCantonReturn {
   }, [cantonService]);
 
   const getBalances = useCallback(async (): Promise<CantonWalletBalancesResponseDto> => {
-    const balances = await cantonService.getBalances();
-    setCantonBalances(balances);
-    return balances;
+    // If getBalances is already in progress, return the existing promise
+    if (getBalancesPromise.current) {
+      return getBalancesPromise.current;
+    }
+
+    const promise = (async () => {
+      try {
+        const balances = await cantonService.getBalances();
+        setCantonBalances(balances);
+        return balances;
+      } finally {
+        // Clear promise after a short delay to allow reuse
+        setTimeout(() => {
+          getBalancesPromise.current = null;
+        }, 100);
+      }
+    })();
+
+    getBalancesPromise.current = promise;
+    return promise;
   }, [cantonService]);
 
   const signMessage = useCallback(async (message: string): Promise<string> => {

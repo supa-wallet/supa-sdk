@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { PrivyProvider, PrivyClientConfig } from '@privy-io/react-auth';
+import { SmartWalletsProvider } from '@privy-io/react-auth/smart-wallets';
 import { Buffer } from 'buffer';
 import { createApiClient, ApiClient } from '../core/client';
 import { CantonService } from '../services/cantonService';
@@ -23,6 +24,21 @@ export interface SupaConfig {
     logo?: string;
   };
   loginMethods?: Array<'email' | 'wallet' | 'google' | 'twitter' | 'discord' | 'github' | 'linkedin'>;
+  smartWallets?: {
+    enabled?: boolean;
+    paymasterContext?: {
+      mode?: string;
+      calculateGasLimits?: boolean;
+      expiryDuration?: number;
+      sponsorshipInfo?: {
+        webhookData?: Record<string, any>;
+        smartAccountInfo?: {
+          name?: string;
+          version?: string;
+        };
+      };
+    };
+  };
 }
 export interface ConfirmModalOptions {
   title?: string;
@@ -183,53 +199,106 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
   const isSignMessageModal = modalState.type === 'signMessage';
   const isSignTransactionModal = modalState.type === 'signTransaction';
 
+  // Smart Wallets enabled check
+  const smartWalletsEnabled = config.smartWallets?.enabled ?? false;
+
   return (
     <PrivyProvider
       appId={config.privyAppId}
       clientId={config.privyClientId}
       config={privyConfig}
     >
-      <SupaContext.Provider value={contextValue}>
-        <div className={themeClass}>
-          {children}
+      {smartWalletsEnabled ? (
+        <SmartWalletsProvider
+          config={config.smartWallets?.paymasterContext ? {
+            paymasterContext: config.smartWallets.paymasterContext
+          } : undefined}
+        >
+          <SupaContext.Provider value={contextValue}>
+            <div className={themeClass}>
+              {children}
 
-          {/* Confirmation Modal */}
-          {isConfirmModal && modalState.options && (
-            <ConfirmationModal
-              open={isOpen}
-              onClose={handleReject}
-              onConfirm={handleConfirm}
-              onReject={handleReject}
-              loading={modalState.loading}
-              {...(modalState.options as ConfirmModalOptions)}
-            />
-          )}
+              {/* Confirmation Modal */}
+              {isConfirmModal && modalState.options && (
+                <ConfirmationModal
+                  open={isOpen}
+                  onClose={handleReject}
+                  onConfirm={handleConfirm}
+                  onReject={handleReject}
+                  loading={modalState.loading}
+                  {...(modalState.options as ConfirmModalOptions)}
+                />
+              )}
 
-          {/* Sign Message Modal */}
-          {isSignMessageModal && modalState.options && (
-            <SignMessageModal
-              open={isOpen}
-              onClose={handleReject}
-              onConfirm={handleConfirm}
-              onReject={handleReject}
-              loading={modalState.loading}
-              {...(modalState.options as SignMessageModalOptions)}
-            />
-          )}
+              {/* Sign Message Modal */}
+              {isSignMessageModal && modalState.options && (
+                <SignMessageModal
+                  open={isOpen}
+                  onClose={handleReject}
+                  onConfirm={handleConfirm}
+                  onReject={handleReject}
+                  loading={modalState.loading}
+                  {...(modalState.options as SignMessageModalOptions)}
+                />
+              )}
 
-          {/* Sign Transaction Modal */}
-          {isSignTransactionModal && modalState.options && (
-            <SignTransactionModal
-              open={isOpen}
-              onClose={handleReject}
-              onConfirm={handleConfirm}
-              onReject={handleReject}
-              loading={modalState.loading}
-              {...(modalState.options as SignTransactionOptions)}
-            />
-          )}
-        </div>
-      </SupaContext.Provider>
+              {/* Sign Transaction Modal */}
+              {isSignTransactionModal && modalState.options && (
+                <SignTransactionModal
+                  open={isOpen}
+                  onClose={handleReject}
+                  onConfirm={handleConfirm}
+                  onReject={handleReject}
+                  loading={modalState.loading}
+                  {...(modalState.options as SignTransactionOptions)}
+                />
+              )}
+            </div>
+          </SupaContext.Provider>
+        </SmartWalletsProvider>
+      ) : (
+        <SupaContext.Provider value={contextValue}>
+          <div className={themeClass}>
+            {children}
+
+            {/* Confirmation Modal */}
+            {isConfirmModal && modalState.options && (
+              <ConfirmationModal
+                open={isOpen}
+                onClose={handleReject}
+                onConfirm={handleConfirm}
+                onReject={handleReject}
+                loading={modalState.loading}
+                {...(modalState.options as ConfirmModalOptions)}
+              />
+            )}
+
+            {/* Sign Message Modal */}
+            {isSignMessageModal && modalState.options && (
+              <SignMessageModal
+                open={isOpen}
+                onClose={handleReject}
+                onConfirm={handleConfirm}
+                onReject={handleReject}
+                loading={modalState.loading}
+                {...(modalState.options as SignMessageModalOptions)}
+              />
+            )}
+
+            {/* Sign Transaction Modal */}
+            {isSignTransactionModal && modalState.options && (
+              <SignTransactionModal
+                open={isOpen}
+                onClose={handleReject}
+                onConfirm={handleConfirm}
+                onReject={handleReject}
+                loading={modalState.loading}
+                {...(modalState.options as SignTransactionOptions)}
+              />
+            )}
+          </div>
+        </SupaContext.Provider>
+      )}
     </PrivyProvider>
   );
 }

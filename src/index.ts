@@ -119,6 +119,13 @@ export type { UseConfirmModalReturn } from './hooks/useConfirmModal';
 export { useStellarWallet } from './hooks/useStellarWallet';
 export type { UseStellarWalletReturn } from './hooks/useStellarWallet';
 
+/**
+ * Smart Wallets hook (EVM)
+ * @see {@link useSmartWallets}
+ */
+export { useSmartWallets } from './hooks/useSmartWallets';
+export type { UseSmartWalletsReturn } from './hooks/useSmartWallets';
+
 // ===== UI Components =====
 /**
  * Confirmation modal components (for custom usage)

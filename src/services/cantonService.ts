@@ -78,7 +78,7 @@ export class CantonService {
       console.log('error', error);
       
       // If wallet already exists, it's OK - user is already registered
-      if (typeof error === 'object' && error !== null && 'message' in error && 
+      if (error?.error === 'CantonWalletAlreadyExistsError' || typeof error === 'object' && error !== null && 'message' in error && 
           (error as any).message === "Canton wallet already exists for the user.") {
         // Wallet exists, nothing more to do here
         return;

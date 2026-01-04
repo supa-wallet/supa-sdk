@@ -1,7 +1,7 @@
 {
   "name": "@supanovaapp/sdk",
-  "version": "0.2.1",
-  "description": "React SDK for Supa Backend + Privy.io integration with Canton Network support",
+  "version": "0.2.2",
+  "description": "React SDK for Supa Backend + Privy.io integration with Canton Network and EVM Smart Wallets support",
   "main": "./dist/index.cjs.js",
   "module": "./dist/index.esm.js",
   "types": "./dist/index.d.ts",
@@ -41,7 +41,10 @@
     "@headlessui/react": "^2.2.0",
     "@privy-io/react-auth": "^3.3.0",
     "axios": "^1.7.9",
-    "buffer": "^6.0.3"
+    "buffer": "^6.0.3",
+    "ox": "^0.8.0",
+    "permissionless": "^0.2.24",
+    "viem": "^2.21.54"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
