@@ -11,8 +11,10 @@ import { privyPublicKeyToCantonBase64 } from './converters';
 export interface StellarWallet {
   /** Stellar address (public key in Stellar format) */
   address: string;
-  /** Raw public key in hex format */
-  publicKey: string;
+  /** Raw public key in hex format (camelCase) */
+  publicKey?: string;
+  /** Raw public key in hex format (snake_case from Privy API) */
+  public_key?: string;
   /** Chain type, always 'stellar' for Stellar wallets */
   chainType: 'stellar';
   /** Wallet client type (e.g., 'privy') */
@@ -86,11 +88,12 @@ export const getPublicKeyBase64 = (wallet: StellarWallet | any): string => {
   }
 
   // Try to get publicKey from different possible locations
-  let publicKey = wallet.publicKey;
+  // Privy uses snake_case (public_key) in API responses
+  let publicKey = wallet.publicKey || wallet.public_key;
   
   // If not found directly, check nested properties (Privy might have different structures)
   if (!publicKey && wallet.linkedAccount) {
-    publicKey = wallet.linkedAccount.publicKey;
+    publicKey = wallet.linkedAccount.publicKey || wallet.linkedAccount.public_key;
   }
   
   if (!publicKey) {

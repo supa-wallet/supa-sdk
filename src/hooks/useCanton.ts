@@ -20,6 +20,10 @@ import type {
 } from '../core/types';
 import type { CantonSubmitPreparedOptions } from '../services/cantonService';
 
+// Global flags to prevent duplicate operations across multiple hook instances
+let globalPreapprovalAttempted = false;
+let globalPreapprovalPromise: Promise<void> | null = null;
+
 export interface UseCantonReturn {
   /** First Stellar wallet (primary) */
   stellarWallet: StellarWallet | null;
@@ -138,35 +142,20 @@ export function useCanton(): UseCantonReturn {
   useEffect(() => {
     if (authenticated && stellarWallet && isRegistered && !hasFetchedCantonUser.current) {
       hasFetchedCantonUser.current = true;
-      console.log('[Supa SDK] 🔍 Auto-fetching Canton user info...');
       
       const fetchUserInfo = async () => {
         try {
           const user = await cantonService.getMe();
           setCantonUser(user);
           
-          console.log('[Supa SDK] Canton user info:', {
-            transferPreapprovalSet: user.transferPreapprovalSet,
-            preapprovalAttempted: preapprovalAttempted.current,
-            preapprovalPromise: !!preapprovalPromise.current,
-            stellarWallet: !!stellarWallet,
-          });
-          
           // Automatically setup transfer preapproval in background if not set and not attempted yet
-          if (!user.transferPreapprovalSet && !preapprovalAttempted.current && !preapprovalPromise.current && stellarWallet) {
-            console.log('[Supa SDK] 🔄 Starting automatic transfer preapproval setup...');
-            preapprovalAttempted.current = true;
+          // Use global flags to prevent duplicate calls across multiple hook instances
+          if (!user.transferPreapprovalSet && !globalPreapprovalAttempted && !globalPreapprovalPromise && stellarWallet) {
+            globalPreapprovalAttempted = true;
             
             // Run in background without blocking
             setupTransferPreapproval().catch(err => {
               console.warn('[Supa SDK] ❌ Failed to automatically setup transfer preapproval:', err);
-            });
-          } else {
-            console.log('[Supa SDK] ⏭️ Skipping preapproval setup. Reasons:', {
-              transferPreapprovalAlreadySet: user.transferPreapprovalSet,
-              alreadyAttempted: preapprovalAttempted.current,
-              promiseInProgress: !!preapprovalPromise.current,
-              noStellarWallet: !stellarWallet,
             });
           }
         } catch (err) {
@@ -200,8 +189,29 @@ export function useCanton(): UseCantonReturn {
       const result = await createWallet({ chainType: 'stellar' });
       
       if (result) {
-        return result as unknown as StellarWallet;
+        // CRITICAL: createWallet returns { user, wallet }, we need the wallet object
+        const createdWallet = (result as any).wallet || result;
+        
+        // Check if we got public_key in the created wallet
+        if (createdWallet.public_key || createdWallet.publicKey) {
+          console.log('[Supa SDK] ✅ Stellar wallet created successfully');
+          return createdWallet as StellarWallet;
+        }
+        
+        // Fallback: Wait for React to update wallets from useWallets hook
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Get fresh wallet from Privy's state
+        const freshWallets = getStellarWallets(user, wallets);
+        
+        if (freshWallets[0]) {
+          console.log('[Supa SDK] ✅ Stellar wallet created successfully');
+          return freshWallets[0];
+        }
+        
+        return createdWallet as StellarWallet;
       }
+      
       return null;
     } catch (err: any) {
       const error = new Error(`Failed to create Stellar wallet: ${err.message}`);
@@ -210,7 +220,7 @@ export function useCanton(): UseCantonReturn {
     } finally {
       setLoading(false);
     }
-  }, [authenticated, createWallet]);
+  }, [authenticated, createWallet, user, wallets]);
 
   const signHash = useCallback(async (hashBase64: string): Promise<string> => {
     if (!stellarWallet) {
@@ -269,7 +279,7 @@ export function useCanton(): UseCantonReturn {
             wallet = createdWallet;
           } else {
             // Wait a bit for React state to update and try again
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
             // Try to get wallet from updated state
             const freshWallets = getStellarWallets(user, wallets);
@@ -281,27 +291,91 @@ export function useCanton(): UseCantonReturn {
           }
         }
 
-        // Get public key in base64
-        const publicKey = getPublicKeyBase64(wallet);
-
-        // Create sign function that uses modal wrapper
-        const signFunction = async (hashHex: string): Promise<string> => {
-          const result = await signRawHashWithModal(
-            {
-              address: wallet!.address,
-              chainType: 'stellar',
-              hash: hashHex as `0x${string}`,
-            },
-            {
-              skipModal: true,
+        // Poll for public key availability with multiple attempts
+        let publicKey: string | null = null;
+        let attempts = 0;
+        const maxAttempts = 10; // 10 attempts * 2 seconds = 20 seconds max
+        
+        while (attempts < maxAttempts && !publicKey) {
+          try {
+            publicKey = getPublicKeyBase64(wallet);
+            break;
+          } catch (err: any) {
+            attempts++;
+            
+            if (attempts >= maxAttempts) {
+              throw new Error(`${err.message} After ${maxAttempts} attempts, the Stellar wallet is still not ready. Please refresh the app and try again.`);
             }
-          );
+            
+            // Wait 2 seconds before retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Refresh wallet from current state
+            const freshWallets = getStellarWallets(user, wallets);
+            if (freshWallets[0]) {
+              wallet = freshWallets[0];
+            }
+          }
+        }
+
+        if (!publicKey) {
+          throw new Error('Failed to obtain public key from Stellar wallet');
+        }
+
+        // Give Privy time to initialize wallet proxy for signing
+        // Note: useSupa handles proper step separation with React re-renders,
+        // so wallet should already be in Privy state when this is called
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Create sign function with retry logic for wallet proxy initialization
+        const signFunction = async (hashHex: string): Promise<string> => {
+          let signAttempts = 0;
+          const maxSignAttempts = 5;
           
-          if (!result) {
-            throw new Error('User rejected signature');
+          console.log('[Supa SDK] 🔐 Signing with wallet:', wallet!.address);
+          
+          while (signAttempts < maxSignAttempts) {
+            try {
+              console.log(`[Supa SDK] 🔐 Sign attempt ${signAttempts + 1}/${maxSignAttempts}...`);
+              const result = await signRawHashWithModal(
+                {
+                  address: wallet!.address,
+                  chainType: 'stellar',
+                  hash: hashHex as `0x${string}`,
+                },
+                {
+                  skipModal: true,
+                }
+              );
+              
+              if (!result) {
+                throw new Error('User rejected signature');
+              }
+              
+              console.log('[Supa SDK] ✅ Signature obtained successfully');
+              return result.signature;
+            } catch (signErr: any) {
+              signAttempts++;
+              console.log(`[Supa SDK] ❌ Sign attempt ${signAttempts} failed:`, signErr.message);
+              
+              // If wallet not found/not initialized, wait and retry with progressive delay
+              if (signErr.message?.includes('Wallet not found') || 
+                  signErr.message?.includes('not initialized') ||
+                  signErr.message?.includes('proxy') ||
+                  signErr.message?.includes('Wallet')) {
+                if (signAttempts < maxSignAttempts) {
+                  // Progressive delay: 2s, 3s, then 4s for remaining attempts
+                  const delay = signAttempts === 1 ? 2000 : signAttempts === 2 ? 3000 : 4000;
+                  console.log(`[Supa SDK] ⏳ Waiting ${delay/1000}s before retry...`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  continue;
+                }
+              }
+              throw signErr;
+            }
           }
           
-          return result.signature;
+          throw new Error('Failed to sign after multiple attempts');
         };
 
         // Register Canton wallet
@@ -310,8 +384,10 @@ export function useCanton(): UseCantonReturn {
           signFunction,
         });
 
+        console.log('[Supa SDK] ✅ Canton wallet registered successfully');
         setIsRegistered(true);
       } catch (err: any) {
+        console.error('[Supa SDK] ❌ Canton registration failed:', err);
         const error = new Error(`Failed to register Canton wallet: ${err.message}`);
         setError(error);
         throw error;
@@ -381,12 +457,23 @@ export function useCanton(): UseCantonReturn {
       throw new Error('No Stellar wallet found');
     }
 
-    // If already in progress, return the existing promise
+    // If already in progress (global), return the existing promise
+    if (globalPreapprovalPromise) {
+      return globalPreapprovalPromise;
+    }
+
+    // Also check local ref for this instance
     if (preapprovalPromise.current) {
       return preapprovalPromise.current;
     }
 
-    // Mark as attempted
+    // Check if already set (avoid unnecessary API calls)
+    if (cantonUser?.transferPreapprovalSet) {
+      return;
+    }
+
+    // Mark as attempted globally
+    globalPreapprovalAttempted = true;
     preapprovalAttempted.current = true;
 
     // Create a new promise for this setup attempt
@@ -395,6 +482,13 @@ export function useCanton(): UseCantonReturn {
       setError(null);
 
       try {
+        // Double check with fresh user data before calling prepare
+        const freshUser = await cantonService.getMe();
+        if (freshUser.transferPreapprovalSet) {
+          setCantonUser(freshUser);
+          return; // Already set, skip
+        }
+
         // Step 1: Prepare transfer preapproval
         const prepareResponse = await cantonService.prepareTransferPreapproval();
 
@@ -436,7 +530,14 @@ export function useCanton(): UseCantonReturn {
       }
     })();
 
+    globalPreapprovalPromise = promise;
     preapprovalPromise.current = promise;
+    
+    // Clear global promise when done
+    promise.finally(() => {
+      globalPreapprovalPromise = null;
+    });
+    
     return promise;
   }, [stellarWallet, signRawHashWithModal, cantonService]);
 
@@ -451,23 +552,8 @@ export function useCanton(): UseCantonReturn {
         const user = await cantonService.getMe();
         setCantonUser(user);
         
-        console.log('[Supa SDK] Canton user info:', {
-          transferPreapprovalSet: user.transferPreapprovalSet,
-          preapprovalAttempted: preapprovalAttempted.current,
-          preapprovalPromise: !!preapprovalPromise.current,
-          stellarWallet: !!stellarWallet,
-        });
-        
-        // Automatically setup transfer preapproval in background if not set and not attempted yet
-        if (!user.transferPreapprovalSet && !preapprovalAttempted.current && !preapprovalPromise.current && stellarWallet) {
-          console.log('[Supa SDK] 🔄 Starting automatic transfer preapproval setup...');
-          // Run in background without blocking the return
-          setupTransferPreapproval().catch(err => {
-            console.warn('[Supa SDK] ❌ Failed to automatically setup transfer preapproval:', err);
-          });
-        } else {
-          console.log('[Supa SDK] ⏭️ Skipping preapproval setup');
-        }
+        // Note: Auto preapproval is handled by the useEffect hook after registration
+        // to avoid duplicate calls
         
         return user;
       } finally {

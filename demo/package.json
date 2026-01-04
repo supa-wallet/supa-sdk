@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@floating-ui/react": "^0.26.22",
-    "@supanovaapp/sdk": "file:../supanovaapp-sdk-0.2.4.tgz",
+    "@supanovaapp/sdk": "^0.2.5",
     "lucide-react": "^0.554.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
