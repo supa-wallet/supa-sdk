@@ -43,7 +43,8 @@ export default defineConfig(({ mode }) => ({
       external: (id) => {
         if (id === 'react' || id.startsWith('react/')) return true;
         if (id === 'react-dom' || id.startsWith('react-dom/')) return true;
-        // Solana packages are optional peer deps of Privy
+        // Bundle compute-budget and token-2022, externalize other Solana packages
+        if (id === '@solana-program/compute-budget' || id === '@solana-program/token-2022') return false;
         if (id.startsWith('@solana-program/') || id.startsWith('@solana/')) return true;
         return false;
       },
