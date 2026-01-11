@@ -16,6 +16,14 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   optimizeDeps: {
+    include: [
+      '@solana-program/token-2022',
+      '@solana-program/compute-budget',
+      '@solana-program/memo',
+      '@solana-program/system',
+      '@solana-program/token',
+      '@solana/kit',
+    ],
     esbuildOptions: {
       define: {
         global: 'globalThis',

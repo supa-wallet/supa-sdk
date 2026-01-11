@@ -5,13 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Supa SDK Demo</title>
+    <style>
+      /* Prevent flash of unstyled content */
+      body {
+        background-color: #0a0a0c;
+        color: #fafafa;
+      }
+      @media (prefers-color-scheme: light) {
+        body {
+          background-color: #ffffff;
+          color: #1a1a1a;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
-
-
-

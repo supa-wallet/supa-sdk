@@ -25,11 +25,27 @@ export type TimeInterval =
 export interface CantonPrepareRegisterRequestDto {
   /** Base64 stellar public key from privy */
   publicKey: string;
+  /** Optional invite code */
+  inviteCode?: string;
+}
+
+/** Cost estimation for Canton transaction */
+export interface CantonCostEstimationDto {
+  /** Timestamp when the estimation was calculated (ISO 8601) */
+  estimationTimestamp: string;
+  /** Confirmation request traffic cost estimation in micro-units */
+  confirmationRequestTrafficCostEstimation: number;
+  /** Confirmation response traffic cost estimation in micro-units */
+  confirmationResponseTrafficCostEstimation: number;
+  /** Total traffic cost estimation in micro-units */
+  totalTrafficCostEstimation: number;
 }
 
 export interface CantonPrepareTransactionResponseDto {
   /** Base64 hash to be signed by the user */
   hash: string;
+  /** Estimated cost of the transaction (optional) */
+  costEstimation?: CantonCostEstimationDto;
 }
 
 export interface CantonSubmitRegisterRequestDto {
@@ -261,6 +277,42 @@ export interface CantonPrepareAmuletTransferRequestDto {
   amount: string;
   /** Optional memo for the transfer */
   memo?: string;
+}
+
+// ============= Canton Incoming Transfers Types =============
+
+/** Canton instrument/token info for incoming transfers */
+export interface CantonInstrumentDto {
+  /** Admin party ID of the instrument */
+  admin: string;
+  /** Token identifier (e.g., "Amulet" for Canton Coin, "CBTC" for wrapped BTC) */
+  id: string;
+}
+
+/** Incoming transfer information */
+export interface CantonIncomingTransferDto {
+  /** Instrument details (token info) */
+  instrument: CantonInstrumentDto;
+  /** Contract ID of the transfer instruction (use this to approve or reject) */
+  contractId: string;
+  /** Sender party ID */
+  sender: string;
+  /** Receiver party ID */
+  receiver: string;
+  /** Amount to be transferred as a string */
+  amount: string;
+  /** Date when the transfer was sent/requested (ISO 8601) */
+  requestedAt: string;
+  /** Date before which the transfer must be executed (ISO 8601) */
+  executeBefore: string;
+}
+
+/** Request for preparing response to incoming transfer */
+export interface CantonPrepareResponseIncomingTransferRequestDto {
+  /** Contract ID received from fetching incoming transfers */
+  contractId: string;
+  /** Whether to accept (approve) or reject the incoming transfer */
+  accept: boolean;
 }
 
 // ============= User Types =============

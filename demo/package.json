@@ -10,17 +10,20 @@
   },
   "dependencies": {
     "@floating-ui/react": "^0.26.22",
-    "@supanovaapp/sdk": "^0.2.5",
+    "@solana-program/compute-budget": "^0.6.0",
+    "@solana-program/memo": "^0.8.0",
+    "@solana-program/system": "^0.8.0",
+    "@solana-program/token": "^0.6.0",
+    "@solana-program/token-2022": "^0.6.0",
+    "@solana/kit": "^3.0.3",
+    "@supanovaapp/sdk": "file:..",
     "lucide-react": "^0.554.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "styled-components": "^6.1.13"
   },
-  "peerDependencies": {
-    "@solana-program/memo": "^0.10.0",
-    "@solana-program/system": "^0.10.0",
-    "@solana-program/token": "^0.9.0",
-    "@solana/kit": "^5.1.0"
+  "overrides": {
+    "@solana/kit": "^3.0.3"
   },
   "devDependencies": {
     "@types/react": "^19.0.2",

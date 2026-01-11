@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect } from 'react';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { darkTheme, lightTheme, type Theme } from './theme';
+import { GlobalStyles } from './GlobalStyles';
 
 type ThemeMode = 'light' | 'dark';
 
@@ -38,6 +39,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const theme = mode === 'dark' ? darkTheme : lightTheme;
 
+  // Apply theme to body synchronously before paint
+  useLayoutEffect(() => {
+    document.body.style.backgroundColor = theme.colors.bg.primary;
+    document.body.style.color = theme.colors.text.primary;
+  }, [theme]);
+
   useEffect(() => {
     // Save theme to localStorage
     localStorage.setItem('theme-mode', mode);
@@ -61,6 +68,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   return (
     <ThemeContext.Provider value={value}>
       <StyledThemeProvider theme={theme}>
+        <GlobalStyles key={mode} />
         {children}
       </StyledThemeProvider>
     </ThemeContext.Provider>

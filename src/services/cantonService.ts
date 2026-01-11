@@ -16,6 +16,9 @@ import type {
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonPrepareAmuletTransferRequestDto,
+  CantonIncomingTransferDto,
+  CantonPrepareResponseIncomingTransferRequestDto,
+  CantonCostEstimationDto,
 } from '../core/types';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 
@@ -27,6 +30,9 @@ export type {
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonPrepareAmuletTransferRequestDto,
+  CantonIncomingTransferDto,
+  CantonPrepareResponseIncomingTransferRequestDto,
+  CantonCostEstimationDto,
 };
 
 export interface CantonRegisterParams {
@@ -34,6 +40,8 @@ export interface CantonRegisterParams {
   publicKey: string;
   /** Function to sign hash (returns signature in hex) */
   signFunction: (hashHex: string) => Promise<string>;
+  /** Optional invite code */
+  inviteCode?: string;
 }
 
 export interface CantonTapParams {
@@ -48,6 +56,8 @@ export interface CantonSubmitPreparedOptions {
   timeout?: number;
   /** Polling interval in milliseconds (default: 1000) */
   pollInterval?: number;
+  /** Callback to receive cost estimation before signing (optional) */
+  onCostEstimation?: (costEstimation: CantonCostEstimationDto | undefined) => void | Promise<void>;
 }
 
 export class CantonService {
@@ -77,37 +87,58 @@ export class CantonService {
    * 
    * @param params Registration parameters
    */
-  async registerCanton(params: CantonRegisterParams, errCounter = 0): Promise<void> {
+  async registerCanton(params: CantonRegisterParams, errCounter = 0): Promise<any> {
     if (errCounter > 4) throw new Error('Failed to register Canton wallet after multiple attempts');
-    const { publicKey, signFunction } = params;
+    const { publicKey, signFunction, inviteCode } = params;
     
     // Step 1: Prepare registration - get hash to sign
-    let prepareResponse;
-    try {
-      prepareResponse = await this.client.post<CantonPrepareTransactionResponseDto>(
-        '/canton/register/prepare',
-        { publicKey } as CantonPrepareRegisterRequestDto
-      );  
-    } catch (error: any) {
-      console.log('error', error);
-      
-      // If wallet already exists, it's OK - user is already registered
-      if (error?.error === 'CantonWalletAlreadyExistsError' || typeof error === 'object' && error !== null && 'message' in error && 
-          (error as any).message === "Canton wallet already exists for the user.") {
-        // Wallet exists, nothing more to do here
-        return;
+    // let prepareResponse;
+    const getResponse = async () => {
+      try {
+        const requestBody: CantonPrepareRegisterRequestDto = { publicKey };
+        if (inviteCode) {
+          requestBody.inviteCode = inviteCode;
+        }
+        
+        const res = await this.client.post<CantonPrepareTransactionResponseDto>(
+          '/canton/register/prepare',
+          requestBody
+        );
+        return res;
+      } catch (error: any) {
+        console.log('[Canton Service] Registration prepare error:', error);
+        
+        // If wallet already exists, it's OK - user is already registered
+        // Check for both error code 400 and specific error message/type
+        if (error?.statusCode === 400 && 
+            (error?.error === 'CantonWalletAlreadyExistsError' || 
+             (typeof error?.message === 'string' && error.message.toLowerCase().includes("canton wallet already exists")))) {
+          console.log('[Canton Service] ✅ Canton wallet already exists - treating as registered');
+          return 'registered';
+        }
+        
+        // Don't retry for mainnet access errors - these are permission issues
+        if (error?.error === 'CantonMainnetNodeNotEnabledForThisUser' || 
+            error?.message?.includes('enable mainnet node access')) {
+          throw error;
+        }
+        
+        // Retry for other errors after delay
+        console.log('[Canton Service] Retrying registration after error...');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return this.registerCanton(params, errCounter + 1);
       }
-      
-      // Don't retry for mainnet access errors - these are permission issues
-      if (error?.error === 'CantonMainnetNodeNotEnabledForThisUser' || 
-          error?.message?.includes('enable mainnet node access')) {
-        throw error;
-      }
-      
-      // Retry for other errors after delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      return this.registerCanton(params, errCounter + 1);
     }
+
+    const prepareResponse = await getResponse();
+    if (!prepareResponse) {
+      return;
+    }
+
+    if (prepareResponse === 'registered') {
+      return 'registered';
+    }
+    
 
     const hashBase64 = prepareResponse.hash;
 
@@ -155,6 +186,11 @@ export class CantonService {
       '/canton/devnet/tap',
       { amount } as CantonPrepareTapRequestDto
     );
+
+    // Call onCostEstimation callback if provided
+    if (options?.onCostEstimation && prepareResponse.costEstimation) {
+      await options.onCostEstimation(prepareResponse.costEstimation);
+    }
 
     const hashBase64 = prepareResponse.hash;
 
@@ -390,13 +426,39 @@ export class CantonService {
     }
 
     const result = await this.client.post<CantonPrepareTransactionResponseDto>(
-      '/canton/api/prepare_amulet_transfer',
+      '/canton/transfers/prepare_amulet_transfer',
       params
     );
     
     // Инвалидируем кеш после подготовки трансфера
     this.invalidateMeCache();
     return result;
+  }
+
+  /**
+   * Get pending incoming transfers for the current user
+   * Returns a list of transfer offers that can be accepted or rejected
+   * @returns Array of incoming transfer DTOs
+   */
+  async getPendingIncomingTransfers(): Promise<CantonIncomingTransferDto[]> {
+    return await this.client.get<CantonIncomingTransferDto[]>(
+      '/canton/transfers/pending_incoming_transfers'
+    );
+  }
+
+  /**
+   * Prepare response to incoming transfer (accept or reject)
+   * Flow: prepare -> sign -> submit
+   * @param params Request with contractId and accept flag
+   * @returns Prepare response with hash to sign
+   */
+  async prepareResponseToIncomingTransfer(
+    params: CantonPrepareResponseIncomingTransferRequestDto
+  ): Promise<CantonPrepareTransactionResponseDto> {
+    return await this.client.post<CantonPrepareTransactionResponseDto>(
+      '/canton/transfers/prepare_response_to_incoming_transfer',
+      params
+    );
   }
 }
 

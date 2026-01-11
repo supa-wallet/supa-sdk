@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Send, AlertCircle } from 'lucide-react';
+import { Send, AlertCircle, DollarSign } from 'lucide-react';
 import styled from 'styled-components';
-import { useSupa } from '@supanovaapp/sdk';
+import { useSupa, CantonCostEstimationDto } from '@supanovaapp/sdk';
 import {
   useToast,
   Card,
@@ -29,6 +29,35 @@ const HelpText = styled.span`
   color: ${({ theme }) => theme.colors.text.muted};
 `;
 
+const CostEstimationBox = styled.div`
+  background: ${({ theme }) => theme.colors.bg?.hover};
+  border: 1px solid ${({ theme }) => theme.colors.border?.primary};
+  border-radius: ${({ theme }) => theme.radii.md};
+  padding: ${({ theme }) => theme.space[3]};
+  margin-bottom: ${({ theme }) => theme.space[4]};
+`;
+
+const CostRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: ${({ theme }) => theme.space[1]} 0;
+  font-size: 0.875rem;
+  
+  &:not(:last-child) {
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border.primary};
+  }
+`;
+
+const CostLabel = styled.span`
+  color: ${({ theme }) => theme.colors.text.secondary};
+`;
+
+const CostValue = styled.span`
+  color: ${({ theme }) => theme.colors.text.primary};
+  font-weight: 500;
+`;
+
 export function SendCantonCoin() {
   const { canton } = useSupa();
   const { toast } = useToast();
@@ -37,6 +66,7 @@ export function SendCantonCoin() {
   const [memo, setMemo] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [costEstimation, setCostEstimation] = useState<CantonCostEstimationDto | null>(null);
 
   const validateAmount = (value: string): boolean => {
     if (!value || parseFloat(value) <= 0) {
@@ -60,6 +90,7 @@ export function SendCantonCoin() {
 
   const handleSend = async () => {
     setError(null);
+    setCostEstimation(null);
 
     if (!receiverPartyId.trim()) {
       setError('Please enter receiver Party ID');
@@ -75,7 +106,15 @@ export function SendCantonCoin() {
       await canton.sendCantonCoin(
         receiverPartyId.trim(),
         amount,
-        memo.trim() || undefined
+        memo.trim() || undefined,
+        {
+          onCostEstimation: (cost: CantonCostEstimationDto) => {
+            if (cost) {
+              setCostEstimation(cost);
+              console.log('💰 Cost estimation:', cost);
+            }
+          }
+        }
       );
       
       toast.success(`Successfully sent ${amount} Canton Coin! 🎉`);
@@ -84,6 +123,7 @@ export function SendCantonCoin() {
       setReceiverPartyId('');
       setAmount('');
       setMemo('');
+      setCostEstimation(null);
     } catch (err: any) {
       console.error('Send Canton Coin error:', err);
       const errorMessage = err?.message || 'Failed to send Canton Coin';
@@ -148,6 +188,32 @@ export function SendCantonCoin() {
             />
             <HelpText>Optional note for the transfer</HelpText>
           </FormGroup>
+
+          {costEstimation && (
+            <CostEstimationBox>
+              <Flex style={{ alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <DollarSign size={16} />
+                <Text style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                  Transaction Cost Estimation
+                </Text>
+              </Flex>
+              <CostRow>
+                <CostLabel>Request Traffic Cost:</CostLabel>
+                <CostValue>{costEstimation.confirmationRequestTrafficCostEstimation.toLocaleString()} μunits</CostValue>
+              </CostRow>
+              <CostRow>
+                <CostLabel>Response Traffic Cost:</CostLabel>
+                <CostValue>{costEstimation.confirmationResponseTrafficCostEstimation.toLocaleString()} μunits</CostValue>
+              </CostRow>
+              <CostRow>
+                <CostLabel>Total Cost:</CostLabel>
+                <CostValue>{costEstimation.totalTrafficCostEstimation.toLocaleString()} μunits</CostValue>
+              </CostRow>
+              <HelpText style={{ display: 'block', marginTop: '8px' }}>
+                Estimated at: {new Date(costEstimation.estimationTimestamp).toLocaleString()}
+              </HelpText>
+            </CostEstimationBox>
+          )}
 
           {error && (
             <Alert $variant="error" style={{ marginBottom: 16 }}>

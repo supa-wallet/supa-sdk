@@ -12,7 +12,6 @@ import {
   SendCantonCoin,
 } from './components';
 import {
-  GlobalStyles,
   ThemeProvider,
   ToastProvider,
   AppLayout,
@@ -49,7 +48,6 @@ function AppWithTheme() {
         loginMethods: ['email', 'wallet'],
       }}
     >
-      <GlobalStyles />
       <ToastProvider>
         <Demo />
       </ToastProvider>
