@@ -19,6 +19,10 @@ import type {
   CantonIncomingTransferDto,
   CantonPrepareResponseIncomingTransferRequestDto,
   CantonCostEstimationDto,
+  CantonTransactionDto,
+  CantonTransactionsParams,
+  CantonPriceInterval,
+  CantonPriceCandleDto,
 } from '../core/types';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 
@@ -33,6 +37,10 @@ export type {
   CantonIncomingTransferDto,
   CantonPrepareResponseIncomingTransferRequestDto,
   CantonCostEstimationDto,
+  CantonTransactionDto,
+  CantonTransactionsParams,
+  CantonPriceInterval,
+  CantonPriceCandleDto,
 };
 
 export interface CantonRegisterParams {
@@ -458,6 +466,41 @@ export class CantonService {
     return await this.client.post<CantonPrepareTransactionResponseDto>(
       '/canton/transfers/prepare_response_to_incoming_transfer',
       params
+    );
+  }
+
+  /**
+   * Get Canton transactions history with pagination
+   * @param params Pagination parameters (limit, beforeOffsetExclusive)
+   * @returns Array of transaction DTOs
+   */
+  async getTransactions(
+    params: CantonTransactionsParams = {}
+  ): Promise<CantonTransactionDto[]> {
+    const { limit = 20, beforeOffsetExclusive } = params;
+    
+    const queryParams = new URLSearchParams();
+    queryParams.append('limit', String(limit));
+    
+    if (beforeOffsetExclusive !== undefined) {
+      queryParams.append('beforeOffsetExclusive', String(beforeOffsetExclusive));
+    }
+    
+    return await this.client.get<CantonTransactionDto[]>(
+      `/canton/api/transactions?${queryParams.toString()}`
+    );
+  }
+
+  /**
+   * Get Canton price history (candles from Bybit)
+   * @param interval Time interval: '1h' (hour), '1d' (day), '1w' (week), '1M' (month)
+   * @returns Array of price candles
+   */
+  async getPriceHistory(
+    interval: CantonPriceInterval
+  ): Promise<CantonPriceCandleDto[]> {
+    return await this.client.get<CantonPriceCandleDto[]>(
+      `/canton/prices/history?interval=${encodeURIComponent(interval)}`
     );
   }
 }

@@ -24,6 +24,7 @@ export default defineConfig({
       '@solana-program/token',
       '@solana/kit',
     ],
+    exclude: ['@supanovaapp/sdk'],
     esbuildOptions: {
       define: {
         global: 'globalThis',

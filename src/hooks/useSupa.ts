@@ -3,9 +3,8 @@
  * Provides unified access to all SDK functionality
  */
 
-import { useEffect, useMemo, useRef } from 'react';
 import { useAuth, UseAuthReturn } from './useAuth';
-import { useCanton, UseCantonReturn } from './useCanton';
+import { useCanton, type UseCantonReturn } from './useCanton';
 import { useAPI, UseAPIReturn } from './useAPI';
 
 /**
@@ -28,6 +27,9 @@ export interface UseSupaReturn {
 /**
  * Main hook for accessing all Supa SDK features
  * Combines authentication, Canton Network, and API functionality
+ * 
+ * Note: Canton state (isRegistered, cantonUser, etc.) is shared across
+ * all components via CantonProvider. No duplicate registration will occur.
  * 
  * @returns Combined SDK functionality with convenience methods
  * 
@@ -71,10 +73,6 @@ export const useSupa = (): UseSupaReturn => {
   const canton = useCanton();
   const api = useAPI();
 
-  // Flags to prevent duplicate automatic actions
-  const hasAutoCreatedWallet = useRef(false);
-  const hasAutoRegistered = useRef(false);
-
   /**
    * Automated onboarding flow
    * Steps:
@@ -94,28 +92,11 @@ export const useSupa = (): UseSupaReturn => {
     }
 
     // Step 2 & 3: Register Canton (automatically creates Stellar wallet if needed)
+    // registerCanton is deduplicated in CantonProvider - safe to call multiple times
     if (!canton.isRegistered) {
       await canton.registerCanton();
     }
   };
-
-  // Automatic onboarding logic
-  const currentStep = useMemo(() => {
-    return !canton.stellarWallet ? 1 : !canton.isRegistered ? 2 : 3;
-  }, [canton.stellarWallet, canton.isRegistered]);
-
-  useEffect(() => {
-    if (!canton.loading && auth.authenticated) {
-      if (currentStep === 1 && !hasAutoCreatedWallet.current) {
-        hasAutoCreatedWallet.current = true;
-        canton.createStellarWallet();
-      }
-      if (currentStep === 2 && !hasAutoRegistered.current) {
-        hasAutoRegistered.current = true;
-        canton.registerCanton();
-      }
-    }
-  }, [currentStep, auth.authenticated, canton.loading]);
 
   return {
     auth,
@@ -124,4 +105,3 @@ export const useSupa = (): UseSupaReturn => {
     onboard,
   };
 };
-

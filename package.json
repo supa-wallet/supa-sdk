@@ -37,6 +37,14 @@
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
+  "peerDependenciesMeta": {
+    "@solana-program/compute-budget": {
+      "optional": true
+    },
+    "@solana-program/token-2022": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@privy-io/react-auth": "^3.3.0",

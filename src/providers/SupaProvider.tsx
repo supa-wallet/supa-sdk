@@ -6,6 +6,7 @@ import { createApiClient, ApiClient } from '../core/client';
 import { CantonService, createCantonService } from '../services/cantonService';
 import { ApiService, createApiService } from '../services/apiService';
 import { ConfirmationModal, SignMessageModal, SignTransactionModal } from '../components/ConfirmationModal';
+import { CantonProvider } from './CantonProvider';
 
 // Initialize Buffer polyfill for browser (required by Privy SDK)
 if (typeof window !== 'undefined' && !(window as any).Buffer) {
@@ -223,6 +224,52 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
           } : undefined}
         >
           <SupaContext.Provider value={contextValue}>
+            <CantonProvider cantonService={services.cantonService}>
+              <div className={themeClass}>
+                {children}
+
+                {/* Confirmation Modal */}
+                {isConfirmModal && modalState.options && (
+                  <ConfirmationModal
+                    open={isOpen}
+                    onClose={handleReject}
+                    onConfirm={handleConfirm}
+                    onReject={handleReject}
+                    loading={modalState.loading}
+                    {...(modalState.options as ConfirmModalOptions)}
+                  />
+                )}
+
+                {/* Sign Message Modal */}
+                {isSignMessageModal && modalState.options && (
+                  <SignMessageModal
+                    open={isOpen}
+                    onClose={handleReject}
+                    onConfirm={handleConfirm}
+                    onReject={handleReject}
+                    loading={modalState.loading}
+                    {...(modalState.options as SignMessageModalOptions)}
+                  />
+                )}
+
+                {/* Sign Transaction Modal */}
+                {isSignTransactionModal && modalState.options && (
+                  <SignTransactionModal
+                    open={isOpen}
+                    onClose={handleReject}
+                    onConfirm={handleConfirm}
+                    onReject={handleReject}
+                    loading={modalState.loading}
+                    {...(modalState.options as SignTransactionOptions)}
+                  />
+                )}
+              </div>
+            </CantonProvider>
+          </SupaContext.Provider>
+        </SmartWalletsProvider>
+      ) : (
+        <SupaContext.Provider value={contextValue}>
+          <CantonProvider cantonService={services.cantonService}>
             <div className={themeClass}>
               {children}
 
@@ -262,49 +309,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
                 />
               )}
             </div>
-          </SupaContext.Provider>
-        </SmartWalletsProvider>
-      ) : (
-        <SupaContext.Provider value={contextValue}>
-          <div className={themeClass}>
-            {children}
-
-            {/* Confirmation Modal */}
-            {isConfirmModal && modalState.options && (
-              <ConfirmationModal
-                open={isOpen}
-                onClose={handleReject}
-                onConfirm={handleConfirm}
-                onReject={handleReject}
-                loading={modalState.loading}
-                {...(modalState.options as ConfirmModalOptions)}
-              />
-            )}
-
-            {/* Sign Message Modal */}
-            {isSignMessageModal && modalState.options && (
-              <SignMessageModal
-                open={isOpen}
-                onClose={handleReject}
-                onConfirm={handleConfirm}
-                onReject={handleReject}
-                loading={modalState.loading}
-                {...(modalState.options as SignMessageModalOptions)}
-              />
-            )}
-
-            {/* Sign Transaction Modal */}
-            {isSignTransactionModal && modalState.options && (
-              <SignTransactionModal
-                open={isOpen}
-                onClose={handleReject}
-                onConfirm={handleConfirm}
-                onReject={handleReject}
-                loading={modalState.loading}
-                {...(modalState.options as SignTransactionOptions)}
-              />
-            )}
-          </div>
+          </CantonProvider>
         </SupaContext.Provider>
       )}
     </PrivyProvider>

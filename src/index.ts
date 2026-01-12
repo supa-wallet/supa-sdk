@@ -57,6 +57,13 @@ export type {
   ModalResult,
 } from './providers/SupaProvider';
 
+/**
+ * Canton Provider for shared state (automatically included in SupaProvider)
+ * @see {@link CantonProvider}
+ */
+export { CantonProvider, useCantonContext } from './providers/CantonProvider';
+export type { CantonContextValue, CantonProviderProps } from './providers/CantonProvider';
+
 // ===== Main Hook =====
 /**
  * Primary hook combining all SDK functionality

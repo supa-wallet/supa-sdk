@@ -15,6 +15,9 @@ For a quick overview of the code, check out the demo application in the `/demo` 
 - **Automatic Polling** - Transaction completion tracking
 - **TypeScript Support** - Full type safety and IntelliSense
 - **React Hooks** - Simple and intuitive API
+- **Cost Estimation** - Real-time transaction cost estimation before signing
+- **Incoming Transfers** - Accept or reject incoming Canton token transfers
+- **Invite Codes** - Support for invite-based registration
 
 ## Installation
 
@@ -196,6 +199,8 @@ After successful authentication, `authenticated` becomes `true` and `user` objec
 
 #### Register Canton Wallet
 
+Register your Canton wallet with optional invite code support:
+
 ```tsx
 import { useCanton } from '@supa/sdk';
 
@@ -204,7 +209,12 @@ function CantonWallet() {
 
   const handleRegister = async () => {
     try {
+      // Register without invite code
       await registerCanton();
+      
+      // Or with invite code
+      await registerCanton('your-invite-code');
+      
       console.log('Canton wallet registered!');
     } catch (error) {
       console.error('Registration failed:', error);
@@ -221,10 +231,14 @@ function CantonWallet() {
     <div>
       <p>Party ID: {cantonUser?.partyId}</p>
       <p>Email: {cantonUser?.email}</p>
+      <p>Transfer Preapproval: {cantonUser?.transferPreapprovalSet ? 'Enabled' : 'Disabled'}</p>
     </div>
   );
 }
 ```
+
+**Parameters:**
+- `inviteCode` (optional) - Invite code for registration
 
 #### Get Active Contracts
 
@@ -279,8 +293,11 @@ if (cantonBalances) {
 
 #### Send Canton Coin
 
+Send Canton Coin with cost estimation support:
+
 ```tsx
 const { sendCantonCoin } = useCanton();
+const [costEstimation, setCostEstimation] = useState(null);
 
 try {
   const result = await sendCantonCoin(
@@ -290,6 +307,15 @@ try {
     {
       timeout: 30000,      // completion timeout (ms)
       pollInterval: 1000,  // polling interval (ms)
+      onCostEstimation: (cost) => {
+        // Called before signing with cost estimation
+        if (cost) {
+          setCostEstimation(cost);
+          console.log('Request cost:', cost.confirmationRequestTrafficCostEstimation);
+          console.log('Response cost:', cost.confirmationResponseTrafficCostEstimation);
+          console.log('Total cost:', cost.totalTrafficCostEstimation, 'μunits');
+        }
+      }
     }
   );
   console.log('Canton Coin sent successfully:', result);
@@ -303,9 +329,21 @@ try {
 }
 ```
 
+**Cost Estimation Object:**
+```typescript
+interface CantonCostEstimationDto {
+  estimationTimestamp: string;  // ISO 8601 timestamp
+  confirmationRequestTrafficCostEstimation: number;  // in micro-units
+  confirmationResponseTrafficCostEstimation: number; // in micro-units
+  totalTrafficCostEstimation: number;  // total in micro-units
+}
+```
+
 **Note**: The amount cannot have more than 10 decimal places. Transfers are only supported to wallets with preapproved transfers enabled.
 
 #### Submit a Transaction
+
+Submit Canton transactions with cost estimation:
 
 ```tsx
 const { sendTransaction } = useCanton();
@@ -318,6 +356,12 @@ try {
   const result = await sendTransaction(commands, disclosedContracts, {
     timeout: 30000,      // completion timeout (ms)
     pollInterval: 1000,  // polling interval (ms)
+    onCostEstimation: (cost) => {
+      // Cost estimation callback (called before signing)
+      if (cost) {
+        console.log('Transaction cost:', cost.totalTrafficCostEstimation, 'μunits');
+      }
+    }
   });
   console.log('Transaction successful:', result);
 } catch (error) {
@@ -327,9 +371,131 @@ try {
 
 The SDK automatically:
 1. Prepares the transaction
-2. Shows confirmation modal
-3. Signs with user approval
-4. Submits and polls for completion
+2. Calls `onCostEstimation` callback if provided
+3. Shows confirmation modal
+4. Signs with user approval
+5. Submits and polls for completion
+
+#### Incoming Transfers
+
+Manage incoming Canton token transfers:
+
+**Get Pending Incoming Transfers:**
+
+```tsx
+const { getPendingIncomingTransfers } = useCanton();
+
+try {
+  const incomingTransfers = await getPendingIncomingTransfers();
+  
+  incomingTransfers.forEach(transfer => {
+    console.log('From:', transfer.sender);
+    console.log('Amount:', transfer.amount);
+    console.log('Token:', transfer.instrument.id); // 'Amulet', 'CBTC', etc.
+    console.log('Expires:', transfer.executeBefore);
+    console.log('Contract ID:', transfer.contractId); // Use this to respond
+  });
+} catch (error) {
+  console.error('Failed to fetch incoming transfers:', error);
+}
+```
+
+**Respond to Incoming Transfer:**
+
+```tsx
+const { respondToIncomingTransfer } = useCanton();
+
+// Accept a transfer
+try {
+  const result = await respondToIncomingTransfer(
+    contractId,  // From getPendingIncomingTransfers()
+    true,        // true = accept, false = reject
+    {
+      onCostEstimation: (cost) => {
+        console.log('Response cost:', cost?.totalTrafficCostEstimation);
+      }
+    }
+  );
+  console.log('Transfer accepted:', result);
+} catch (error) {
+  console.error('Failed to respond:', error);
+}
+
+// Reject a transfer
+await respondToIncomingTransfer(contractId, false);
+```
+
+**Complete Example with UI:**
+
+```tsx
+function IncomingTransfers() {
+  const { getPendingIncomingTransfers, respondToIncomingTransfer } = useCanton();
+  const [transfers, setTransfers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadTransfers = async () => {
+    setLoading(true);
+    try {
+      const incoming = await getPendingIncomingTransfers();
+      setTransfers(incoming);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAccept = async (contractId) => {
+    try {
+      await respondToIncomingTransfer(contractId, true);
+      await loadTransfers(); // Refresh list
+    } catch (error) {
+      console.error('Failed to accept:', error);
+    }
+  };
+
+  const handleReject = async (contractId) => {
+    try {
+      await respondToIncomingTransfer(contractId, false);
+      await loadTransfers(); // Refresh list
+    } catch (error) {
+      console.error('Failed to reject:', error);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={loadTransfers} disabled={loading}>
+        {loading ? 'Loading...' : 'Refresh Transfers'}
+      </button>
+      
+      {transfers.map(transfer => (
+        <div key={transfer.contractId}>
+          <p>From: {transfer.sender}</p>
+          <p>Amount: {transfer.amount} {transfer.instrument.id}</p>
+          <p>Expires: {new Date(transfer.executeBefore).toLocaleString()}</p>
+          <button onClick={() => handleAccept(transfer.contractId)}>Accept</button>
+          <button onClick={() => handleReject(transfer.contractId)}>Reject</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Incoming Transfer Object:**
+```typescript
+interface CantonIncomingTransferDto {
+  instrument: {
+    admin: string;  // Token administrator party ID
+    id: string;     // Token ID ('Amulet', 'CBTC', etc.)
+  };
+  contractId: string;    // Use this to accept/reject
+  sender: string;        // Sender party ID
+  receiver: string;      // Your party ID
+  amount: string;        // Transfer amount
+  requestedAt: string;   // ISO 8601 timestamp
+  executeBefore: string; // ISO 8601 expiration timestamp
+}
+```
 
 #### Sign a Message
 
@@ -348,7 +514,7 @@ try {
 
 ### 4. Devnet Operations
 
-Request test tokens from the devnet faucet:
+Request test tokens from the devnet faucet with cost estimation:
 
 ```tsx
 const { tapDevnet } = useCanton();
@@ -357,6 +523,11 @@ try {
   const result = await tapDevnet('1000', {
     timeout: 30000,
     pollInterval: 1000,
+    onCostEstimation: (cost) => {
+      if (cost) {
+        console.log('Faucet request cost:', cost.totalTrafficCostEstimation, 'μunits');
+      }
+    }
   });
   console.log('Tokens received:', result);
 } catch (error) {
@@ -407,7 +578,7 @@ await sendTransaction(command, contracts, {
 | Hook | Purpose | Key Methods |
 |------|---------|-------------|
 | `useAuth` | Authentication | `login`, `logout`, `authenticated`, `user` |
-| `useCanton` | Canton Network | `registerCanton`, `getBalances`, `sendCantonCoin`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet` |
+| `useCanton` | Canton Network | `registerCanton`, `getBalances`, `sendCantonCoin`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet`, `getPendingIncomingTransfers`, `respondToIncomingTransfer` |
 | `useSignMessage` | Enhanced message signing | `signMessage` with custom modals |
 | `useSendTransaction` | Enhanced transactions | `sendTransaction` with custom modals |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |
@@ -435,6 +606,9 @@ import type {
   CantonLockedUtxoDto,
   CantonUnlockedUtxoDto,
   CantonPrepareAmuletTransferRequestDto,
+  CantonCostEstimationDto,
+  CantonIncomingTransferDto,
+  CantonPrepareResponseIncomingTransferRequestDto,
   
   // Option Types
   SignMessageOptions,
@@ -545,7 +719,7 @@ npm publish
 
 ### EVM Smart Wallets
 
-Supa SDK supports Privy Smart Wallets for EVM chains with gas sponsorship capabilities.
+Supa SDK supports Privy Smart Wallets for EVM chains based on privy provider
 
 ```tsx
 <SupaProvider
@@ -555,7 +729,6 @@ Supa SDK supports Privy Smart Wallets for EVM chains with gas sponsorship capabi
     smartWallets: {
       enabled: true,
       paymasterContext: {
-        mode: 'SPONSORED',
         // ... paymaster configuration
       }
     }

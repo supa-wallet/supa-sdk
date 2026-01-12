@@ -10,6 +10,9 @@ import {
   AppHeader,
   CantonBalances,
   SendCantonCoin,
+  IncomingTransfers,
+  TransactionHistory,
+  PriceHistory,
 } from './components';
 import {
   ThemeProvider,
@@ -104,6 +107,9 @@ function Demo() {
             <CantonBalances />
             <DevnetFaucet onTap={canton.tapDevnet} />
             <SendCantonCoin />
+            <IncomingTransfers />
+            <TransactionHistory />
+            <PriceHistory />
             <Divider />
             <CantonOperationsTabs showTechnicalDetails={showTechnicalDetails} />
           </>

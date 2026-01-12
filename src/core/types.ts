@@ -315,6 +315,73 @@ export interface CantonPrepareResponseIncomingTransferRequestDto {
   accept: boolean;
 }
 
+// ============= Canton Transactions History Types =============
+
+/** Token operation in a transaction */
+export interface CantonTokenOperationDto {
+  /** Amount as decimal string */
+  amount: string;
+  /** Operation description (e.g., "Subscription fee (from locked)") */
+  description?: string;
+  /** Direction: "in", "out", "lock", "unlock" */
+  direction: 'in' | 'out' | 'lock' | 'unlock';
+  /** Token symbol (e.g., "CC" for Canton Coin) */
+  token: string;
+  /** Counterparty party ID (for transfers) */
+  counterparty?: string;
+}
+
+/** Canton transaction from history */
+export interface CantonTransactionDto {
+  /** Balance change (positive for incoming, negative for outgoing) */
+  balanceChange: number;
+  /** Transaction date (ISO 8601) */
+  date: string;
+  /** Additional transaction details (varies by type) */
+  details: Record<string, unknown>;
+  /** Ledger offset for pagination */
+  ledgerOffset: number;
+  /** Locked balance change */
+  lockedChange: number;
+  /** List of token operations in this transaction */
+  tokenOperations: CantonTokenOperationDto[];
+  /** Transaction type identifier */
+  type: string;
+  /** Human-readable transaction type label */
+  typeLabel: string;
+  /** Unique update ID */
+  updateId: string;
+}
+
+/** Parameters for fetching transactions */
+export interface CantonTransactionsParams {
+  /** Maximum number of transactions to return (1-100, default: 20) */
+  limit?: number;
+  /** Offset for pagination (exclusive). Pass oldest transaction offset from previous response */
+  beforeOffsetExclusive?: number;
+}
+
+// ============= Canton Price History Types =============
+
+/** Time interval for price history */
+export type CantonPriceInterval = '1h' | '1d' | '1w' | '1M';
+
+/** Price candle data point */
+export interface CantonPriceCandleDto {
+  /** Opening price */
+  open: string;
+  /** Closing price */
+  close: string;
+  /** Minimum price in the interval */
+  min: string;
+  /** Maximum price in the interval */
+  max: string;
+  /** Interval start timestamp (ISO 8601) */
+  start: string;
+  /** Interval end timestamp (ISO 8601) */
+  end: string;
+}
+
 // ============= User Types =============
 
 export interface UserResponseDto {

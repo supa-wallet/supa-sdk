@@ -10,3 +10,6 @@ export { CantonOperationsTabs } from './CantonOperationsTabs';
 export { AppHeader } from './AppHeader';
 export { CantonBalances } from './CantonBalances';
 export { SendCantonCoin } from './SendCantonCoin';
+export { IncomingTransfers } from './IncomingTransfers';
+export { TransactionHistory } from './TransactionHistory';
+export { PriceHistory } from './PriceHistory';
