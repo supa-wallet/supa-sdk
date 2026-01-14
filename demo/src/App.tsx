@@ -13,6 +13,7 @@ import {
   IncomingTransfers,
   TransactionHistory,
   PriceHistory,
+  DeleteAccount,
 } from './components';
 import {
   ThemeProvider,
@@ -112,6 +113,8 @@ function Demo() {
             <PriceHistory />
             <Divider />
             <CantonOperationsTabs showTechnicalDetails={showTechnicalDetails} />
+            <Divider />
+            <DeleteAccount />
           </>
         )}
       </Main>

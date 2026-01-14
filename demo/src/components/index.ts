@@ -13,3 +13,4 @@ export { SendCantonCoin } from './SendCantonCoin';
 export { IncomingTransfers } from './IncomingTransfers';
 export { TransactionHistory } from './TransactionHistory';
 export { PriceHistory } from './PriceHistory';
+export { DeleteAccount } from './DeleteAccount';
