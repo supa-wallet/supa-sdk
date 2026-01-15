@@ -44,6 +44,13 @@ export interface SupaConfig {
   defaultChain?: any;
   /** Supported chains for the app */
   supportedChains?: any[];
+  /**
+   * Enable wallet export functionality (uses Solana wallets instead of Stellar)
+   * When false (default): Uses Stellar wallets, export will throw an error
+   * When true: Uses Solana wallets, export is available
+   * @default false
+   */
+  withExport?: boolean;
 }
 export interface ConfirmModalOptions {
   title?: string;
@@ -224,7 +231,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
           } : undefined}
         >
           <SupaContext.Provider value={contextValue}>
-            <CantonProvider cantonService={services.cantonService}>
+            <CantonProvider cantonService={services.cantonService} withExport={config.withExport}>
               <div className={themeClass}>
                 {children}
 
@@ -269,7 +276,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
         </SmartWalletsProvider>
       ) : (
         <SupaContext.Provider value={contextValue}>
-          <CantonProvider cantonService={services.cantonService}>
+          <CantonProvider cantonService={services.cantonService} withExport={config.withExport}>
             <div className={themeClass}>
               {children}
 

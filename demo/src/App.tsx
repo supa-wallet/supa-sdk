@@ -1,5 +1,5 @@
 import './types/styled.d.ts';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { SupaProvider, useSupa } from '@supanovaapp/sdk';
 import {
   LoginScreen,
@@ -22,6 +22,8 @@ import {
   Footer,
   Divider,
   useTheme,
+  Button,
+  Card,
 } from './ui';
 
 function App() {
@@ -61,6 +63,19 @@ function AppWithTheme() {
 function Demo() {
   const { auth, canton } = useSupa();
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const handleExportWallet = async () => {
+    if (!canton.stellarWallet) return;
+    setExportLoading(true);
+    try {
+      await auth.exportWallet({ address: canton.stellarWallet.address });
+    } catch (err) {
+      alert('Failed to export wallet: ' + (err as Error).message);
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const currentStep = useMemo(() => {
     if (!canton.stellarWallet) return 1;
@@ -96,10 +111,17 @@ function Demo() {
         />
 
         {canton.stellarWallet && (
-          <StellarWalletCard
-            address={canton.stellarWallet.address}
-            isRegistered={canton.isRegistered}
-          />
+          <>
+            <StellarWalletCard
+              address={canton.stellarWallet.address}
+              isRegistered={canton.isRegistered}
+            />
+            <Card>
+              <Button onClick={handleExportWallet} disabled={exportLoading}>
+                {exportLoading ? 'Exporting...' : 'Export Wallet'}
+              </Button>
+            </Card>
+          </>
         )}
 
         {canton.isRegistered && (

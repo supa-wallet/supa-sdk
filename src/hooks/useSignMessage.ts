@@ -7,8 +7,8 @@
 import { useState, useCallback } from 'react';
 import { useSupaContext } from '../providers/SupaProvider';
 import { useSignRawHashWithModal } from './useSignRawHashWithModal';
-import { useStellarWallet } from './useStellarWallet';
-import type { StellarWallet } from '../utils/stellar';
+import { useCantonWallet } from './useCantonWallet';
+import type { CantonWallet } from '../utils/wallet';
 
 export interface SignMessageOptions {
   onSuccess?: (signature: string) => void;
@@ -31,13 +31,13 @@ export interface UseSignMessageReturn {
   loading: boolean;
   error: Error | null;
   clearError: () => void;
-  stellarWallets: StellarWallet[];
-  stellarWallet: StellarWallet | null;
+  cantonWallets: CantonWallet[];
+  cantonWallet: CantonWallet | null;
 }
 export function useSignMessage(): UseSignMessageReturn {
   const { cantonService } = useSupaContext();
   const { signRawHashWithModal } = useSignRawHashWithModal();
-  const { stellarWallet, stellarWallets } = useStellarWallet();
+  const { cantonWallet, cantonWallets } = useCantonWallet();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -59,8 +59,8 @@ export function useSignMessage(): UseSignMessageReturn {
         showTechnicalDetails = false,
       } = options || {};
 
-      if (!stellarWallet) {
-        const err = new Error('No Stellar wallet found. Please create one first.');
+      if (!cantonWallet) {
+        const err = new Error('No Canton wallet found. Please create one first.');
         setError(err);
         onError?.(err);
         return null;
@@ -72,7 +72,7 @@ export function useSignMessage(): UseSignMessageReturn {
       try {
         const signFunction = async (hashHex: string): Promise<string> => {
           const result = await signRawHashWithModal(
-            { address: stellarWallet.address, chainType: 'stellar', hash: hashHex as `0x${string}` },
+            { address: cantonWallet.address, chainType: cantonWallet.chainType, hash: hashHex as `0x${string}` },
             {
               skipModal,
               title,
@@ -106,7 +106,7 @@ export function useSignMessage(): UseSignMessageReturn {
         setLoading(false);
       }
     },
-    [stellarWallet, signRawHashWithModal, cantonService]
+    [cantonWallet, signRawHashWithModal, cantonService]
   );
 
   return {
@@ -114,8 +114,8 @@ export function useSignMessage(): UseSignMessageReturn {
     loading,
     error,
     clearError,
-    stellarWallets,
-    stellarWallet,
+    cantonWallets,
+    cantonWallet,
   };
 }
 

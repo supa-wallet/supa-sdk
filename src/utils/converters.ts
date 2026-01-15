@@ -107,22 +107,81 @@ export const stripLeadingZero = (hex: string): string => {
 export const privyPublicKeyToCantonBase64 = (publicKeyHex: string): string => {
   // Remove 0x prefix if present
   let hexString = publicKeyHex.startsWith('0x') ? publicKeyHex.slice(2) : publicKeyHex;
-  
+
   // Remove leading '00' byte if present (Stellar public keys from Privy include this)
   if (hexString.startsWith('00')) {
     hexString = hexString.slice(2);
   }
-  
+
   try {
     // Convert hex to bytes
     const bytes = new Uint8Array(
       hexString.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16))
     );
-    
+
     // Convert bytes to base64
     return btoa(String.fromCharCode(...bytes));
   } catch (e) {
     throw new Error('Failed to convert public key to base64');
   }
+};
+
+/**
+ * Base58 alphabet (Bitcoin/Solana style)
+ */
+const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+/**
+ * Decodes a base58 string to bytes using BigInt for precision
+ * @param str - Base58 encoded string
+ * @returns Byte array
+ */
+export const base58ToBytes = (str: string): Uint8Array => {
+  // Count leading zeros (represented as '1' in base58)
+  let leadingZeros = 0;
+  for (const char of str) {
+    if (char === '1') leadingZeros++;
+    else break;
+  }
+
+  // Decode using BigInt for precision
+  let num = BigInt(0);
+  for (const char of str) {
+    const value = BASE58_ALPHABET.indexOf(char);
+    if (value === -1) {
+      throw new Error(`Invalid base58 character: ${char}`);
+    }
+    num = num * BigInt(58) + BigInt(value);
+  }
+
+  // Convert BigInt to bytes
+  const bytes: number[] = [];
+  while (num > 0) {
+    bytes.unshift(Number(num % BigInt(256)));
+    num = num / BigInt(256);
+  }
+
+  // Add leading zeros
+  for (let i = 0; i < leadingZeros; i++) {
+    bytes.unshift(0);
+  }
+
+  return new Uint8Array(bytes);
+};
+
+/**
+ * Converts a Solana address (base58) to base64 for Canton Network
+ * @param address - Solana address in base58 format
+ * @returns Public key in base64 format (32 bytes Ed25519 key)
+ * @throws {Error} If decoded key is not 32 bytes
+ */
+export const solanaAddressToBase64 = (address: string): string => {
+  const bytes = base58ToBytes(address);
+
+  if (bytes.length !== 32) {
+    throw new Error(`Invalid Solana address: expected 32 bytes, got ${bytes.length}`);
+  }
+
+  return btoa(String.fromCharCode(...bytes));
 };
 
