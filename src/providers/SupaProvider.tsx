@@ -51,6 +51,8 @@ export interface SupaConfig {
    * @default false
    */
   withExport?: boolean;
+  /** Enable automatic onboarding (create wallet + register Canton on login). Default: true */
+  autoOnboarding?: boolean;
 }
 export interface ConfirmModalOptions {
   title?: string;
@@ -231,7 +233,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
           } : undefined}
         >
           <SupaContext.Provider value={contextValue}>
-            <CantonProvider cantonService={services.cantonService} withExport={config.withExport}>
+            <CantonProvider cantonService={services.cantonService} withExport={config.withExport} autoOnboarding={config.autoOnboarding}>
               <div className={themeClass}>
                 {children}
 
@@ -276,7 +278,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
         </SmartWalletsProvider>
       ) : (
         <SupaContext.Provider value={contextValue}>
-          <CantonProvider cantonService={services.cantonService} withExport={config.withExport}>
+          <CantonProvider cantonService={services.cantonService} withExport={config.withExport} autoOnboarding={config.autoOnboarding}>
             <div className={themeClass}>
               {children}
 

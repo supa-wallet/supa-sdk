@@ -62,7 +62,7 @@ export type {
  * @see {@link CantonProvider}
  */
 export { CantonProvider, useCantonContext } from './providers/CantonProvider';
-export type { CantonContextValue, CantonProviderProps } from './providers/CantonProvider';
+export type { CantonContextValue, CantonProviderProps, CantonSendCoinOptions } from './providers/CantonProvider';
 
 // ===== Main Hook =====
 /**

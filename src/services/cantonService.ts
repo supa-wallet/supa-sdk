@@ -72,13 +72,13 @@ export class CantonService {
   private meCache: CantonMeResponseDto | null = null;
   private meCacheTimestamp: number = 0;
   private mePendingPromise: Promise<CantonMeResponseDto> | null = null;
-  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(private client: ApiClient) {}
 
   /**
-   * Инвалидация кеша /me
-   * Вызывается после операций регистрации/изменения пользователя
+   * Invalidate /me cache
+   * Called after registration/user modification operations
    */
   private invalidateMeCache(): void {
     this.meCache = null;
@@ -131,6 +131,14 @@ export class CantonService {
           throw error;
         }
         
+        // Don't retry for invite code validation errors - these are user input errors
+        if (error?.error === 'CantonInviteCodeAlreadyUsedOrInvalid' ||
+            (error?.statusCode === 400 && 
+             (error?.message?.toLowerCase().includes('invite code') ||
+              error?.message?.toLowerCase().includes('invitecode')))) {
+          throw error;
+        }
+        
         // Retry for other errors after delay
         console.log('[Canton Service] Retrying registration after error...');
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -168,7 +176,7 @@ export class CantonService {
       } as CantonSubmitRegisterRequestDto
     );
 
-    // Инвалидируем кеш после успешной регистрации
+    // Invalidate cache after successful registration
     this.invalidateMeCache();
   }
 
@@ -270,7 +278,7 @@ export class CantonService {
       const completionResponse = await this.queryCompletion(submissionId);
       
       if (completionResponse.status === 'completed') {
-        // Инвалидируем кеш после успешной транзакции
+        // Invalidate cache after successful transaction
         this.invalidateMeCache();
         return completionResponse;
       }
@@ -285,32 +293,32 @@ export class CantonService {
   /**
    * Get current Canton user info (partyId and email)
    * Only works after registration
-   * С мемоизацией на 5 минут и дедупликацией одновременных запросов
+   * With 5 minute caching and request deduplication
    */
   async getMe(force: boolean = false): Promise<CantonMeResponseDto> {
     const now = Date.now();
     
-    // Если кеш актуален и не требуется принудительное обновление
+    // If cache is valid and force refresh is not required
     if (!force && this.meCache && (now - this.meCacheTimestamp) < this.CACHE_TTL) {
       return this.meCache;
     }
 
-    // Если запрос уже выполняется, возвращаем тот же промис
+    // If request is already in progress, return the same promise
     if (this.mePendingPromise) {
       return this.mePendingPromise;
     }
 
-    // Создаём промис для загрузки данных
+    // Create promise for loading data
     this.mePendingPromise = this.client.get<CantonMeResponseDto>('/canton/api/me')
       .then((data) => {
-        // Обновляем кеш
+        // Update cache
         this.meCache = data;
         this.meCacheTimestamp = Date.now();
         this.mePendingPromise = null;
         return data;
       })
       .catch((error) => {
-        // Сбрасываем pending при ошибке
+        // Reset pending on error
         this.mePendingPromise = null;
         throw error;
       });
@@ -401,7 +409,7 @@ export class CantonService {
       '/canton/api/prepare_transfer_preapproval',
       {}
     );
-    // Инвалидируем кеш после preapproval
+    // Invalidate cache after preapproval
     this.invalidateMeCache();
     return result;
   }
@@ -438,7 +446,7 @@ export class CantonService {
       params
     );
     
-    // Инвалидируем кеш после подготовки трансфера
+    // Invalidate cache after transfer preparation
     this.invalidateMeCache();
     return result;
   }

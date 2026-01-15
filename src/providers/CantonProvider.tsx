@@ -38,6 +38,11 @@ import type {
 // Types
 // ============================================================================
 
+export interface CantonSendCoinOptions extends CantonSubmitPreparedOptions {
+  /** Skip confirmation modal. Default: false */
+  skipModal?: boolean;
+}
+
 export interface CantonContextValue {
   /** First Stellar wallet (primary) */
   cantonWallet: CantonWallet | null;
@@ -90,7 +95,7 @@ export interface CantonContextValue {
     receiverPartyId: string,
     amount: string,
     memo?: string,
-    options?: CantonSubmitPreparedOptions
+    options?: CantonSendCoinOptions
   ) => Promise<CantonQueryCompletionResponseDto>;
   
   /** Setup transfer preapproval (internal, called automatically) */
@@ -133,13 +138,15 @@ export interface CantonProviderProps {
   children: ReactNode;
   /** Enable wallet export (uses Solana instead of Stellar). Default: false */
   withExport?: boolean;
+  /** Enable automatic onboarding (create wallet + register Canton on login). Default: true */
+  autoOnboarding?: boolean;
 }
 
 // ============================================================================
 // Canton Provider Component
 // ============================================================================
 
-export function CantonProvider({ cantonService, children, withExport = false }: CantonProviderProps) {
+export function CantonProvider({ cantonService, children, withExport = false, autoOnboarding = true }: CantonProviderProps) {
   const { user, authenticated } = useAuth();
   const { wallets } = useWallets();
   const { signRawHashWithModal } = useSignRawHashWithModal();
@@ -664,7 +671,7 @@ export function CantonProvider({ cantonService, children, withExport = false }: 
     receiverPartyId: string,
     amount: string,
     memo?: string,
-    options?: CantonSubmitPreparedOptions
+    options?: CantonSendCoinOptions
   ): Promise<CantonQueryCompletionResponseDto> => {
     if (!cantonWallet) {
       throw new Error('No Stellar wallet found');
@@ -692,6 +699,7 @@ export function CantonProvider({ cantonService, children, withExport = false }: 
           hash: hashHex as `0x${string}`,
         },
         {
+          skipModal: options?.skipModal || false,
           title: 'Send Canton Coin',
           description: `You are sending ${amount} Canton Coin${memo ? ` (${memo})` : ''}.`,
           confirmText: 'Confirm & Sign',
@@ -901,7 +909,8 @@ export function CantonProvider({ cantonService, children, withExport = false }: 
   // Auto-onboarding: Create Stellar Wallet + Register Canton (once)
   // ============================================================================
   useEffect(() => {
-    if (!authenticated || loading) return;
+    // Skip if auto-onboarding is disabled
+    if (!autoOnboarding || !authenticated || loading) return;
 
     const runAutoOnboarding = async () => {
       // Step 1: Auto-create Canton wallet if needed
@@ -935,7 +944,7 @@ export function CantonProvider({ cantonService, children, withExport = false }: 
     };
 
     runAutoOnboarding();
-  }, [authenticated, loading, cantonWallet, isRegistered, createStellarWallet, createSolanaWallet, registerCanton, withExport]);
+  }, [autoOnboarding, authenticated, loading, cantonWallet, isRegistered, createStellarWallet, createSolanaWallet, registerCanton, withExport]);
 
   // ============================================================================
   // Context Value
