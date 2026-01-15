@@ -20,7 +20,7 @@ import {
 import { getPublicKeyBase64 } from '@supanovaapp/sdk';
 
 export function CantonUserInfo() {
-  const { cantonUser, getMe, isRegistered, loading, stellarWallet } = useCanton();
+  const { cantonUser, getMe, isRegistered, loading, cantonWallet } = useCanton();
   const loadedRef = useRef(false);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export function CantonUserInfo() {
             </WalletInfo>
           </WalletCard>
 
-          {stellarWallet && (
+          {cantonWallet && (
             <WalletCard>
               <WalletIcon>
                 <Key />
@@ -103,7 +103,7 @@ export function CantonUserInfo() {
               <WalletInfo>
                 <WalletLabel>Public Key (Base64)</WalletLabel>
                 <WalletAddress style={{ fontSize: '0.8125rem', wordBreak: 'break-all' }}>
-                  {getPublicKeyBase64(stellarWallet)}
+                  {getPublicKeyBase64(cantonWallet)}
                 </WalletAddress>
               </WalletInfo>
             </WalletCard>

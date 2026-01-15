@@ -4,7 +4,7 @@ export { SendTransaction } from './SendTransaction';
 export { CantonUserInfo } from './CantonUserInfo';
 export { LoginScreen } from './LoginScreen';
 export { OnboardingSteps } from './OnboardingSteps';
-export { StellarWalletCard } from './StellarWalletCard';
+export { CantonWalletCard } from './CantonWalletCard';
 export { DevnetFaucet } from './DevnetFaucet';
 export { CantonOperationsTabs } from './CantonOperationsTabs';
 export { AppHeader } from './AppHeader';

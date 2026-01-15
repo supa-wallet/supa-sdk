@@ -108,7 +108,7 @@ export function OnboardingSteps({
                 {currentStep > 1 ? <CheckCircle style={{ width: 18, height: 18 }} /> : '1'}
               </StepNumber>
               <StepContent>
-                <StepTitle>Create Stellar Wallet</StepTitle>
+                <StepTitle>Create Canton Wallet</StepTitle>
                 <StepDescription>Required for Canton Network signing</StepDescription>
               </StepContent>
               {currentStep === 1 && (
