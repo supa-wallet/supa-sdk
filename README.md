@@ -165,6 +165,87 @@ function App() {
 - `nodeIdentifier` - Canton node identifier
 - `appearance` - Theme and styling options
 - `loginMethods` - Array of enabled authentication methods
+- `autoOnboarding` - Enable automatic wallet creation and Canton registration on login (default: `true`)
+
+### Disabling Auto-Onboarding (Paywall Implementation)
+
+By default, the SDK automatically creates a Stellar wallet and registers Canton when a user logs in (`autoOnboarding: true`). For applications with paywalls or invite-only access, you can disable this:
+
+```tsx
+<SupaProvider
+  config={{
+    privyAppId: 'your-privy-app-id',
+    nodeIdentifier: 'nodeId',
+    autoOnboarding: false, // Disable automatic wallet creation and Canton registration
+  }}
+>
+  <YourApp />
+</SupaProvider>
+```
+
+With `autoOnboarding: false`:
+- Users can authenticate via Privy, but won't automatically get a Canton wallet
+- You control when to call `registerCanton()` (e.g., after payment or invite code verification)
+- Enables implementation of paywalls, invite systems, or conditional access
+
+**Example: Paywall Flow**
+
+```tsx
+function PaywallApp() {
+  const { authenticated } = useAuth();
+  const { isRegistered, registerCanton } = useCanton();
+  const [hasPaid, setHasPaid] = useState(false);
+
+  if (!authenticated) {
+    return <LoginScreen />;
+  }
+
+  if (!hasPaid) {
+    return <PaywallScreen onPaymentComplete={() => setHasPaid(true)} />;
+  }
+
+  if (!isRegistered) {
+    return (
+      <button onClick={() => registerCanton()}>
+        Create Canton Wallet
+      </button>
+    );
+  }
+
+  return <MainApp />;
+}
+```
+
+**Example: Invite Code Flow**
+
+```tsx
+function InviteOnlyApp() {
+  const { authenticated } = useAuth();
+  const { isRegistered, registerCanton } = useCanton();
+  const [inviteCode, setInviteCode] = useState('');
+
+  if (!authenticated) {
+    return <LoginScreen />;
+  }
+
+  if (!isRegistered) {
+    return (
+      <div>
+        <input
+          value={inviteCode}
+          onChange={(e) => setInviteCode(e.target.value)}
+          placeholder="Enter invite code"
+        />
+        <button onClick={() => registerCanton(inviteCode)}>
+          Register with Invite
+        </button>
+      </div>
+    );
+  }
+
+  return <MainApp />;
+}
+```
 
 ---
 

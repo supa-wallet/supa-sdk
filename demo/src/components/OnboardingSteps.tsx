@@ -9,6 +9,7 @@ import {
   Section,
   SectionTitle,
 } from '../ui';
+import { InviteCodeInput } from './InviteCodeInput';
 
 const StepIndicator = styled.div<{ $active?: boolean; $completed?: boolean }>`
   display: flex;
@@ -70,7 +71,10 @@ interface OnboardingStepsProps {
   loading: boolean;
   error: Error | null;
   onCreateWallet: () => void;
-  onRegister: () => void;
+  onRegister: (inviteCode?: string) => void;
+  inviteCode?: string;
+  onInviteCodeChange?: (code: string) => void;
+  inviteCodeError?: string;
 }
 
 export function OnboardingSteps({
@@ -79,10 +83,17 @@ export function OnboardingSteps({
   error,
   onCreateWallet,
   onRegister,
+  inviteCode = '',
+  onInviteCodeChange,
+  inviteCodeError,
 }: OnboardingStepsProps) {
   if (currentStep >= 4) {
     return null;
   }
+
+  const handleRegister = () => {
+    onRegister(inviteCode);
+  };
 
   return (
     <Section>
@@ -124,7 +135,7 @@ export function OnboardingSteps({
               {currentStep === 2 && (
                 <Button
                   $variant="primary"
-                  onClick={onRegister}
+                  onClick={handleRegister}
                   disabled={loading}
                 >
                   {loading ? <Loader2 className="animate-spin" /> : null}
@@ -133,6 +144,17 @@ export function OnboardingSteps({
                 </Button>
               )}
             </StepIndicator>
+
+            {currentStep === 2 && onInviteCodeChange && (
+              <div style={{ marginTop: '16px' }}>
+                <InviteCodeInput
+                  value={inviteCode}
+                  onChange={onInviteCodeChange}
+                  placeholder="Invite code (optional)"
+                  error={inviteCodeError}
+                />
+              </div>
+            )}
 
             <StepIndicator $completed={currentStep > 3} $active={currentStep === 3}>
               <StepNumber $completed={currentStep > 3} $active={currentStep === 3}>
@@ -162,7 +184,7 @@ export function OnboardingSteps({
             </StepIndicator>
           </Flex>
 
-          {error && (
+          {error && !inviteCodeError && (
             <Alert $variant="error" style={{ marginTop: 16 }}>
               <AlertCircle />
               {error.message}

@@ -55,13 +55,13 @@ export class ApiService {
   private privyBalanceCacheTimestamp: number = 0;
   private privyBalancePendingPromise: Promise<any> | null = null;
   
-  private readonly USER_CACHE_TTL = 5 * 60 * 1000; // 5 минут
+  private readonly USER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(private client: ApiClient) {}
 
   /**
-   * Инвалидация кеша /user/me
-   * Вызывается после операций, изменяющих данные пользователя
+   * Invalidate /user/me cache
+   * Called after operations that modify user data
    */
   private invalidateUserCache(): void {
     this.userMeCache = null;
@@ -70,7 +70,7 @@ export class ApiService {
   }
 
   /**
-   * Инвалидация кеша /supa_points/balance
+   * Invalidate /supa_points/balance cache
    */
   private invalidateSupaPointsCache(): void {
     this.supaPointsBalanceCache = null;
@@ -79,7 +79,7 @@ export class ApiService {
   }
 
   /**
-   * Инвалидация кеша /privy/balance
+   * Invalidate /privy/balance cache
    */
   private invalidatePrivyBalanceCache(): void {
     this.privyBalanceCache = null;
@@ -92,32 +92,32 @@ export class ApiService {
   /**
    * Get current user information
    * GET /user/me
-   * С мемоизацией на 5 минут и дедупликацией одновременных запросов
+   * With 5 minute caching and request deduplication
    */
   async getCurrentUser(force: boolean = false): Promise<UserResponseDto> {
     const now = Date.now();
     
-    // Если кеш актуален и не требуется принудительное обновление
+    // If cache is valid and force refresh is not required
     if (!force && this.userMeCache && (now - this.userMeCacheTimestamp) < this.USER_CACHE_TTL) {
       return this.userMeCache;
     }
 
-    // Если запрос уже выполняется, возвращаем тот же промис
+    // If request is already in progress, return the same promise
     if (this.userMePendingPromise) {
       return this.userMePendingPromise;
     }
 
-    // Создаём промис для загрузки данных
+    // Create promise for loading data
     this.userMePendingPromise = this.client.get<UserResponseDto>('/user/me')
       .then((data) => {
-        // Обновляем кеш
+        // Update cache
         this.userMeCache = data;
         this.userMeCacheTimestamp = Date.now();
         this.userMePendingPromise = null;
         return data;
       })
       .catch((error) => {
-        // Сбрасываем pending при ошибке
+        // Reset pending on error
         this.userMePendingPromise = null;
         throw error;
       });
@@ -333,32 +333,32 @@ export class ApiService {
   /**
    * Get SupaPoints balance
    * GET /supa_points/balance
-   * С мемоизацией на 5 минут и дедупликацией одновременных запросов
+   * With 5 minute caching and request deduplication
    */
   async getSupaPointsBalance(force: boolean = false): Promise<SupaPointsBalanceResponseDto> {
     const now = Date.now();
     
-    // Если кеш актуален и не требуется принудительное обновление
+    // If cache is valid and force refresh is not required
     if (!force && this.supaPointsBalanceCache && (now - this.supaPointsBalanceCacheTimestamp) < this.USER_CACHE_TTL) {
       return this.supaPointsBalanceCache;
     }
 
-    // Если запрос уже выполняется, возвращаем тот же промис
+    // If request is already in progress, return the same promise
     if (this.supaPointsBalancePendingPromise) {
       return this.supaPointsBalancePendingPromise;
     }
 
-    // Создаём промис для загрузки данных
+    // Create promise for loading data
     this.supaPointsBalancePendingPromise = this.client.get<SupaPointsBalanceResponseDto>('/supa_points/balance')
       .then((data) => {
-        // Обновляем кеш
+        // Update cache
         this.supaPointsBalanceCache = data;
         this.supaPointsBalanceCacheTimestamp = Date.now();
         this.supaPointsBalancePendingPromise = null;
         return data;
       })
       .catch((error) => {
-        // Сбрасываем pending при ошибке
+        // Reset pending on error
         this.supaPointsBalancePendingPromise = null;
         throw error;
       });
@@ -385,7 +385,7 @@ export class ApiService {
    */
   async dailyLogin(): Promise<DailyLoginResponseDto> {
     const result = await this.client.post<DailyLoginResponseDto>('/supa_points/daily_login');
-    // Инвалидируем кеш баланса после начисления
+    // Invalidate balance cache after accrual
     this.invalidateSupaPointsCache();
     return result;
   }
@@ -405,32 +405,32 @@ export class ApiService {
   /**
    * Get Privy balance
    * GET /privy/balance
-   * С мемоизацией на 5 минут и дедупликацией одновременных запросов
+   * With 5 minute caching and request deduplication
    */
   async getPrivyBalance(force: boolean = false): Promise<any> {
     const now = Date.now();
     
-    // Если кеш актуален и не требуется принудительное обновление
+    // If cache is valid and force refresh is not required
     if (!force && this.privyBalanceCache && (now - this.privyBalanceCacheTimestamp) < this.USER_CACHE_TTL) {
       return this.privyBalanceCache;
     }
 
-    // Если запрос уже выполняется, возвращаем тот же промис
+    // If request is already in progress, return the same promise
     if (this.privyBalancePendingPromise) {
       return this.privyBalancePendingPromise;
     }
 
-    // Создаём промис для загрузки данных
+    // Create promise for loading data
     this.privyBalancePendingPromise = this.client.get<any>('/privy/balance')
       .then((data) => {
-        // Обновляем кеш
+        // Update cache
         this.privyBalanceCache = data;
         this.privyBalanceCacheTimestamp = Date.now();
         this.privyBalancePendingPromise = null;
         return data;
       })
       .catch((error) => {
-        // Сбрасываем pending при ошибке
+        // Reset pending on error
         this.privyBalancePendingPromise = null;
         throw error;
       });

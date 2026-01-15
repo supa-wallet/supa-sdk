@@ -1,5 +1,5 @@
 import './types/styled.d.ts';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { SupaProvider, useSupa } from '@supanovaapp/sdk';
 import {
   LoginScreen,
@@ -49,6 +49,7 @@ function AppWithTheme() {
         appearance: {
           theme: mode,
         },
+        autoOnboarding: false,
         loginMethods: ['email', 'wallet'],
       }}
     >
@@ -62,6 +63,8 @@ function AppWithTheme() {
 function Demo() {
   const { auth, canton } = useSupa();
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteCodeError, setInviteCodeError] = useState<string>('');
 
   const currentStep = useMemo(() => {
     if (!canton.stellarWallet) return 1;
@@ -69,6 +72,28 @@ function Demo() {
     if (canton.cantonUser && !canton.cantonUser.transferPreapprovalSet) return 3;
     return 4;
   }, [canton.stellarWallet, canton.isRegistered, canton.cantonUser])
+
+  // Extract invite code error from Canton error
+  useEffect(() => {
+    if (canton.error?.message) {
+      const errorMessage = canton.error.message.toLowerCase();
+      if (errorMessage.includes('invite code') || 
+          errorMessage.includes('invitecode') ||
+          errorMessage.includes('already used') ||
+          errorMessage.includes('invalid')) {
+        // Show user-friendly error message
+        if (errorMessage.includes('already used or invalid')) {
+          setInviteCodeError('Invite code already used or invalid');
+        } else if (errorMessage.includes('invite code')) {
+          setInviteCodeError('Invalid invite code');
+        }
+      } else {
+        setInviteCodeError('');
+      }
+    } else {
+      setInviteCodeError('');
+    }
+  }, [canton.error])
 
   // Login view
   if (!auth.authenticated) {
@@ -93,7 +118,14 @@ function Demo() {
           loading={canton.loading}
           error={canton.error}
           onCreateWallet={canton.createStellarWallet}
-          onRegister={canton.registerCanton}
+          onRegister={(code) => canton.registerCanton(code)}
+          inviteCode={inviteCode}
+          onInviteCodeChange={(code) => {
+            setInviteCode(code);
+            setInviteCodeError('');
+            canton.clearError();
+          }}
+          inviteCodeError={inviteCodeError}
         />
 
         {canton.stellarWallet && (
