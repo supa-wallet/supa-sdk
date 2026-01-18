@@ -7,11 +7,13 @@ Demo application for **Supa SDK** with Privy.io and Canton Network integration e
 This demo showcases:
 
 - Privy authentication (email, wallets, social networks)
-- Stellar wallet creation for Canton Network
+- Solana wallet creation for Canton Network (with `withExport: true`)
+- **Wallet Private Key Export** via Privy modal
 - Canton wallet registration on backend
 - Test tokens from devnet faucet
 - Transaction signing via Privy
 - Supa Backend API integration
+- Complete logout with state cleanup
 - Debug Panel - view all intermediate values (publicKey, hash, signature)
 
 ## Quick Start
@@ -84,11 +86,19 @@ Demo is divided into logical blocks:
 // Step 1: Login with Privy
 <button onClick={() => auth.login()}>Login with Privy</button>
 
-// Step 2: Register Canton (will automatically create Stellar)
+// Step 2: Register Canton (will automatically create Solana wallet)
 <button onClick={() => canton.registerCanton()}>Register Canton</button>
 
-// Step 3: Get test tokens
+// Step 3: Export wallet private key (Solana only, requires withExport: true)
+<button onClick={() => auth.exportWallet({ address: canton.cantonWallet.address })}>
+  Export Private Key
+</button>
+
+// Step 4: Get test tokens
 <button onClick={() => canton.tapDevnet('1000')}>Tap Devnet</button>
+
+// Step 5: Complete logout
+<button onClick={() => logout()}>Logout</button>
 ```
 
 ### 2. Debug Panel
@@ -200,6 +210,60 @@ function TapDevnet() {
   return (
     <button onClick={handleTap} disabled={loading}>
       Get Test Tokens
+    </button>
+  );
+}
+```
+
+### Exporting Wallet Private Key
+
+**Note:** Wallet export requires `withExport: true` in SupaProvider config.
+
+```tsx
+import { useAuth, useStellarWallet } from '@supa/sdk';
+
+function ExportWalletButton() {
+  const { exportWallet, authenticated } = useAuth();
+  const { cantonWallet } = useStellarWallet();
+
+  const handleExport = async () => {
+    if (!cantonWallet) {
+      alert('No wallet found');
+      return;
+    }
+
+    try {
+      await exportWallet({ address: cantonWallet.address });
+      // Privy modal will open with your private key
+    } catch (err) {
+      alert('Export failed: ' + err.message);
+    }
+  };
+
+  return (
+    <button onClick={handleExport} disabled={!authenticated || !cantonWallet}>
+      Export Private Key
+    </button>
+  );
+}
+```
+
+### Complete Logout
+
+```tsx
+import { useSupa } from '@supa/sdk';
+
+function LogoutButton() {
+  const { logout, auth } = useSupa();
+
+  const handleLogout = async () => {
+    await logout();
+    // All SDK state is now cleared
+  };
+
+  return (
+    <button onClick={handleLogout} disabled={!auth.authenticated}>
+      Complete Logout
     </button>
   );
 }

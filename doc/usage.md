@@ -99,6 +99,8 @@ function LoginButton() {
 }
 ```
 
+### Login
+
 To start the authentication flow:
 
 ```javascript
@@ -119,6 +121,107 @@ This opens the Privy authentication modal where users can choose their preferred
 - `authenticated` will remain `false`
 - `user` will be `null`
 - User can retry by calling `login()` again
+
+### Logout
+
+For a complete logout with state cleanup, use the `useSupa` hook:
+
+```tsx
+import { useSupa } from '@supa/sdk';
+
+function LogoutButton() {
+  const { logout, auth } = useSupa();
+
+  const handleLogout = async () => {
+    await logout();
+    console.log('User logged out and all state cleared');
+  };
+
+  return (
+    <button onClick={handleLogout} disabled={!auth.authenticated}>
+      Logout
+    </button>
+  );
+}
+```
+
+**What happens during logout:**
+1. All Canton state is cleared (balances, user info, registration flags)
+2. Privy session is terminated
+3. User is logged out completely
+4. All internal SDK flags are reset
+
+**Note:** Using `auth.logout()` directly only logs out from Privy but does not clear Canton state. For a complete cleanup, always use `useSupa().logout()` instead.
+
+### Export Wallet Private Key
+
+**Available only with `withExport: true` (Solana wallets)**
+
+Export your wallet's private key to use it with other wallet clients:
+
+```tsx
+import { useAuth, useStellarWallet } from '@supa/sdk';
+
+function ExportWalletButton() {
+  const { exportWallet, authenticated } = useAuth();
+  const { cantonWallet } = useStellarWallet();
+
+  const handleExport = async () => {
+    if (!cantonWallet) {
+      console.error('No wallet found');
+      return;
+    }
+    
+    try {
+      // Export the specified wallet
+      await exportWallet({ address: cantonWallet.address });
+      
+      // Or export first wallet by default
+      await exportWallet();
+    } catch (error) {
+      console.error('Export failed:', error.message);
+    }
+  };
+
+  return (
+    <button 
+      onClick={handleExport} 
+      disabled={!authenticated || !cantonWallet}
+    >
+      Export Private Key
+    </button>
+  );
+}
+```
+
+**What happens:**
+1. Privy modal opens displaying your private key
+2. You can copy the key for use in MetaMask, Phantom, or other wallet clients
+3. Instructions are provided for importing into popular wallets
+
+**Security:**
+- Private key is assembled on a separate origin
+- Neither your app nor Privy can access the key during transmission
+- Only the user sees the full private key
+
+**⚠️ Security Warning:** Never share your private key! Anyone with access to your private key can control your wallet and all its assets.
+
+**Availability:**
+- **Solana wallets** (`withExport: true`): Export via `useExportWallet` from `@privy-io/react-auth/solana`
+- **EVM wallets** (`withExport: false`): Export via `usePrivy` from `@privy-io/react-auth`
+- **Stellar wallets**: Not supported by Privy (no native export functionality)
+
+**Configuration:**
+```tsx
+<SupaProvider
+  config={{
+    privyAppId: 'your-app-id',
+    withExport: true, // Enable wallet export (uses Solana)
+  }}
+>
+  <App />
+</SupaProvider>
+```
 
 ---
 
@@ -570,8 +673,9 @@ const modal: UseConfirmModalReturn = useConfirmModal();
 
 | Hook | Purpose | Key Methods |
 |------|---------|-------------|
+| `useSupa` | Main SDK hook | `auth`, `canton`, `api`, `onboard`, `logout` (recommended) |
 | `useAuth` | Authentication | `login`, `logout`, `authenticated`, `user` |
-| `useCanton` | Canton Network | `registerCanton`, `signMessage`, `sendTransaction`, `tapDevnet`, `getActiveContracts` |
+| `useCanton` | Canton Network | `registerCanton`, `signMessage`, `sendTransaction`, `tapDevnet`, `getActiveContracts`, `resetState` |
 | `useSignMessage` | Message signing with modal | `signMessage`, `loading`, `error` |
 | `useSendTransaction` | Transactions with modal | `sendTransaction`, `loading`, `error` |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |

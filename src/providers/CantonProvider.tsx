@@ -117,6 +117,9 @@ export interface CantonContextValue {
   /** Get Canton price history (candles from Bybit) */
   getPriceHistory: (interval: CantonPriceInterval) => Promise<CantonPriceCandleDto[]>;
   
+  /** Reset all Canton state (for logout) */
+  resetState: () => void;
+  
   /** Loading state */
   loading: boolean;
   
@@ -232,6 +235,35 @@ export function CantonProvider({ cantonService, children, withExport = false, au
   // ============================================================================
   const clearError = useCallback(() => {
     setError(null);
+  }, []);
+
+  // ============================================================================
+  // Reset State (for logout)
+  // ============================================================================
+  const resetState = useCallback(() => {
+    console.log('[Supa SDK] 🔄 Resetting Canton state...');
+    
+    // Reset all state
+    setLoading(false);
+    setError(null);
+    setIsRegistered(false);
+    setCantonUser(null);
+    setCantonBalances(null);
+    
+    // Reset all flags
+    hasCheckedRegistration.current = false;
+    hasFetchedCantonUser.current = false;
+    hasAutoCreatedWallet.current = false;
+    hasAutoRegistered.current = false;
+    preapprovalAttempted.current = false;
+    
+    // Clear all promises
+    registrationPromise.current = null;
+    getMePromise.current = null;
+    getBalancesPromise.current = null;
+    preapprovalPromise.current = null;
+    
+    console.log('[Supa SDK] ✅ Canton state reset complete');
   }, []);
 
   // ============================================================================
@@ -970,6 +1002,7 @@ export function CantonProvider({ cantonService, children, withExport = false, au
     respondToIncomingTransfer,
     getTransactions,
     getPriceHistory,
+    resetState,
     loading,
     error,
     clearError,

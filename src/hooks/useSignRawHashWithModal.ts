@@ -90,26 +90,8 @@ export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
           ? JSON.stringify({ address: params.address, chainType: params.chainType, hash: params.hash }, null, 2)
           : params.hash;
 
-      // Show modal if not skipped
-      if (!skipModal) {
-        const confirmed = await signTransactionConfirm({
-          transaction: transactionDisplay,
-          title,
-          description,
-          confirmText,
-          rejectText,
-          infoText,
-        });
-
-        if (!confirmed.confirmed) {
-          return null;
-        }
-
-        // Show loading in modal while signing
-        setModalLoading(true);
-      }
-
-      try {
+      // Helper function to perform signing
+      const performSign = async (): Promise<{ signature: string }> => {
         if (withExport) {
           // Solana approach: use signMessage
           const wallet = solanaWallets.find(w => w.address === params.address);
@@ -138,11 +120,37 @@ export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
           });
           return result;
         }
-      } finally {
-        if (!skipModal) {
+      };
+
+      // Path 1: Show modal, get confirmation, sign with loading state
+      if (!skipModal) {
+        const confirmed = await signTransactionConfirm({
+          transaction: transactionDisplay,
+          title,
+          description,
+          confirmText,
+          rejectText,
+          infoText,
+        });
+
+        if (!confirmed.confirmed) {
+          return null;
+        }
+
+        // Show loading in modal while signing
+        setModalLoading(true);
+        try {
+          const result = await performSign();
+          return result;
+        } finally {
           setModalLoading(false);
         }
       }
+
+      // Path 2: Sign directly without modal (for automated operations)
+      // Errors will propagate to caller for handling
+      const result = await performSign();
+      return result;
     },
     [withExport, signRawHash, solanaSignMessage, solanaWallets, signTransactionConfirm, setModalLoading]
   );

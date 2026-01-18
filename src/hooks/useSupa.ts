@@ -22,6 +22,9 @@ export interface UseSupaReturn {
   
   /** Automated onboarding flow (login → create wallet → register Canton) */
   onboard: () => Promise<void>;
+
+  /** Complete logout (Privy + clear all SDK state) */
+  logout: () => Promise<void>;
 }
 
 /**
@@ -37,7 +40,7 @@ export interface UseSupaReturn {
  * Basic usage
  * ```tsx
  * function Dashboard() {
- *   const { auth, canton, api } = useSupa();
+ *   const { auth, canton, api, logout } = useSupa();
  * 
  *   if (!auth.authenticated) {
  *     return <button onClick={auth.login}>Login</button>;
@@ -49,6 +52,7 @@ export interface UseSupaReturn {
  *       <button onClick={() => canton.registerCanton()}>
  *         Register Canton
  *       </button>
+ *       <button onClick={logout}>Logout</button>
  *     </div>
  *   );
  * }
@@ -98,10 +102,29 @@ export const useSupa = (): UseSupaReturn => {
     }
   };
 
+  /**
+   * Complete logout
+   * Steps:
+   * 1. Clear all Canton state (balances, user info, flags)
+   * 2. Logout from Privy (clears auth session)
+   */
+  const logout = async () => {
+    console.log('[Supa SDK] 🚪 Logging out...');
+    
+    // Step 1: Reset Canton state first
+    canton.resetState();
+    
+    // Step 2: Logout from Privy
+    await auth.logout();
+    
+    console.log('[Supa SDK] ✅ Logout complete');
+  };
+
   return {
     auth,
     canton,
     api,
     onboard,
+    logout,
   };
 };

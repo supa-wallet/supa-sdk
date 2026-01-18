@@ -15,3 +15,4 @@ export { TransactionHistory } from './TransactionHistory';
 export { PriceHistory } from './PriceHistory';
 export { DeleteAccount } from './DeleteAccount';
 export { InviteCodeInput } from './InviteCodeInput';
+export { ExportWallet } from './ExportWallet';

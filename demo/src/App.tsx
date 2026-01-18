@@ -14,6 +14,7 @@ import {
   TransactionHistory,
   PriceHistory,
   DeleteAccount,
+  ExportWallet,
 } from './components';
 import {
   ThemeProvider,
@@ -66,21 +67,8 @@ function AppWithTheme() {
 function Demo() {
   const { auth, canton } = useSupa();
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
-  const [exportLoading, setExportLoading] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [inviteCodeError, setInviteCodeError] = useState<string>('');
-
-  const handleExportWallet = async () => {
-    if (!canton.cantonWallet) return;
-    setExportLoading(true);
-    try {
-      await auth.exportWallet({ address: canton.cantonWallet.address });
-    } catch (err) {
-      alert('Failed to export wallet: ' + (err as Error).message);
-    } finally {
-      setExportLoading(false);
-    }
-  };
 
   const currentStep = useMemo(() => {
     if (!canton.cantonWallet) return 1;
@@ -150,11 +138,7 @@ function Demo() {
               address={canton.cantonWallet.address}
               isRegistered={canton.isRegistered}
             />
-            <Card>
-              <Button onClick={handleExportWallet} disabled={exportLoading}>
-                {exportLoading ? 'Exporting...' : 'Export Wallet'}
-              </Button>
-            </Card>
+            <ExportWallet />
           </>
         )}
 
