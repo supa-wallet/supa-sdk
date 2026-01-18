@@ -13,12 +13,12 @@ import {
   Section,
 } from '../ui';
 
-interface StellarWalletCardProps {
+interface CantonWalletCardProps {
   address: string;
   isRegistered: boolean;
 }
 
-export function StellarWalletCard({ address, isRegistered }: StellarWalletCardProps) {
+export function CantonWalletCard({ address, isRegistered }: CantonWalletCardProps) {
   return (
     <Section>
       <Card>

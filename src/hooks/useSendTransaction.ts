@@ -7,9 +7,9 @@
 import { useState, useCallback } from 'react';
 import { useSupaContext } from '../providers/SupaProvider';
 import { useSignRawHashWithModal } from './useSignRawHashWithModal';
-import { useStellarWallet } from './useStellarWallet';
+import { useCantonWallet } from './useCantonWallet';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
-import type { StellarWallet } from '../utils/stellar';
+import type { CantonWallet } from '../utils/wallet';
 import type { CantonQueryCompletionResponseDto, CantonSubmitPreparedOptions } from '../services/cantonService';
 
 export interface SendTransactionOptions {
@@ -38,14 +38,14 @@ export interface UseSendTransactionReturn {
   loading: boolean;
   error: Error | null;
   clearError: () => void;
-  stellarWallets: StellarWallet[];
-  stellarWallet: StellarWallet | null;
+  cantonWallets: CantonWallet[];
+  cantonWallet: CantonWallet | null;
 }
 
 export function useSendTransaction(): UseSendTransactionReturn {
   const { cantonService } = useSupaContext();
   const { signRawHashWithModal } = useSignRawHashWithModal();
-  const { stellarWallet, stellarWallets } = useStellarWallet();
+  const { cantonWallet, cantonWallets } = useCantonWallet();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -72,7 +72,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
         submitOptions,
       } = options || {};
 
-      if (!stellarWallet) {
+      if (!cantonWallet) {
         const err = new Error('No Stellar wallet found. Please create one first.');
         setError(err);
         onError?.(err);
@@ -96,7 +96,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
         // Step 3: Sign hash with automatic modal
         const hashHex = base64ToHex(prepareResponse.hash);
         const signResult = await signRawHashWithModal(
-          { address: stellarWallet.address, chainType: 'stellar', hash: hashHex as `0x${string}` },
+          { address: cantonWallet.address, chainType: 'solana', hash: hashHex as `0x${string}` },
           {
             skipModal,
             title: modalTitle,
@@ -138,7 +138,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
         setLoading(false);
       }
     },
-    [stellarWallet, signRawHashWithModal, cantonService]
+    [cantonWallet, signRawHashWithModal, cantonService]
   );
 
   return {
@@ -146,7 +146,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
     loading,
     error,
     clearError,
-    stellarWallets,
-    stellarWallet,
+    cantonWallets,
+    cantonWallet,
   };
 }

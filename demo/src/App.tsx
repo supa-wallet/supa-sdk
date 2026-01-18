@@ -4,7 +4,7 @@ import { SupaProvider, useSupa } from '@supanovaapp/sdk';
 import {
   LoginScreen,
   OnboardingSteps,
-  StellarWalletCard,
+  CantonWalletCard,
   DevnetFaucet,
   CantonOperationsTabs,
   AppHeader,
@@ -14,6 +14,7 @@ import {
   TransactionHistory,
   PriceHistory,
   DeleteAccount,
+  ExportWallet,
 } from './components';
 import {
   ThemeProvider,
@@ -23,6 +24,8 @@ import {
   Footer,
   Divider,
   useTheme,
+  Button,
+  Card,
 } from './ui';
 
 function App() {
@@ -50,6 +53,7 @@ function AppWithTheme() {
           theme: mode,
         },
         autoOnboarding: false,
+        withExport: true,
         loginMethods: ['email', 'wallet'],
       }}
     >
@@ -67,11 +71,11 @@ function Demo() {
   const [inviteCodeError, setInviteCodeError] = useState<string>('');
 
   const currentStep = useMemo(() => {
-    if (!canton.stellarWallet) return 1;
+    if (!canton.cantonWallet) return 1;
     if (!canton.isRegistered) return 2;
     if (canton.cantonUser && !canton.cantonUser.transferPreapprovalSet) return 3;
     return 4;
-  }, [canton.stellarWallet, canton.isRegistered, canton.cantonUser])
+  }, [canton.cantonWallet, canton.isRegistered, canton.cantonUser])
 
   // Extract invite code error from Canton error
   useEffect(() => {
@@ -117,7 +121,7 @@ function Demo() {
           currentStep={currentStep}
           loading={canton.loading}
           error={canton.error}
-          onCreateWallet={canton.createStellarWallet}
+          onCreateWallet={canton.createCantonWallet}
           onRegister={(code) => canton.registerCanton(code)}
           inviteCode={inviteCode}
           onInviteCodeChange={(code) => {
@@ -128,11 +132,14 @@ function Demo() {
           inviteCodeError={inviteCodeError}
         />
 
-        {canton.stellarWallet && (
-          <StellarWalletCard
-            address={canton.stellarWallet.address}
-            isRegistered={canton.isRegistered}
-          />
+        {canton.cantonWallet && (
+          <>
+            <CantonWalletCard
+              address={canton.cantonWallet.address}
+              isRegistered={canton.isRegistered}
+            />
+            <ExportWallet />
+          </>
         )}
 
         {canton.isRegistered && (

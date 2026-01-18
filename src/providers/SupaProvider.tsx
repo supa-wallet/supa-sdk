@@ -44,6 +44,13 @@ export interface SupaConfig {
   defaultChain?: any;
   /** Supported chains for the app */
   supportedChains?: any[];
+  /**
+   * Enable wallet export functionality (uses Solana wallets instead of Stellar)
+   * When false (default): Uses Stellar wallets, export will throw an error
+   * When true: Uses Solana wallets, export is available
+   * @default false
+   */
+  withExport?: boolean;
   /** Enable automatic onboarding (create wallet + register Canton on login). Default: true */
   autoOnboarding?: boolean;
 }
@@ -226,7 +233,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
           } : undefined}
         >
           <SupaContext.Provider value={contextValue}>
-            <CantonProvider cantonService={services.cantonService} autoOnboarding={config.autoOnboarding}>
+            <CantonProvider cantonService={services.cantonService} withExport={config.withExport} autoOnboarding={config.autoOnboarding}>
               <div className={themeClass}>
                 {children}
 
@@ -271,7 +278,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
         </SmartWalletsProvider>
       ) : (
         <SupaContext.Provider value={contextValue}>
-          <CantonProvider cantonService={services.cantonService} autoOnboarding={config.autoOnboarding}>
+          <CantonProvider cantonService={services.cantonService} withExport={config.withExport} autoOnboarding={config.autoOnboarding}>
             <div className={themeClass}>
               {children}
 

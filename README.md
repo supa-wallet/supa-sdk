@@ -9,6 +9,7 @@ For a quick overview of the code, check out the demo application in the `/demo` 
 ## Key Features
 
 - **Privy.io Authentication** - Email, wallet, and social login methods  
+- **Wallet Export** - Export private keys for Solana wallets (with `withExport: true`)
 - **EVM Smart Wallets** - Support for Privy Smart Wallets with gas sponsorship
 - **Built-in Confirmation Modals** - User-friendly signing confirmations
 - **Theme Support** - Light/dark mode with customizable appearance
@@ -273,6 +274,78 @@ function LoginButton() {
 ```
 
 After successful authentication, `authenticated` becomes `true` and `user` object contains user data.
+
+#### Export Wallet Private Key
+
+**Note:** Wallet export is only available when `withExport: true` is set in SupaProvider config (Solana wallets).
+
+Export your wallet's private key to use it with other wallet clients like Phantom:
+
+```tsx
+import { useAuth, useCantonWallet } from '@supa/sdk';
+
+function ExportWalletButton() {
+  const { exportWallet, authenticated } = useAuth();
+  const { cantonWallet } = useCantonWallet();
+
+  const handleExport = async () => {
+    if (!cantonWallet) return;
+    
+    try {
+      // Export the primary Canton wallet
+      await exportWallet({ address: cantonWallet.address });
+      
+      // Or export without specifying address (exports first wallet)
+      await exportWallet();
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
+  };
+
+  return (
+    <button onClick={handleExport} disabled={!authenticated || !cantonWallet}>
+      Export Private Key
+    </button>
+  );
+}
+```
+
+**What happens:**
+- Privy modal opens showing your private key
+- You can copy the key to use with MetaMask, Phantom, or other wallet clients
+- The key is assembled securely on a different origin - neither you nor Privy can access it during transmission
+
+**Security Warning:** Never share your private key! Anyone with your private key has full control over your wallet.
+
+#### Complete Logout with State Cleanup
+
+For a complete logout that clears all SDK state (Canton balances, registration, etc.), use the `useSupa` hook:
+
+```tsx
+import { useSupa } from '@supa/sdk';
+
+function App() {
+  const { auth, canton, logout } = useSupa();
+
+  if (!auth.authenticated) {
+    return <button onClick={auth.login}>Login</button>;
+  }
+
+  return (
+    <div>
+      <p>Welcome! Canton registered: {canton.isRegistered ? 'Yes' : 'No'}</p>
+      <button onClick={logout}>Complete Logout</button>
+    </div>
+  );
+}
+```
+
+**What `useSupa().logout()` does:**
+1. Clears all Canton state (balances, user info, registration flags)
+2. Terminates Privy session
+3. Resets all internal SDK state
+
+**Note:** Using `auth.logout()` directly only logs out from Privy but doesn't clear Canton state. For complete cleanup, always use `useSupa().logout()`.
 
 ---
 
@@ -658,8 +731,9 @@ await sendTransaction(command, contracts, {
 
 | Hook | Purpose | Key Methods |
 |------|---------|-------------|
+| `useSupa` | Main SDK hook | `auth`, `canton`, `api`, `onboard`, `logout` (recommended for complete cleanup) |
 | `useAuth` | Authentication | `login`, `logout`, `authenticated`, `user` |
-| `useCanton` | Canton Network | `registerCanton`, `getBalances`, `sendCantonCoin`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet`, `getPendingIncomingTransfers`, `respondToIncomingTransfer` |
+| `useCanton` | Canton Network | `registerCanton`, `getBalances`, `sendCantonCoin`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet`, `getPendingIncomingTransfers`, `respondToIncomingTransfer`, `resetState` |
 | `useSignMessage` | Enhanced message signing | `signMessage` with custom modals |
 | `useSendTransaction` | Enhanced transactions | `sendTransaction` with custom modals |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |

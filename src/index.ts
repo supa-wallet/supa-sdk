@@ -120,11 +120,11 @@ export { useConfirmModal } from './hooks/useConfirmModal';
 export type { UseConfirmModalReturn } from './hooks/useConfirmModal';
 
 /**
- * Stellar wallet hook
- * @see {@link useStellarWallet}
+ * Canton wallet hook (works with Stellar or Solana based on withExport config)
+ * @see {@link useCantonWallet}
  */
-export { useStellarWallet } from './hooks/useStellarWallet';
-export type { UseStellarWalletReturn } from './hooks/useStellarWallet';
+export { useCantonWallet, useStellarWallet } from './hooks/useCantonWallet';
+export type { UseCantonWalletReturn, UseStellarWalletReturn } from './hooks/useCantonWallet';
 
 /**
  * Smart Wallets hook (EVM)
@@ -157,10 +157,10 @@ export * from './core/types';
 export * from './utils/converters';
 
 /**
- * Stellar wallet utilities for Canton Network
- * @see {@link getStellarWallets}, {@link getPublicKeyBase64}, {@link isStellarWallet}
+ * Canton wallet utilities
+ * @see {@link getCantonWallets}, {@link getPublicKeyBase64}, {@link isCantonWallet}, {@link CantonWallet}
  */
-export * from './utils/stellar';
+export * from './utils/wallet';
 
 // ===== Advanced: Services =====
 /**
