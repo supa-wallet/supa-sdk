@@ -1,6 +1,6 @@
 import './types/styled.d.ts';
 import { useMemo, useState, useEffect } from 'react';
-import { SupaProvider, useSupa } from '@supanovaapp/sdk';
+import { SupaProvider, useInitializationTransactions, useSupa } from '@supanovaapp/sdk';
 import {
   LoginScreen,
   OnboardingSteps,
@@ -24,8 +24,6 @@ import {
   Footer,
   Divider,
   useTheme,
-  Button,
-  Card,
 } from './ui';
 
 function App() {
@@ -49,6 +47,7 @@ function AppWithTheme() {
         privyClientId,
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi',
         nodeIdentifier: import.meta.env.VITE_CANTON_NODE_ID,
+        supaAppId: import.meta.env.VITE_SUPA_APP_ID || undefined,
         appearance: {
           theme: mode,
         },
@@ -66,16 +65,31 @@ function AppWithTheme() {
 
 function Demo() {
   const { auth, canton } = useSupa();
+  const { runInitializationTransactions, loading: initLoading } = useInitializationTransactions();
+
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [inviteCodeError, setInviteCodeError] = useState<string>('');
+  const [initAttempted, setInitAttempted] = useState(false);
 
   const currentStep = useMemo(() => {
     if (!canton.cantonWallet) return 1;
     if (!canton.isRegistered) return 2;
-    if (canton.cantonUser && !canton.cantonUser.transferPreapprovalSet) return 3;
-    return 4;
-  }, [canton.cantonWallet, canton.isRegistered, canton.cantonUser])
+    return 3;
+  }, [canton.cantonWallet, canton.isRegistered])
+
+  // Auto-run initialization in background after registration once
+  useEffect(() => {
+    if (!auth.authenticated) return;
+    if (!canton.isRegistered) return;
+    if (initAttempted) return;
+
+    setInitAttempted(true);
+    runInitializationTransactions().catch(() => {
+      // do not block UI; allow retry on next app entry if needed
+      setInitAttempted(false);
+    });
+  }, [auth.authenticated, canton.isRegistered, initAttempted, runInitializationTransactions]);
 
   // Extract invite code error from Canton error
   useEffect(() => {
@@ -117,6 +131,10 @@ function Demo() {
       />
 
       <Main>
+        <div style={{ marginBottom: 12, opacity: 0.7, fontSize: '0.875rem' }}>
+          Initialization status: {initLoading ? 'running' : 'idle'}
+        </div>
+
         <OnboardingSteps
           currentStep={currentStep}
           loading={canton.loading}

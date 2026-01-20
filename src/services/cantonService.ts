@@ -23,6 +23,7 @@ import type {
   CantonTransactionsParams,
   CantonPriceInterval,
   CantonPriceCandleDto,
+  CantonSubmitMultipleResultDto,
 } from '../core/types';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 
@@ -41,6 +42,7 @@ export type {
   CantonTransactionsParams,
   CantonPriceInterval,
   CantonPriceCandleDto,
+  CantonSubmitMultipleResultDto,
 };
 
 export interface CantonRegisterParams {
@@ -242,6 +244,19 @@ export class CantonService {
   }
 
   /**
+   * Submit multiple signed Canton transactions in a single request
+   * @param txs Array of { hash, signature } (base64)
+   */
+  async submitMultiplePrepared(
+    txs: CantonSubmitRegisterRequestDto[]
+  ): Promise<CantonSubmitMultipleResultDto[]> {
+    return await this.client.post<CantonSubmitMultipleResultDto[]>(
+      '/canton/api/submit_multiple_prepared',
+      txs
+    );
+  }
+
+  /**
    * Query completion status for a submission
    * @param submissionId Submission ID from submitPrepared
    */
@@ -412,6 +427,17 @@ export class CantonService {
     // Invalidate cache after preapproval
     this.invalidateMeCache();
     return result;
+  }
+
+  /**
+   * Prepare initialization transactions for onboarding
+   * Backend may return 0..4 transactions depending on app rules.
+   */
+  async prepareInitializationTransactions(): Promise<CantonPrepareTransactionResponseDto[]> {
+    return await this.client.post<CantonPrepareTransactionResponseDto[]>(
+      '/canton/api/prepare_initialization_transactions',
+      {}
+    );
   }
 
   /**

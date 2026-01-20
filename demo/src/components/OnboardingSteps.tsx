@@ -87,7 +87,7 @@ export function OnboardingSteps({
   onInviteCodeChange,
   inviteCodeError,
 }: OnboardingStepsProps) {
-  if (currentStep >= 4) {
+  if (currentStep >= 3) {
     return null;
   }
 
@@ -156,25 +156,12 @@ export function OnboardingSteps({
               </div>
             )}
 
-            <StepIndicator $completed={currentStep > 3} $active={currentStep === 3}>
-              <StepNumber $completed={currentStep > 3} $active={currentStep === 3}>
-                {currentStep > 3 ? <CheckCircle style={{ width: 18, height: 18 }} /> : '3'}
-              </StepNumber>
-              <StepContent>
-                <StepTitle>Setup Transfer Preapproval</StepTitle>
-                <StepDescription>Enable seamless Canton transfers</StepDescription>
-              </StepContent>
-              {currentStep === 3 && loading && (
-                <Loader2 className="animate-spin" style={{ width: 20, height: 20 }} />
-              )}
-            </StepIndicator>
-
-            <StepIndicator $completed={currentStep === 4}>
-              <StepNumber $completed={currentStep === 4}>
-                {currentStep === 4 ? (
+            <StepIndicator $completed={currentStep === 3}>
+              <StepNumber $completed={currentStep === 3}>
+                {currentStep === 3 ? (
                   <CheckCircle style={{ width: 18, height: 18 }} />
                 ) : (
-                  '4'
+                  '3'
                 )}
               </StepNumber>
               <StepContent>

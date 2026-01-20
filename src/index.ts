@@ -9,7 +9,7 @@
  * @example
  * Basic setup
  * ```tsx
- * import { SupaProvider, useAuth, useCanton } from '@supa/sdk';
+ * import { SupaProvider, useAuth, useCanton } from '@supanovaapp/sdk';
  * 
  * function App() {
  *   return (
@@ -104,6 +104,13 @@ export type { UseSignMessageReturn, SignMessageOptions } from './hooks/useSignMe
  */
 export { useSendTransaction } from './hooks/useSendTransaction';
 export type { UseSendTransactionReturn, SendTransactionOptions } from './hooks/useSendTransaction';
+
+/**
+ * Initialization transactions hook (prepare_initialization_transactions)
+ * @see {@link useInitializationTransactions}
+ */
+export { useInitializationTransactions } from './hooks/useInitializationTransactions';
+export type { UseInitializationTransactionsReturn } from './hooks/useInitializationTransactions';
 
 /**
  * Sign raw hash with automatic confirmation modal

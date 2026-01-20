@@ -25,11 +25,11 @@ For a quick overview of the code, check out the demo application in the `/demo` 
 ### From npm (when published)
 
 ```bash
-npm install @supa/sdk
+npm install @supanovaapp/sdk
 # or
-yarn add @supa/sdk
+yarn add @supanovaapp/sdk
 # or
-pnpm add @supa/sdk
+pnpm add @supanovaapp/sdk
 ```
 
 #### Optional: For Smart Wallets support
@@ -67,7 +67,7 @@ npm link
 
 In your project directory:
 ```bash
-npm link @supa/sdk
+npm link @supanovaapp/sdk
 ```
 
 **Option B: Using local path**
@@ -76,7 +76,7 @@ In your project's `package.json`, add:
 ```json
 {
   "dependencies": {
-    "@supa/sdk": "file:../path/to/supa-sdk"
+    "@supanovaapp/sdk": "file:../path/to/supa-sdk"
   }
 }
 ```
@@ -101,7 +101,7 @@ npm install ../path/to/supa-sdk/supa-sdk-0.1.0.tgz
 ## Quick Start
 
 ```tsx
-import { SupaProvider, useAuth, useCanton } from '@supa/sdk';
+import { SupaProvider, useAuth, useCanton } from '@supanovaapp/sdk';
 
 function App() {
   return (
@@ -138,7 +138,7 @@ function MyApp() {
 Wrap your application with `SupaProvider`:
 
 ```tsx
-import { SupaProvider } from '@supa/sdk';
+import { SupaProvider } from '@supanovaapp/sdk';
 
 function App() {
   return (
@@ -255,7 +255,7 @@ function InviteOnlyApp() {
 Use the `useAuth` hook to manage authentication:
 
 ```tsx
-import { useAuth } from '@supa/sdk';
+import { useAuth } from '@supanovaapp/sdk';
 
 function LoginButton() {
   const { login, logout, authenticated, user } = useAuth();
@@ -282,7 +282,7 @@ After successful authentication, `authenticated` becomes `true` and `user` objec
 Export your wallet's private key to use it with other wallet clients like Phantom:
 
 ```tsx
-import { useAuth, useCantonWallet } from '@supa/sdk';
+import { useAuth, useCantonWallet } from '@supanovaapp/sdk';
 
 function ExportWalletButton() {
   const { exportWallet, authenticated } = useAuth();
@@ -322,7 +322,7 @@ function ExportWalletButton() {
 For a complete logout that clears all SDK state (Canton balances, registration, etc.), use the `useSupa` hook:
 
 ```tsx
-import { useSupa } from '@supa/sdk';
+import { useSupa } from '@supanovaapp/sdk';
 
 function App() {
   const { auth, canton, logout } = useSupa();
@@ -356,7 +356,7 @@ function App() {
 Register your Canton wallet with optional invite code support:
 
 ```tsx
-import { useCanton } from '@supa/sdk';
+import { useCanton } from '@supanovaapp/sdk';
 
 function CantonWallet() {
   const { registerCanton, isRegistered, cantonUser, loading } = useCanton();
@@ -696,7 +696,7 @@ try {
 #### Custom Modal Options
 
 ```tsx
-import { useSignMessage } from '@supa/sdk';
+import { useSignMessage } from '@supanovaapp/sdk';
 
 const { signMessage } = useSignMessage();
 
@@ -713,7 +713,7 @@ await signMessage('Hello', {
 #### Custom Transaction Modals
 
 ```tsx
-import { useSendTransaction } from '@supa/sdk';
+import { useSendTransaction } from '@supanovaapp/sdk';
 
 const { sendTransaction } = useSendTransaction();
 
@@ -770,7 +770,7 @@ import type {
   SendTransactionOptions,
   ConfirmModalOptions,
   CantonSubmitPreparedOptions,
-} from '@supa/sdk';
+} from '@supanovaapp/sdk';
 ```
 
 ## How to run demo
@@ -832,7 +832,7 @@ npm run build
 
 ### Development Workflow
 
-The demo application in `/demo` folder is already configured to use the local SDK version via `"@supa/sdk": "file:.."` dependency.
+The demo application in `/demo` folder is already configured to use the local SDK version via `"@supanovaapp/sdk": "file:.."` dependency.
 
 #### Recommended Workflow
 

@@ -60,31 +60,12 @@ export class ApiService {
   constructor(private client: ApiClient) {}
 
   /**
-   * Invalidate /user/me cache
-   * Called after operations that modify user data
-   */
-  private invalidateUserCache(): void {
-    this.userMeCache = null;
-    this.userMeCacheTimestamp = 0;
-    this.userMePendingPromise = null;
-  }
-
-  /**
    * Invalidate /supa_points/balance cache
    */
   private invalidateSupaPointsCache(): void {
     this.supaPointsBalanceCache = null;
     this.supaPointsBalanceCacheTimestamp = 0;
     this.supaPointsBalancePendingPromise = null;
-  }
-
-  /**
-   * Invalidate /privy/balance cache
-   */
-  private invalidatePrivyBalanceCache(): void {
-    this.privyBalanceCache = null;
-    this.privyBalanceCacheTimestamp = 0;
-    this.privyBalancePendingPromise = null;
   }
 
   // ============= User Methods =============

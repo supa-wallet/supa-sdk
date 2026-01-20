@@ -143,13 +143,24 @@ export interface CantonProviderProps {
   withExport?: boolean;
   /** Enable automatic onboarding (create wallet + register Canton on login). Default: true */
   autoOnboarding?: boolean;
+  /**
+   * Legacy onboarding stage: automatically setup transfer preapproval after registration.
+   * Default: false (new onboarding uses prepare_initialization_transactions).
+   */
+  autoTransferPreapproval?: boolean;
 }
 
 // ============================================================================
 // Canton Provider Component
 // ============================================================================
 
-export function CantonProvider({ cantonService, children, withExport = false, autoOnboarding = true }: CantonProviderProps) {
+export function CantonProvider({
+  cantonService,
+  children,
+  withExport = false,
+  autoOnboarding = true,
+  autoTransferPreapproval = false,
+}: CantonProviderProps) {
   const { user, authenticated } = useAuth();
   const { wallets } = useWallets();
   const { signRawHashWithModal } = useSignRawHashWithModal();
@@ -215,6 +226,10 @@ export function CantonProvider({ cantonService, children, withExport = false, au
           setCantonUser(fetchedUser);
           
           // Automatically setup transfer preapproval if not set
+          if (!autoTransferPreapproval) {
+            return;
+          }
+
           if (!fetchedUser.transferPreapprovalSet && !preapprovalAttempted.current && cantonWallet) {
             preapprovalAttempted.current = true;
             setupTransferPreapprovalInternal(fetchedUser).catch(err => {
@@ -228,7 +243,7 @@ export function CantonProvider({ cantonService, children, withExport = false, au
       
       fetchUserInfo();
     }
-  }, [authenticated, cantonWallet, isRegistered]);
+  }, [authenticated, cantonWallet, isRegistered, autoTransferPreapproval]);
 
   // ============================================================================
   // Clear Error
