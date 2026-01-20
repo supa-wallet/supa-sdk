@@ -19,6 +19,8 @@ export interface SupaConfig {
   privyClientId?: string;
   apiBaseUrl?: string;
   nodeIdentifier: string;
+  /** Optional app identifier for special app-specific rules (sent as X-Supa-App-Id header) */
+  supaAppId?: string;
   appearance?: {
     theme?: 'light' | 'dark';
     accentColor?: string;
@@ -53,6 +55,14 @@ export interface SupaConfig {
   withExport?: boolean;
   /** Enable automatic onboarding (create wallet + register Canton on login). Default: true */
   autoOnboarding?: boolean;
+  /**
+   * Optional onboarding stages flags.
+   * By default transfer preapproval is NOT auto-executed.
+   */
+  onboardingStages?: {
+    /** Auto-run transfer preapproval stage (legacy). Default: false */
+    transferPreapproval?: boolean;
+  };
 }
 export interface ConfirmModalOptions {
   title?: string;
@@ -132,6 +142,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
     const apiClient = createApiClient({
       baseURL: config.apiBaseUrl,
       nodeIdentifier: config.nodeIdentifier,
+      supaAppId: config.supaAppId,
     });
 
     const cantonService = createCantonService(apiClient);
@@ -233,7 +244,12 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
           } : undefined}
         >
           <SupaContext.Provider value={contextValue}>
-            <CantonProvider cantonService={services.cantonService} withExport={config.withExport} autoOnboarding={config.autoOnboarding}>
+            <CantonProvider
+              cantonService={services.cantonService}
+              withExport={config.withExport}
+              autoOnboarding={config.autoOnboarding}
+              autoTransferPreapproval={config.onboardingStages?.transferPreapproval ?? false}
+            >
               <div className={themeClass}>
                 {children}
 
@@ -278,7 +294,12 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
         </SmartWalletsProvider>
       ) : (
         <SupaContext.Provider value={contextValue}>
-          <CantonProvider cantonService={services.cantonService} withExport={config.withExport} autoOnboarding={config.autoOnboarding}>
+          <CantonProvider
+            cantonService={services.cantonService}
+            withExport={config.withExport}
+            autoOnboarding={config.autoOnboarding}
+            autoTransferPreapproval={config.onboardingStages?.transferPreapproval ?? false}
+          >
             <div className={themeClass}>
               {children}
 

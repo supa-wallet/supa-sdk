@@ -36,6 +36,7 @@ VITE_PRIVY_APP_ID=your_privy_app_id
 VITE_PRIVY_CLIENT_ID=your_privy_client_id
 VITE_API_BASE_URL=https://stage_api.supa.fyi
 VITE_CANTON_NODE_ID=nodeId
+VITE_SUPA_APP_ID=supa-app-300
 ```
 
 > **Important**: Get Privy credentials at https://dashboard.privy.io
@@ -149,7 +150,7 @@ export default defineConfig({
 ### Basic Login
 
 ```tsx
-import { useAuth } from '@supa/sdk';
+import { useAuth } from '@supanovaapp/sdk';
 
 function LoginButton() {
   const { login, authenticated, user } = useAuth();
@@ -169,7 +170,7 @@ function LoginButton() {
 ### Canton Registration
 
 ```tsx
-import { useCanton } from '@supa/sdk';
+import { useCanton } from '@supanovaapp/sdk';
 
 function RegisterCanton() {
   const { registerCanton, isRegistered, loading, error } = useCanton();
@@ -192,7 +193,7 @@ function RegisterCanton() {
 ### Getting Test Tokens
 
 ```tsx
-import { useCanton } from '@supa/sdk';
+import { useCanton } from '@supanovaapp/sdk';
 
 function TapDevnet() {
   const { tapDevnet, loading } = useCanton();
@@ -220,7 +221,7 @@ function TapDevnet() {
 **Note:** Wallet export requires `withExport: true` in SupaProvider config.
 
 ```tsx
-import { useAuth, useStellarWallet } from '@supa/sdk';
+import { useAuth, useStellarWallet } from '@supanovaapp/sdk';
 
 function ExportWalletButton() {
   const { exportWallet, authenticated } = useAuth();
@@ -251,7 +252,7 @@ function ExportWalletButton() {
 ### Complete Logout
 
 ```tsx
-import { useSupa } from '@supa/sdk';
+import { useSupa } from '@supanovaapp/sdk';
 
 function LogoutButton() {
   const { logout, auth } = useSupa();

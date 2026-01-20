@@ -9,24 +9,21 @@ import type { ApiError } from './types';
 export interface ClientConfig {
   baseURL?: string;
   nodeIdentifier: string;
+  /** Optional app identifier for app-specific backend rules */
+  supaAppId?: string;
   getAccessToken?: () => Promise<string | null>;
-}
-
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
 }
 
 export class ApiClient {
   private client: AxiosInstance;
   private getAccessToken?: () => Promise<string | null>;
   private nodeIdentifier: string;
-  private cache: Map<string, CacheEntry<any>> = new Map();
-  private cacheTTL: number = 5 * 60 * 1000; // 5 minutes default TTL
+  private supaAppId?: string;
 
   constructor(config: ClientConfig = { nodeIdentifier: '' }) {
     const baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi';
     this.nodeIdentifier = config.nodeIdentifier;
+    this.supaAppId = config.supaAppId;
     
     this.client = axios.create({
       baseURL,
@@ -55,13 +52,19 @@ export class ApiClient {
         if (config.url?.startsWith('/canton/')) {
           config.headers['X-Canton-Node-Id'] = this.nodeIdentifier;
         }
+
+        // Add X-Supa-App-Id for app-specific backend rules (all requests)
+        if (this.supaAppId) {
+          config.headers['X-Supa-App-Id'] = this.supaAppId;
+        }
         
         // Log request details
         console.group(`[Supa SDK] 📤 REQUEST: ${config.method?.toUpperCase()} ${config.url}`);
         console.log('Headers:', {
           'Content-Type': config.headers['Content-Type'],
           'Authorization': config.headers.Authorization ? `Bearer ***${String(config.headers.Authorization).slice(-20)}` : 'none',
-          'X-Canton-Node-Id': config.headers['X-Canton-Node-Id'] || 'none'
+          'X-Canton-Node-Id': config.headers['X-Canton-Node-Id'] || 'none',
+          'X-Supa-App-Id': config.headers['X-Supa-App-Id'] || 'none',
         });
         if (config.data) {
           console.log('Request Body:', config.data);

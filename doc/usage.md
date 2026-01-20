@@ -5,25 +5,25 @@
 Using npm:
 
 ```bash
-npm install @supa/sdk
+npm install @supanovaapp/sdk
 ```
 
 Using yarn:
 
 ```bash
-yarn add @supa/sdk
+yarn add @supanovaapp/sdk
 ```
 
 Using pnpm:
 
 ```bash
-pnpm add @supa/sdk
+pnpm add @supanovaapp/sdk
 ```
 
 Then import into your dApp:
 
 ```javascript
-import { SupaProvider, useAuth, useCanton } from '@supa/sdk';
+import { SupaProvider, useAuth, useCanton } from '@supanovaapp/sdk';
 ```
 
 ---
@@ -33,7 +33,7 @@ import { SupaProvider, useAuth, useCanton } from '@supa/sdk';
 Wrap your application with `SupaProvider`. This is typically done once when your application loads:
 
 ```tsx
-import { SupaProvider } from '@supa/sdk';
+import { SupaProvider } from '@supanovaapp/sdk';
 
 function App() {
   return (
@@ -81,7 +81,7 @@ function App() {
 Use the `useAuth` hook to manage authentication:
 
 ```tsx
-import { useAuth } from '@supa/sdk';
+import { useAuth } from '@supanovaapp/sdk';
 
 function LoginButton() {
   const { login, logout, authenticated, user } = useAuth();
@@ -127,7 +127,7 @@ This opens the Privy authentication modal where users can choose their preferred
 For a complete logout with state cleanup, use the `useSupa` hook:
 
 ```tsx
-import { useSupa } from '@supa/sdk';
+import { useSupa } from '@supanovaapp/sdk';
 
 function LogoutButton() {
   const { logout, auth } = useSupa();
@@ -160,7 +160,7 @@ function LogoutButton() {
 Export your wallet's private key to use it with other wallet clients:
 
 ```tsx
-import { useAuth, useStellarWallet } from '@supa/sdk';
+import { useAuth, useStellarWallet } from '@supanovaapp/sdk';
 
 function ExportWalletButton() {
   const { exportWallet, authenticated } = useAuth();
@@ -230,7 +230,7 @@ function ExportWalletButton() {
 After authentication, use the `useCanton` hook to interact with Canton Network. The hook provides access to Canton wallet operations and ledger interactions.
 
 ```tsx
-import { useCanton } from '@supa/sdk';
+import { useCanton } from '@supanovaapp/sdk';
 
 function CantonWallet() {
   const { 
@@ -405,7 +405,7 @@ try {
 On the test network, request tokens from the devnet faucet:
 
 ```tsx
-import { useCanton } from '@supa/sdk';
+import { useCanton } from '@supanovaapp/sdk';
 
 function DevnetFaucet() {
   const { tapDevnet, loading } = useCanton();
@@ -455,7 +455,7 @@ function DevnetFaucet() {
 Use `useSignMessage` for enhanced control over modal dialogs:
 
 ```tsx
-import { useSignMessage } from '@supa/sdk';
+import { useSignMessage } from '@supanovaapp/sdk';
 
 function SignMessageExample() {
   const { signMessage, loading, error } = useSignMessage();
@@ -502,7 +502,7 @@ function SignMessageExample() {
 Use `useSendTransaction` for enhanced transaction handling:
 
 ```tsx
-import { useSendTransaction } from '@supa/sdk';
+import { useSendTransaction } from '@supanovaapp/sdk';
 
 function SendTransactionExample() {
   const { sendTransaction, loading, error } = useSendTransaction();
@@ -552,7 +552,7 @@ function SendTransactionExample() {
 Use `useConfirmModal` for custom confirmation dialogs:
 
 ```tsx
-import { useConfirmModal } from '@supa/sdk';
+import { useConfirmModal } from '@supanovaapp/sdk';
 
 function DeleteButton() {
   const { confirm } = useConfirmModal();
@@ -600,7 +600,7 @@ The SDK automatically inherits the theme from your `SupaProvider` config:
 The SDK reacts to theme changes. Update the `theme` prop and all modals will automatically adapt:
 
 ```tsx
-import { SupaProvider } from '@supa/sdk';
+import { SupaProvider } from '@supanovaapp/sdk';
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -652,7 +652,7 @@ import type {
   SignMessageOptions,
   SendTransactionOptions,
   ConfirmModalOptions,
-} from '@supa/sdk';
+} from '@supanovaapp/sdk';
 ```
 
 ### Hook Types
@@ -691,7 +691,7 @@ The SDK exports utilities for advanced usage:
 import {
   privyPublicKeyToCantonBase64,
   getStellarWallets,
-} from '@supa/sdk';
+} from '@supanovaapp/sdk';
 ```
 
 ### Wallet Utilities

@@ -60,6 +60,17 @@ export interface CantonSubmitTransactionResponseDto {
   submissionId: string;
 }
 
+export interface CantonSubmitMultipleResultDto {
+  /** Hash of the transaction that was submitted */
+  hash: string;
+  /** Whether the submission succeeded */
+  success: boolean;
+  /** Submission ID if successful */
+  submissionId?: string;
+  /** Error message if failed */
+  error?: string;
+}
+
 export type CantonQueryCompletionStatus = 'completed' | 'unknown';
 
 export interface CantonQueryCompletionResponseDto {

@@ -17,7 +17,7 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@supa/sdk": ["../src/index.ts"]
+      "@supanovaapp/sdk": ["../src/index.ts"]
     }
   },
   "include": ["src"],
