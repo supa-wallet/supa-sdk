@@ -33,6 +33,7 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
   const clearError = useCallback(() => setError(null), []);
 
   const runInitializationTransactions = useCallback(async (): Promise<CantonSubmitMultipleResultDto[]> => {
+    console.log('[Init Txs] Starting initialization transactions...');
     if (!cantonWallet) {
       const e = new Error('No Canton wallet found. Please create one first.');
       setError(e);
@@ -43,16 +44,21 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
     setError(null);
 
     try {
+      console.log('[Init Txs] Preparing transactions...');
       const prepared = await cantonService.prepareInitializationTransactions();
+      console.log('[Init Txs] Prepared transactions:', prepared);
       if (!prepared.length) {
+        console.log('[Init Txs] No transactions to initialize');
         return [];
       }
 
       const chainType = config.withExport ? 'solana' : 'stellar';
+      console.log('[Init Txs] Chain type:', chainType);
 
       // Sign sequentially to avoid wallet/provider concurrency issues.
       const signedTxs: CantonSubmitRegisterRequestDto[] = [];
       for (const tx of prepared) {
+        console.log('[Init Txs] Signing transaction:', tx.hash);
         const hashHex = base64ToHex(tx.hash);
         const signResult = await signRawHashWithModal(
           { address: cantonWallet.address, chainType, hash: hashHex as `0x${string}` },
@@ -60,9 +66,11 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
         );
 
         if (!signResult) {
+          console.error('[Init Txs] User rejected signature');
           throw new Error('User rejected initialization transaction signature');
         }
 
+        console.log('[Init Txs] Transaction signed successfully');
         signedTxs.push({
           hash: tx.hash,
           signature: hexToBase64(signResult.signature),
@@ -70,9 +78,13 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
       }
 
       // Preferred: single submit_multiple_prepared call
+      console.log('[Init Txs] Submitting all transactions...');
       try {
-        return await cantonService.submitMultiplePrepared(signedTxs);
+        const result = await cantonService.submitMultiplePrepared(signedTxs);
+        console.log('[Init Txs] ✅ All transactions submitted:', result);
+        return result;
       } catch (e: any) {
+        console.warn('[Init Txs] Batch submit failed, trying individual submits:', e);
         // Fallback: submit each prepared in parallel
         const results = await Promise.allSettled(
           signedTxs.map(async (t) => {
@@ -81,15 +93,18 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
           })
         );
 
-        return results.map((r, i) => {
+        const finalResults = results.map((r, i) => {
           const hash = signedTxs[i]?.hash ?? '';
           if (r.status === 'fulfilled') {
             return { hash, success: true, submissionId: r.value.submissionId };
           }
           return { hash, success: false, error: r.reason?.message ?? String(r.reason ?? 'Unknown error') };
         });
+        console.log('[Init Txs] ✅ Individual submits completed:', finalResults);
+        return finalResults;
       }
     } catch (err: any) {
+      console.error('[Init Txs] ❌ Error:', err);
       const e = new Error(`Failed to run initialization transactions: ${err.message ?? String(err)}`);
       setError(e);
       throw e;

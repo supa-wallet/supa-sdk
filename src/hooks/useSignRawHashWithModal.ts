@@ -5,7 +5,7 @@
  * Supports both Stellar (rawSign) and Solana (signMessage) based on withExport config
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useSignRawHash } from '@privy-io/react-auth/extended-chains';
 import { useSignMessage as useSolanaSignMessage, useWallets as useSolanaWallets } from '@privy-io/react-auth/solana';
 import { useSupaContext } from '../providers/SupaProvider';
@@ -66,6 +66,11 @@ export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
   // Solana signing (for withExport: true)
   const { signMessage: solanaSignMessage } = useSolanaSignMessage();
   const { wallets: solanaWallets } = useSolanaWallets();
+  const solanaWalletsRef = useRef(solanaWallets);
+
+  useEffect(() => {
+    solanaWalletsRef.current = solanaWallets;
+  }, [solanaWallets]);
 
   const signRawHashWithModal = useCallback(
     async (
@@ -94,7 +99,23 @@ export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
       const performSign = async (): Promise<{ signature: string }> => {
         if (withExport) {
           // Solana approach: use signMessage
-          const wallet = solanaWallets.find(w => w.address === params.address);
+          let wallet = solanaWalletsRef.current.find(
+            (w) => w.address === params.address,
+          );
+          if (!wallet) {
+            // In some environments (notably Telegram WebView), the newly created Solana
+            // embedded wallet may not appear in `useWallets()` immediately.
+            // Poll for a short time so onboarding flows can sign on the first click.
+            const maxAttempts = 30; // 30 * 500ms = 15s max
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              await new Promise((r) => setTimeout(r, 500));
+              wallet = solanaWalletsRef.current.find(
+                (w) => w.address === params.address,
+              );
+              if (wallet) break;
+            }
+          }
+
           if (!wallet) {
             throw new Error(`Wallet not found for address: ${params.address}`);
           }
@@ -152,7 +173,13 @@ export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
       const result = await performSign();
       return result;
     },
-    [withExport, signRawHash, solanaSignMessage, solanaWallets, signTransactionConfirm, setModalLoading]
+    [
+      withExport,
+      signRawHash,
+      solanaSignMessage,
+      signTransactionConfirm,
+      setModalLoading,
+    ]
   );
 
   return {

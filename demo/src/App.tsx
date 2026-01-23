@@ -53,7 +53,7 @@ function AppWithTheme() {
         },
         autoOnboarding: false,
         withExport: true,
-        loginMethods: ['email', 'wallet'],
+        loginMethods: ['email', 'wallet', 'telegram'],
       }}
     >
       <ToastProvider>
@@ -65,7 +65,7 @@ function AppWithTheme() {
 
 function Demo() {
   const { auth, canton } = useSupa();
-  const { runInitializationTransactions, loading: initLoading } = useInitializationTransactions();
+  // const { runInitializationTransactions, loading: initLoading } = useInitializationTransactions();
 
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
@@ -85,11 +85,11 @@ function Demo() {
     if (initAttempted) return;
 
     setInitAttempted(true);
-    runInitializationTransactions().catch(() => {
-      // do not block UI; allow retry on next app entry if needed
-      setInitAttempted(false);
-    });
-  }, [auth.authenticated, canton.isRegistered, initAttempted, runInitializationTransactions]);
+    // runInitializationTransactions().catch(() => {
+    //   // do not block UI; allow retry on next app entry if needed
+    //   setInitAttempted(false);
+    // });
+  }, [auth.authenticated, canton.isRegistered, initAttempted,]);
 
   // Extract invite code error from Canton error
   useEffect(() => {
@@ -131,9 +131,9 @@ function Demo() {
       />
 
       <Main>
-        <div style={{ marginBottom: 12, opacity: 0.7, fontSize: '0.875rem' }}>
+        {/* <div style={{ marginBottom: 12, opacity: 0.7, fontSize: '0.875rem' }}>
           Initialization status: {initLoading ? 'running' : 'idle'}
-        </div>
+        </div> */}
 
         <OnboardingSteps
           currentStep={currentStep}

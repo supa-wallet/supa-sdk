@@ -14,6 +14,7 @@ import {
   Modal,
   Flex,
 } from '../ui';
+import { usePrivy } from '@privy-io/react-auth';
 
 const DangerZone = styled.div`
   border: 2px solid ${({ theme }) => theme.colors.error || '#ef4444'};
@@ -140,16 +141,16 @@ export function DeleteAccount() {
         <Card>
           <CardHeader>
             <CardTitle>
-              <Trash2 /> Опасная зона
+              <Trash2 /> Dangerous zone
             </CardTitle>
           </CardHeader>
           <CardContent>
             <DangerZone>
               <Text $weight={600} style={{ marginBottom: 8 }}>
-                Удалить аккаунт
+                Delete account
               </Text>
               <Text $color="secondary" $size="sm" style={{ marginBottom: 16 }}>
-                Удаление аккаунта необратимо. Все ваши данные будут потеряны навсегда.
+                Deleting your account is irreversible. All your data will be lost forever.
               </Text>
               <DeleteButton onClick={handleDeleteClick}>
                 Удалить мой аккаунт
