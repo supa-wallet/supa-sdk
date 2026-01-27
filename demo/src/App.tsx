@@ -65,7 +65,7 @@ function AppWithTheme() {
 
 function Demo() {
   const { auth, canton } = useSupa();
-  // const { runInitializationTransactions, loading: initLoading } = useInitializationTransactions();
+  const { runInitializationTransactions } = useInitializationTransactions();
 
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
@@ -81,15 +81,16 @@ function Demo() {
   // Auto-run initialization in background after registration once
   useEffect(() => {
     if (!auth.authenticated) return;
+    if (!canton.cantonWallet) return;
     if (!canton.isRegistered) return;
     if (initAttempted) return;
 
     setInitAttempted(true);
-    // runInitializationTransactions().catch(() => {
-    //   // do not block UI; allow retry on next app entry if needed
-    //   setInitAttempted(false);
-    // });
-  }, [auth.authenticated, canton.isRegistered, initAttempted,]);
+    runInitializationTransactions().catch(() => {
+      // do not block UI; allow retry on next app entry if needed
+      setInitAttempted(false);
+    });
+  }, [auth.authenticated, canton.cantonWallet, canton.isRegistered, initAttempted, runInitializationTransactions]);
 
   // Extract invite code error from Canton error
   useEffect(() => {
@@ -131,10 +132,6 @@ function Demo() {
       />
 
       <Main>
-        {/* <div style={{ marginBottom: 12, opacity: 0.7, fontSize: '0.875rem' }}>
-          Initialization status: {initLoading ? 'running' : 'idle'}
-        </div> */}
-
         <OnboardingSteps
           currentStep={currentStep}
           loading={canton.loading}

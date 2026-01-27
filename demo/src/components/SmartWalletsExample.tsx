@@ -78,23 +78,23 @@ export function SmartWalletsExample() {
       
       <Status ready={ready}>
         <span>{ready ? '●' : '○'}</span>
-        {ready ? 'Готов к использованию' : 'Не инициализирован'}
+        {ready ? 'Ready to use' : 'Not initialized'}
       </Status>
 
       {address ? (
         <>
-          <Info>Адрес вашего Smart Wallet:</Info>
+          <Info>Your Smart Wallet address:</Info>
           <Address>{address}</Address>
           <Info>
-            Smart Wallet - это управляемый смарт-контрактом кошелёк с расширенными возможностями,
-            включая спонсирование газа и пакетные транзакции.
+            A Smart Wallet is a smart-contract-based wallet with advanced features,
+            including gas sponsorship and batch transactions.
           </Info>
         </>
       ) : (
         <>
           <Info>
-            Smart Wallet автоматически создаётся после создания embedded wallet.
-            {!client && ' Пожалуйста, войдите в систему для использования Smart Wallet.'}
+            A Smart Wallet is automatically created after an embedded wallet is created.
+            {!client && ' Please sign in to use Smart Wallet.'}
           </Info>
         </>
       )}

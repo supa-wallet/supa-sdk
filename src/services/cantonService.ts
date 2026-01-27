@@ -66,6 +66,8 @@ export interface CantonSubmitPreparedOptions {
   timeout?: number;
   /** Polling interval in milliseconds (default: 1000) */
   pollInterval?: number;
+  /** Callback fired after submitPrepared returns submissionId (optional) */
+  onSubmissionId?: (submissionId: string) => void | Promise<void>;
   /** Callback to receive cost estimation before signing (optional) */
   onCostEstimation?: (costEstimation: CantonCostEstimationDto | undefined) => void | Promise<void>;
 }
@@ -285,6 +287,16 @@ export class CantonService {
     // Submit the transaction
     const submitResponse = await this.submitPrepared(hash, signature);
     const { submissionId } = submitResponse;
+
+    // Notify caller that the submission was accepted and we have a submissionId
+    if (options.onSubmissionId) {
+      try {
+        await options.onSubmissionId(submissionId);
+      } catch (e) {
+        console.error(e);
+        // Ignore callback errors to avoid breaking the submit flow
+      }
+    }
     
     // Poll for completion
     const startTime = Date.now();

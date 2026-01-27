@@ -74,7 +74,7 @@ export interface ConfirmModalOptions {
 }
 
 export interface SignTransactionOptions {
-  transaction: string;
+  transaction: string | string[];
   title?: string;
   description?: string;
   confirmText?: string;

@@ -6,6 +6,7 @@ import { CantonContracts } from './CantonContracts';
 import { CantonUserInfo } from './CantonUserInfo';
 import { SignMessage } from './SignMessage';
 import { SendTransaction } from './SendTransaction';
+import { SendTransactions } from './SendTransactions';
 
 const StyledTabList = styled(TabList)`
   display: flex;
@@ -88,7 +89,10 @@ export function CantonOperationsTabs({ showTechnicalDetails }: CantonOperationsT
             <SignMessage showTechnicalDetails={showTechnicalDetails} />
           </TabPanel>
           <TabPanel>
-            <SendTransaction showTechnicalDetails={showTechnicalDetails} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <SendTransaction showTechnicalDetails={showTechnicalDetails} />
+              <SendTransactions showTechnicalDetails={showTechnicalDetails} />
+            </div>
           </TabPanel>
         </TabPanels>
       </TabGroup>

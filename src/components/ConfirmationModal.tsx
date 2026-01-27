@@ -188,7 +188,7 @@ export interface ConfirmationModalProps {
   onConfirm: () => void;
   onReject: () => void;
   title?: ReactNode;
-  message: string;
+  message: string | string[];
   confirmText?: string;
   rejectText?: string;
   description?: string;
@@ -274,9 +274,19 @@ export function ConfirmationModal({
               <div style={styles.body}>
                 {description && <p style={styles.description}>{description}</p>}
                 
-                <div style={styles.messageContainer}>
-                  <pre style={styles.messageContent}>{message}</pre>
-                </div>
+                {Array.isArray(message) ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {message.map((m, idx) => (
+                      <div key={idx} style={{ ...styles.messageContainer, marginBottom: 0 }}>
+                        <pre style={styles.messageContent}>{m}</pre>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={styles.messageContainer}>
+                    <pre style={styles.messageContent}>{message}</pre>
+                  </div>
+                )}
 
                 {infoText && (
                   <div style={styles.infoBox}>
@@ -383,7 +393,7 @@ export interface SignTransactionModalProps {
   onClose: () => void;
   onConfirm: () => void;
   onReject: () => void;
-  transaction: string;
+  transaction: string | string[];
   loading?: boolean;
   title?: string;
   description?: string;
@@ -400,22 +410,30 @@ export function SignTransactionModal({
   transaction,
   loading = false,
   title = 'Sign Transaction',
-  description = 'Review and sign the following transaction:',
+  description,
   confirmText = 'Sign & Send',
   rejectText = 'Reject',
   infoText = 'You are submitting a transaction, please be careful',
 }: SignTransactionModalProps) {
+  const txCount = Array.isArray(transaction) ? transaction.length : 1;
+  const computedTitle = txCount > 1 ? `${String(title)} (${txCount})` : title;
+  const computedDescription =
+    description ??
+    (txCount > 1
+      ? `Review and sign the following transactions (${txCount}).`
+      : 'Review and sign the following transaction:');
+
   return (
     <ConfirmationModal
       open={open}
       onClose={onClose}
       onConfirm={onConfirm}
       onReject={onReject}
-      title={title}
+      title={computedTitle}
       message={transaction}
       confirmText={confirmText}
       rejectText={rejectText}
-      description={description}
+      description={computedDescription}
       infoText={infoText}
       icon={<SendIcon />}
       loading={loading}

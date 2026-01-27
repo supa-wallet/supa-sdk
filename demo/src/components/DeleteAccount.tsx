@@ -91,14 +91,12 @@ export function DeleteAccount() {
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
-      // Получаем токен авторизации
       const token = await auth.getAccessToken();
       
       if (!token) {
         throw new Error('No access token available');
       }
 
-      // Делаем DELETE запрос к /debug/me
       const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi';
       const response = await fetch(`${baseURL}/debug/me`, {
         method: 'DELETE',
@@ -113,19 +111,17 @@ export function DeleteAccount() {
         throw new Error(errorData.message || `Failed to delete account: ${response.status}`);
       }
 
-      toast.success('Аккаунт успешно удален');
+      toast.success('Account deleted successfully');
       
-      // Закрываем модалку
       setIsModalOpen(false);
       
-      // Делаем logout после небольшой задержки
       setTimeout(() => {
         auth.logout();
       }, 1000);
       
     } catch (error: any) {
       console.error('Delete account error:', error);
-      toast.error(error?.message || 'Ошибка при удалении аккаунта');
+      toast.error(error?.message || 'Failed to delete account');
     } finally {
       setIsDeleting(false);
     }
@@ -153,7 +149,7 @@ export function DeleteAccount() {
                 Deleting your account is irreversible. All your data will be lost forever.
               </Text>
               <DeleteButton onClick={handleDeleteClick}>
-                Удалить мой аккаунт
+                Delete my account
               </DeleteButton>
             </DangerZone>
           </CardContent>
@@ -166,16 +162,16 @@ export function DeleteAccount() {
         title={
           <>
             <AlertTriangle style={{ color: '#ef4444' }} />
-            Подтверждение удаления аккаунта
+            Confirm account deletion
           </>
         }
         footer={
           <ModalActions $gap={3} $justify="flex-end">
             <Button onClick={handleCancel} disabled={isDeleting} $variant="secondary">
-              Отмена
+              Cancel
             </Button>
             <DeleteButton onClick={handleConfirmDelete} disabled={isDeleting}>
-              {isDeleting ? 'Удаление...' : 'Да, удалить аккаунт'}
+              {isDeleting ? 'Deleting...' : 'Yes, delete account'}
             </DeleteButton>
           </ModalActions>
         }
@@ -183,12 +179,12 @@ export function DeleteAccount() {
         <ModalWarningBox>
           <AlertTriangle size={20} />
           <WarningText>
-            <strong>Внимание!</strong> Это действие нельзя отменить.
+            <strong>Warning!</strong> This action cannot be undone.
           </WarningText>
         </ModalWarningBox>
 
         <ModalText>
-          Вы собираетесь <strong>безвозвратно удалить</strong> свой аккаунт. Это приведет к:
+          You are about to <strong>permanently delete</strong> your account. This will result in:
         </ModalText>
 
         <ul style={{ 
@@ -197,14 +193,14 @@ export function DeleteAccount() {
           color: 'var(--text-secondary)',
           lineHeight: 1.6,
         }}>
-          <li>Удалению всех ваших данных</li>
-          <li>Удалению вашего Canton кошелька</li>
-          <li>Потере доступа к вашим балансам</li>
-          <li>Невозможности восстановить аккаунт</li>
+          <li>Deletion of all your data</li>
+          <li>Deletion of your Canton wallet</li>
+          <li>Losing access to your balances</li>
+          <li>Account recovery will not be possible</li>
         </ul>
 
         <ModalText>
-          Вы уверены, что хотите продолжить?
+          Are you sure you want to continue?
         </ModalText>
       </Modal>
     </>
