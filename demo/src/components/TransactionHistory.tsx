@@ -147,7 +147,7 @@ export function TransactionHistory() {
 
   const formatDate = (isoDate: string) => {
     const date = new Date(isoDate);
-    return date.toLocaleString('ru-RU', {
+    return date.toLocaleString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -174,20 +174,20 @@ export function TransactionHistory() {
     <Card>
       <CardContent>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text $size="lg" $weight={600}>История транзакций</Text>
+          <Text $size="lg" $weight={600}>Transaction History</Text>
           <Button
             onClick={() => loadTransactions(false)}
             disabled={loading}
             $size="sm"
             $variant="secondary"
           >
-            {loading && transactions.length === 0 ? 'Загрузка...' : 'Обновить'}
+            {loading && transactions.length === 0 ? 'Loading...' : 'Refresh'}
           </Button>
         </div>
 
       <Controls>
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-          Показывать:
+          Show:
           <LimitSelect
             value={limit}
             onChange={(e) => setLimit(Number(e.target.value))}
@@ -203,7 +203,7 @@ export function TransactionHistory() {
 
       {transactions.length === 0 ? (
         <EmptyState>
-          {loading ? 'Загрузка транзакций...' : 'История транзакций пуста'}
+          {loading ? 'Loading transactions...' : 'No transactions yet'}
         </EmptyState>
       ) : (
         <>
@@ -223,7 +223,7 @@ export function TransactionHistory() {
                   {tx.balanceChange >= 0 ? '+' : ''}{tx.balanceChange.toFixed(4)} CC
                   {tx.lockedChange !== 0 && (
                     <span style={{ fontSize: '13px', marginLeft: '8px' }}>
-                      (заблокировано: {tx.lockedChange >= 0 ? '+' : ''}{tx.lockedChange.toFixed(4)})
+                      (locked: {tx.lockedChange >= 0 ? '+' : ''}{tx.lockedChange.toFixed(4)})
                     </span>
                   )}
                 </BalanceChange>
@@ -250,7 +250,7 @@ export function TransactionHistory() {
                 {Object.keys(tx.details).length > 0 && (
                   <details style={{ fontSize: '12px', marginTop: '4px' }}>
                     <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                      Детали
+                      Details
                     </summary>
                     <pre style={{ 
                       marginTop: '8px', 
@@ -274,7 +274,7 @@ export function TransactionHistory() {
               disabled={loading}
               $variant="secondary"
             >
-              {loading ? 'Загрузка...' : 'Загрузить еще'}
+              {loading ? 'Loading...' : 'Load more'}
             </LoadMoreButton>
           )}
         </>

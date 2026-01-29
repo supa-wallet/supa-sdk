@@ -113,10 +113,10 @@ const EmptyState = styled.div`
 `;
 
 const intervals: { value: CantonPriceInterval; label: string }[] = [
-  { value: '1h', label: '1 час' },
-  { value: '1d', label: '1 день' },
-  { value: '1w', label: '1 неделя' },
-  { value: '1M', label: '1 месяц' },
+  { value: '1h', label: '1 hour' },
+  { value: '1d', label: '1 day' },
+  { value: '1w', label: '1 week' },
+  { value: '1M', label: '1 month' },
 ];
 
 export function PriceHistory() {
@@ -156,14 +156,13 @@ export function PriceHistory() {
 
   const priceChange = stats ? ((stats.latest - stats.open) / stats.open * 100) : 0;
 
-  // Нормализация высот для отображения
   const maxPrice = stats ? stats.high : 1;
   const minPrice = stats ? stats.low : 0;
   const priceRange = maxPrice - minPrice || 1;
 
   const formatDate = (isoDate: string) => {
     const date = new Date(isoDate);
-    return date.toLocaleString('ru-RU', {
+    return date.toLocaleString('en-US', {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
@@ -178,7 +177,7 @@ export function PriceHistory() {
   return (
     <Card>
       <CardContent>
-        <Text $size="lg" $weight={600}>История цен Canton Coin</Text>
+        <Text $size="lg" $weight={600}>Canton Coin Price History</Text>
 
       <Controls>
         {intervals.map((int) => (
@@ -199,28 +198,28 @@ export function PriceHistory() {
           $size="sm"
           $variant="secondary"
         >
-          {loading ? 'Загрузка...' : 'Обновить'}
+          {loading ? 'Loading...' : 'Refresh'}
         </Button>
       </Controls>
 
       {stats && (
         <PriceStats>
           <StatItem>
-            <StatLabel>Текущая</StatLabel>
+            <StatLabel>Current</StatLabel>
             <StatValue>${stats.latest.toFixed(4)}</StatValue>
           </StatItem>
           <StatItem>
-            <StatLabel>Изменение</StatLabel>
+            <StatLabel>Change</StatLabel>
             <StatValue style={{ color: priceChange >= 0 ? 'var(--success)' : 'var(--error)' }}>
               {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
             </StatValue>
           </StatItem>
           <StatItem>
-            <StatLabel>Максимум</StatLabel>
+            <StatLabel>High</StatLabel>
             <StatValue>${stats.high.toFixed(4)}</StatValue>
           </StatItem>
           <StatItem>
-            <StatLabel>Минимум</StatLabel>
+            <StatLabel>Low</StatLabel>
             <StatValue>${stats.low.toFixed(4)}</StatValue>
           </StatItem>
         </PriceStats>
@@ -228,9 +227,9 @@ export function PriceHistory() {
 
       <ChartContainer>
         {loading && candles.length === 0 ? (
-          <EmptyState>Загрузка данных...</EmptyState>
+          <EmptyState>Loading data...</EmptyState>
         ) : candles.length === 0 ? (
-          <EmptyState>Нет данных для отображения</EmptyState>
+          <EmptyState>No data to display</EmptyState>
         ) : (
           <CandlesContainer>
             {candles.map((candle, index) => {
@@ -240,7 +239,6 @@ export function PriceHistory() {
               const low = parseFloat(candle.min);
               const isPositive = close >= open;
               
-              // Высота свечи относительно диапазона
               const bodyHeight = Math.abs(close - open) / priceRange * 100;
               const bottomOffset = (Math.min(open, close) - minPrice) / priceRange * 100;
 
@@ -253,10 +251,10 @@ export function PriceHistory() {
                   >
                     <CandleTooltip>
                       <div><strong>{formatDate(candle.start)}</strong></div>
-                      <div>Открытие: ${open.toFixed(4)}</div>
-                      <div>Закрытие: ${close.toFixed(4)}</div>
-                      <div>Максимум: ${high.toFixed(4)}</div>
-                      <div>Минимум: ${low.toFixed(4)}</div>
+                      <div>Open: ${open.toFixed(4)}</div>
+                      <div>Close: ${close.toFixed(4)}</div>
+                      <div>High: ${high.toFixed(4)}</div>
+                      <div>Low: ${low.toFixed(4)}</div>
                     </CandleTooltip>
                   </Candle>
                 </CandleWrapper>

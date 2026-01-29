@@ -110,20 +110,20 @@ export function IncomingTransfers() {
     <Card>
       <CardContent>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <Text $size="lg" $weight={600}>Входящие трансферы</Text>
+          <Text $size="lg" $weight={600}>Incoming Transfers</Text>
           <Button
             onClick={loadTransfers}
             disabled={loading}
             $size="sm"
             $variant="secondary"
           >
-            {loading ? 'Загрузка...' : 'Обновить'}
+            {loading ? 'Loading...' : 'Refresh'}
           </Button>
         </div>
 
       {transfers.length === 0 ? (
         <EmptyState>
-          {loading ? 'Загрузка...' : 'Нет ожидающих входящих трансферов'}
+          {loading ? 'Loading...' : 'No pending incoming transfers'}
         </EmptyState>
       ) : (
         <TransfersList>
@@ -131,21 +131,21 @@ export function IncomingTransfers() {
             <TransferItem key={transfer.contractId}>
               <TransferInfo>
                 <InfoRow>
-                  <Label>Сумма:</Label>
+                  <Label>Amount:</Label>
                   <Value>{transfer.amount} {transfer.instrument.id}</Value>
                 </InfoRow>
                 <InfoRow>
-                  <Label>От:</Label>
+                  <Label>From:</Label>
                   <Value title={transfer.sender}>
                     {shortenPartyId(transfer.sender)}
                   </Value>
                 </InfoRow>
                 <InfoRow>
-                  <Label>Запрошено:</Label>
+                  <Label>Requested:</Label>
                   <Value>{formatDate(transfer.requestedAt)}</Value>
                 </InfoRow>
                 <InfoRow>
-                  <Label>Выполнить до:</Label>
+                  <Label>Execute before:</Label>
                   <Value>{formatDate(transfer.executeBefore)}</Value>
                 </InfoRow>
               </TransferInfo>
@@ -158,7 +158,7 @@ export function IncomingTransfers() {
                   $size="sm"
                   style={{ flex: 1 }}
                 >
-                  {processing === transfer.contractId ? 'Обработка...' : 'Принять'}
+                  {processing === transfer.contractId ? 'Processing...' : 'Accept'}
                 </Button>
                 <Button
                   onClick={() => handleResponse(transfer.contractId, false)}
@@ -167,7 +167,7 @@ export function IncomingTransfers() {
                   $size="sm"
                   style={{ flex: 1 }}
                 >
-                  {processing === transfer.contractId ? 'Обработка...' : 'Отклонить'}
+                  {processing === transfer.contractId ? 'Processing...' : 'Reject'}
                 </Button>
               </Actions>
             </TransferItem>

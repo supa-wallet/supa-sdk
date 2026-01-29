@@ -106,6 +106,24 @@ export { useSendTransaction } from './hooks/useSendTransaction';
 export type { UseSendTransactionReturn, SendTransactionOptions } from './hooks/useSendTransaction';
 
 /**
+ * Send multiple transactions hook with a single confirmation modal
+ * @see {@link useSendMultipleTransactions}
+ */
+export { useSendMultipleTransactions } from './hooks/useSendMultipleTransactions';
+export type {
+  UseSendMultipleTransactionsReturn,
+  SendMultipleTransactionsOptions,
+  TransactionToSend,
+} from './hooks/useSendMultipleTransactions';
+
+/**
+ * @deprecated Use `useSendMultipleTransactions`
+ * Backwards-compatible alias.
+ */
+export { useSendTransactions } from './hooks/useSendTransactions';
+export type { UseSendTransactionsReturn, SendTransactionsOptions } from './hooks/useSendTransactions';
+
+/**
  * Initialization transactions hook (prepare_initialization_transactions)
  * @see {@link useInitializationTransactions}
  */
