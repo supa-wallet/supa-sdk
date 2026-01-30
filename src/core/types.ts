@@ -290,6 +290,17 @@ export interface CantonPrepareAmuletTransferRequestDto {
   memo?: string;
 }
 
+/** Response for preparing Amulet (Canton Coin) transfer */
+export interface CantonPrepareAmuletTransferResponseDto
+  extends CantonPrepareTransactionResponseDto {
+  /** Canton party ID of the receiver wallet */
+  receiverPartyId: string;
+  /** Amount of Amulet to transfer (decimal string with max 10 decimal places) */
+  amount: string;
+  /** Optional memo for the transfer */
+  memo?: string;
+}
+
 // ============= Canton Incoming Transfers Types =============
 
 /** Canton instrument/token info for incoming transfers */

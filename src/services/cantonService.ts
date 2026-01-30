@@ -16,6 +16,7 @@ import type {
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonPrepareAmuletTransferRequestDto,
+  CantonPrepareAmuletTransferResponseDto,
   CantonIncomingTransferDto,
   CantonPrepareResponseIncomingTransferRequestDto,
   CantonCostEstimationDto,
@@ -35,6 +36,7 @@ export type {
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonPrepareAmuletTransferRequestDto,
+  CantonPrepareAmuletTransferResponseDto,
   CantonIncomingTransferDto,
   CantonPrepareResponseIncomingTransferRequestDto,
   CantonCostEstimationDto,
@@ -470,7 +472,7 @@ export class CantonService {
    */
   async prepareAmuletTransfer(
     params: CantonPrepareAmuletTransferRequestDto
-  ): Promise<CantonPrepareTransactionResponseDto> {
+  ): Promise<CantonPrepareAmuletTransferResponseDto> {
     // Validate decimal places (max 10)
     const decimalParts = params.amount.split('.');
     if (decimalParts.length > 1 && decimalParts[1].length > 10) {
@@ -479,7 +481,7 @@ export class CantonService {
       );
     }
 
-    const result = await this.client.post<CantonPrepareTransactionResponseDto>(
+    const result = await this.client.post<CantonPrepareAmuletTransferResponseDto>(
       '/canton/transfers/prepare_amulet_transfer',
       params
     );

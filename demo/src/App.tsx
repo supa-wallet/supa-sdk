@@ -137,7 +137,7 @@ function Demo() {
           loading={canton.loading}
           error={canton.error}
           onCreateWallet={canton.createCantonWallet}
-          onRegister={(code) => canton.registerCanton(code)}
+          onRegister={(code) => canton.registerCanton(code ? code.trim() : undefined)}
           inviteCode={inviteCode}
           onInviteCodeChange={(code) => {
             setInviteCode(code);
