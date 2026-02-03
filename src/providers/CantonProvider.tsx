@@ -15,7 +15,7 @@ import {
 } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import { useCreateWallet } from '@privy-io/react-auth/extended-chains';
-import { useCreateWallet as useSolanaCreateWallet } from '@privy-io/react-auth/solana';
+import { useCreateWallet as useSolanaCreateWallet, useWallets as useSolanaWallets } from '@privy-io/react-auth/solana';
 import { useAuth } from '../hooks/useAuth';
 import { useSignRawHashWithModal } from '../hooks/useSignRawHashWithModal';
 import { useCantonWallet } from '../hooks/useCantonWallet';
@@ -168,8 +168,22 @@ export function CantonProvider({
   const { createWallet: createSolanaWallet } = useSolanaCreateWallet();
   const { cantonWallet, cantonWallets } = useCantonWallet();
 
+  // Solana wallets for withExport mode
+  const { wallets: solanaWallets } = useSolanaWallets();
+
   // Chain type based on withExport flag
   const chainType = withExport ? 'solana' : 'stellar';
+
+  // Refs for fresh wallet data in callbacks (similar to useSignRawHashWithModal pattern)
+  const walletsRef = useRef(wallets);
+  const solanaWalletsRef = useRef(solanaWallets);
+  const userRef = useRef(user);
+
+  useEffect(() => {
+    walletsRef.current = wallets;
+    solanaWalletsRef.current = solanaWallets;
+    userRef.current = user;
+  }, [wallets, solanaWallets, user]);
   
   // ============================================================================
   // Shared State (single source of truth)
@@ -324,11 +338,33 @@ export function CantonProvider({
       if (err.message?.toLowerCase().includes('already has an embedded wallet') ||
           err.message?.toLowerCase().includes('already has a wallet')) {
         console.log('[Supa SDK] Wallet already exists, fetching existing one...');
-        const existingWallets = getCantonWallets(user, wallets, chainType);
-        if (existingWallets[0]) {
-          console.log('[Supa SDK] ✅ Found existing wallet:', existingWallets[0].address);
-          return existingWallets[0];
+
+        // Use refs for fresh data + polling (similar to useSignRawHashWithModal pattern)
+        const maxAttempts = 10; // 10 * 500ms = 5s max
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          // Get fresh wallets from refs
+          const freshWallets = withExport
+            ? solanaWalletsRef.current
+            : getCantonWallets(userRef.current, walletsRef.current, chainType);
+
+          const existingWallet = freshWallets[0];
+
+          if (existingWallet) {
+            console.log('[Supa SDK] ✅ Found existing wallet:', existingWallet.address);
+            setLoading(false);
+            return existingWallet as CantonWallet;
+          }
+
+          if (attempt < maxAttempts) {
+            console.log(`[Supa SDK] Wallet not found in state, polling... (${attempt}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
         }
+
+        // If still not found after polling
+        const error = new Error(`Wallet exists in Privy but not found in local state. Please refresh the page.`);
+        setError(error);
+        throw error;
       }
 
       const error = new Error(`Failed to create ${withExport ? 'Solana' : 'Stellar'} wallet: ${err.message}`);
@@ -337,7 +373,7 @@ export function CantonProvider({
     } finally {
       setLoading(false);
     }
-  }, [authenticated, createStellarWallet, createSolanaWallet, user, wallets, withExport, chainType]);
+  }, [authenticated, createStellarWallet, createSolanaWallet, user, wallets, withExport, chainType]);;
 
   // ============================================================================
   // Sign Hash
