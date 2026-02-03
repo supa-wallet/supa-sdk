@@ -323,10 +323,12 @@ export function CantonProvider({
         // Fallback: Wait for React to update wallets
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const freshWallets = getCantonWallets(user, wallets, chainType);
+        const freshWallets = withExport
+          ? solanaWalletsRef.current.map(w => ({ ...w, chainType: 'solana' as const }))
+          : getCantonWallets(userRef.current, walletsRef.current, chainType);
         if (freshWallets[0]) {
           console.log(`[Supa SDK] ✅ ${withExport ? 'Solana' : 'Stellar'} wallet created successfully`);
-          return freshWallets[0];
+          return freshWallets[0] as CantonWallet;
         }
 
         return createdWallet as CantonWallet;
@@ -344,7 +346,7 @@ export function CantonProvider({
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           // Get fresh wallets from refs
           const freshWallets = withExport
-            ? solanaWalletsRef.current
+            ? solanaWalletsRef.current.map(w => ({ ...w, chainType: 'solana' as const }))
             : getCantonWallets(userRef.current, walletsRef.current, chainType);
 
           const existingWallet = freshWallets[0];
@@ -373,7 +375,7 @@ export function CantonProvider({
     } finally {
       setLoading(false);
     }
-  }, [authenticated, createStellarWallet, createSolanaWallet, user, wallets, withExport, chainType]);;
+  }, [authenticated, createStellarWallet, createSolanaWallet, withExport, chainType]);
 
   // ============================================================================
   // Sign Hash
@@ -441,7 +443,9 @@ export function CantonProvider({
             wallet = createdWallet;
           } else {
             await new Promise(resolve => setTimeout(resolve, 2000));
-            const freshWallets = getCantonWallets(user, wallets, chainType);
+            const freshWallets = withExport
+              ? solanaWalletsRef.current.map(w => ({ ...w, chainType: 'solana' as const }))
+              : getCantonWallets(userRef.current, walletsRef.current, chainType);
             wallet = freshWallets[0] || null;
           }
           
@@ -465,7 +469,9 @@ export function CantonProvider({
               throw new Error(`${err.message} After ${maxAttempts} attempts, the Stellar wallet is still not ready.`);
             }
             await new Promise(resolve => setTimeout(resolve, 2000));
-            const freshWallets = getCantonWallets(user, wallets, chainType);
+            const freshWallets = withExport
+              ? solanaWalletsRef.current.map(w => ({ ...w, chainType: 'solana' as const }))
+              : getCantonWallets(userRef.current, walletsRef.current, chainType);
             if (freshWallets[0]) {
               wallet = freshWallets[0];
             }
@@ -554,7 +560,7 @@ export function CantonProvider({
 
     registrationPromise.current = promise;
     return promise;
-  }, [cantonWallet, createCantonWallet, user, wallets, signRawHashWithModal, cantonService, isRegistered]);
+  }, [cantonWallet, createCantonWallet, signRawHashWithModal, cantonService, isRegistered, withExport, chainType]);
 
   // ============================================================================
   // Tap Devnet
