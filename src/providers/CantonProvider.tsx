@@ -320,6 +320,17 @@ export function CantonProvider({
 
       return null;
     } catch (err: any) {
+      // If wallet already exists in Privy — find and return it
+      if (err.message?.toLowerCase().includes('already has an embedded wallet') ||
+          err.message?.toLowerCase().includes('already has a wallet')) {
+        console.log('[Supa SDK] Wallet already exists, fetching existing one...');
+        const existingWallets = getCantonWallets(user, wallets, chainType);
+        if (existingWallets[0]) {
+          console.log('[Supa SDK] ✅ Found existing wallet:', existingWallets[0].address);
+          return existingWallets[0];
+        }
+      }
+
       const error = new Error(`Failed to create ${withExport ? 'Solana' : 'Stellar'} wallet: ${err.message}`);
       setError(error);
       throw error;
