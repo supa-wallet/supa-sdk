@@ -201,6 +201,12 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
       ethereum: {
         createOnLogin: 'users-without-wallets',
       },
+      // When withExport is enabled, auto-create Solana wallet on login
+      ...(config.withExport && {
+        solana: {
+          createOnLogin: 'users-without-wallets',
+        },
+      }),
     },
     appearance: {
       theme,

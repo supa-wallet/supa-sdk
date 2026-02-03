@@ -48,6 +48,11 @@ export const getCantonWallets = (
 ): CantonWallet[] => {
   const cantonWallets: CantonWallet[] = [];
 
+  // DEBUG: Log what we receive
+  console.log('[getCantonWallets] chainType:', chainType);
+  console.log('[getCantonWallets] wallets:', wallets?.map((w: any) => ({ address: w.address, chainType: w.chainType, walletClientType: w.walletClientType })));
+  console.log('[getCantonWallets] linkedAccounts:', user?.linkedAccounts?.filter((a: any) => a.type === 'wallet').map((a: any) => ({ address: a.address, chainType: a.chainType })));
+
   // Get from linked accounts
   if (user?.linkedAccounts) {
     const linkedStellar = user.linkedAccounts.filter(

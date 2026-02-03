@@ -25,13 +25,18 @@ export function useCantonWallet(): UseCantonWalletReturn {
   const chainType = config.withExport ? 'solana' : 'stellar';
 
   let cantonWallets: CantonWallet[] = [];
+
   if (authenticated) {
     if (config.withExport) {
-      // Solana wallets from useSolanaWallets don't have chainType, add it
-      cantonWallets = solanaWallets.map(w => ({
-        ...w,
-        chainType: 'solana' as const
-      }));
+      // Solana wallets from useSolanaWallets have private fields, so we need to explicitly extract properties
+      if (solanaWallets && solanaWallets.length > 0) {
+        cantonWallets = solanaWallets.map(w => ({
+          address: w.address,
+          chainType: 'solana' as const,
+          walletClientType: 'privy',
+        })) as CantonWallet[];
+        console.log('[useCantonWallet] mapped wallets:', cantonWallets);
+      }
     } else {
       cantonWallets = getCantonWallets(user, wallets, chainType);
     }

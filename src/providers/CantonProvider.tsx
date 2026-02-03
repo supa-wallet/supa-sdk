@@ -323,9 +323,7 @@ export function CantonProvider({
         // Fallback: Wait for React to update wallets
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const freshWallets = withExport
-          ? solanaWalletsRef.current.map(w => ({ ...w, chainType: 'solana' as const }))
-          : getCantonWallets(userRef.current, walletsRef.current, chainType);
+        const freshWallets = getCantonWallets(userRef.current, walletsRef.current, chainType);
         if (freshWallets[0]) {
           console.log(`[Supa SDK] ✅ ${withExport ? 'Solana' : 'Stellar'} wallet created successfully`);
           return freshWallets[0] as CantonWallet;
@@ -344,10 +342,8 @@ export function CantonProvider({
         // Use refs for fresh data + polling (similar to useSignRawHashWithModal pattern)
         const maxAttempts = 10; // 10 * 500ms = 5s max
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          // Get fresh wallets from refs
-          const freshWallets = withExport
-            ? solanaWalletsRef.current.map(w => ({ ...w, chainType: 'solana' as const }))
-            : getCantonWallets(userRef.current, walletsRef.current, chainType);
+          // Get fresh wallets from refs - always use getCantonWallets for consistent format
+          const freshWallets = getCantonWallets(userRef.current, walletsRef.current, chainType);
 
           const existingWallet = freshWallets[0];
 
@@ -443,9 +439,7 @@ export function CantonProvider({
             wallet = createdWallet;
           } else {
             await new Promise(resolve => setTimeout(resolve, 2000));
-            const freshWallets = withExport
-              ? solanaWalletsRef.current.map(w => ({ ...w, chainType: 'solana' as const }))
-              : getCantonWallets(userRef.current, walletsRef.current, chainType);
+            const freshWallets = getCantonWallets(userRef.current, walletsRef.current, chainType);
             wallet = freshWallets[0] || null;
           }
           
@@ -454,11 +448,16 @@ export function CantonProvider({
           }
         }
 
+        // Ensure wallet has chainType for getPublicKeyBase64
+        if (withExport && wallet && !wallet.chainType) {
+          wallet = { ...wallet, chainType: 'solana' } as CantonWallet;
+        }
+
         // Poll for public key availability
         let publicKey: string | null = null;
         let attempts = 0;
         const maxAttempts = 10;
-        
+
         while (attempts < maxAttempts && !publicKey) {
           try {
             publicKey = getPublicKeyBase64(wallet);
@@ -469,11 +468,13 @@ export function CantonProvider({
               throw new Error(`${err.message} After ${maxAttempts} attempts, the Stellar wallet is still not ready.`);
             }
             await new Promise(resolve => setTimeout(resolve, 2000));
-            const freshWallets = withExport
-              ? solanaWalletsRef.current.map(w => ({ ...w, chainType: 'solana' as const }))
-              : getCantonWallets(userRef.current, walletsRef.current, chainType);
+            const freshWallets = getCantonWallets(userRef.current, walletsRef.current, chainType);
             if (freshWallets[0]) {
               wallet = freshWallets[0];
+              // Ensure chainType for getPublicKeyBase64
+              if (withExport && !wallet.chainType) {
+                wallet = { ...wallet, chainType: 'solana' } as CantonWallet;
+              }
             }
           }
         }
@@ -1009,10 +1010,14 @@ export function CantonProvider({
   // Auto-onboarding: Create Stellar Wallet + Register Canton (once)
   // ============================================================================
   useEffect(() => {
+    console.log('[Supa SDK] auto-onboarding effect:', { autoOnboarding, authenticated, loading, cantonWallet: cantonWallet?.address, hasAutoCreatedWallet: hasAutoCreatedWallet.current });
+
     // Skip if auto-onboarding is disabled
     if (!autoOnboarding || !authenticated || loading) return;
 
     const runAutoOnboarding = async () => {
+      console.log('[Supa SDK] runAutoOnboarding:', { cantonWallet: cantonWallet?.address, hasAutoCreatedWallet: hasAutoCreatedWallet.current, withExport });
+
       // Step 1: Auto-create Canton wallet if needed
       if (!cantonWallet && !hasAutoCreatedWallet.current) {
         hasAutoCreatedWallet.current = true;
