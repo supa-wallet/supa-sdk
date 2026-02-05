@@ -75,7 +75,7 @@ export interface CantonSubmitPreparedOptions {
   /** Optional command ID for idempotency (passed to prepareTransaction) */
   commandId?: string;
   /** Optional deduplication period (passed to submitPrepared) */
-  deduplicationPeriod?: { value: string };
+  deduplicationPeriod?: any;
 }
 
 export class CantonService {
@@ -241,7 +241,7 @@ export class CantonService {
   async submitPrepared(
     hash: string,
     signature: string,
-    deduplicationPeriod?: { value: string }
+    deduplicationPeriod?: any
   ): Promise<CantonSubmitTransactionResponseDto> {
     return await this.client.post<CantonSubmitTransactionResponseDto>(
       '/canton/api/submit_prepared',

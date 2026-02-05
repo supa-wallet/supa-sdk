@@ -42,7 +42,7 @@ export interface SendMultipleTransactionsOptions {
   /** Show technical transaction details (commands, disclosedContracts, hash) as JSON. Default: false */
   showTechnicalDetails?: boolean;
   /** Optional deduplication period (shared across all transactions in the batch) */
-  deduplicationPeriod?: { value: string };
+  deduplicationPeriod?: any;
   submitOptions?: CantonSubmitPreparedOptions;
 }
 

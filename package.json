@@ -1,6 +1,6 @@
 {
   "name": "@supanovaapp/sdk",
-  "version": "0.2.34",
+  "version": "0.2.35",
   "description": "React SDK for Supa Backend + Privy.io integration with Canton Network and EVM Smart Wallets support",
   "main": "./dist/index.cjs.js",
   "module": "./dist/index.esm.js",

@@ -54,7 +54,7 @@ export interface CantonSubmitRegisterRequestDto {
   /** Base64 signature for provided hash */
   signature: string;
   /** Optional deduplication period */
-  deduplicationPeriod?: { value: string };
+  deduplicationPeriod?: any;
 }
 
 export interface CantonSubmitTransactionResponseDto {

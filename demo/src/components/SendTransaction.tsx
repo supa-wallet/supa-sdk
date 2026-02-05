@@ -95,7 +95,7 @@ export function SendTransaction({ showTechnicalDetails }: SendTransactionProps) 
       showTechnicalDetails,
       commandId: cmdId.trim() || undefined,
       submitOptions: {
-        deduplicationPeriod: deduplicationPeriod.trim() ? { value: deduplicationPeriod.trim() } : undefined,
+        deduplicationPeriod: deduplicationPeriod.trim() ? parseJSON(deduplicationPeriod.trim()) : undefined,
       },
       onSuccess: setResult,
       onRejection: () => console.log('User rejected transaction'),
@@ -154,12 +154,12 @@ export function SendTransaction({ showTechnicalDetails }: SendTransactionProps) 
           <InputGroup>
             <InputLabel>Deduplication Period (optional)</InputLabel>
             <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
-              ISO 8601 duration, e.g. PT60S
+              JSON object, e.g. {`{"DeduplicationDuration":{"value":"PT60S"}}`}
             </Text>
-            <Input
+            <TextArea
               value={deduplicationPeriod}
               onChange={(e) => setDeduplicationPeriod(e.target.value)}
-              placeholder="PT60S"
+              placeholder='{"DeduplicationDuration":{"value":"PT60S"}}'
               $mono
             />
           </InputGroup>

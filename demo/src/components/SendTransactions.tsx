@@ -133,7 +133,7 @@ export function SendTransactions({ showTechnicalDetails }: SendTransactionsProps
 
     await sendMultipleTransactions(toTxs(), {
       showTechnicalDetails,
-      deduplicationPeriod: deduplicationPeriod.trim() ? { value: deduplicationPeriod.trim() } : undefined,
+      deduplicationPeriod: deduplicationPeriod.trim() ? parseJSON(deduplicationPeriod.trim()) : undefined,
       onSuccess: setResults,
       onRejection: () => console.log('User rejected transactions'),
       onError: (err) => console.error('Transactions failed:', err),
@@ -210,12 +210,12 @@ export function SendTransactions({ showTechnicalDetails }: SendTransactionsProps
           <InputGroup>
             <InputLabel>Deduplication Period (optional, shared)</InputLabel>
             <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
-              ISO 8601 duration applied to all transactions, e.g. PT60S
+              JSON object applied to all transactions, e.g. {`{"DeduplicationDuration":{"value":"PT60S"}}`}
             </Text>
-            <Input
+            <TextArea
               value={deduplicationPeriod}
               onChange={(e) => setDeduplicationPeriod(e.target.value)}
-              placeholder="PT60S"
+              placeholder='{"DeduplicationDuration":{"value":"PT60S"}}'
               $mono
             />
           </InputGroup>
