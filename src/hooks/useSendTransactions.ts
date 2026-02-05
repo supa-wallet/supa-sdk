@@ -6,11 +6,13 @@
 
 import { useSendMultipleTransactions } from './useSendMultipleTransactions';
 import type {
-  SendMultipleTransactionsOptions as SendTransactionsOptions,
+  SendMultipleTransactionsOptions,
   TransactionToSend,
   UseSendMultipleTransactionsReturn,
 } from './useSendMultipleTransactions';
 import type { CantonQueryCompletionResponseDto } from '../core/types';
+
+export type SendTransactionsOptions = SendMultipleTransactionsOptions;
 
 export interface UseSendTransactionsReturn {
   /** Sign and send multiple Canton transactions with a single confirmation modal */
@@ -34,4 +36,3 @@ export function useSendTransactions(): UseSendTransactionsReturn {
 
   return { sendTransactions, loading, error, clearError, cantonWallets, cantonWallet };
 }
-

@@ -727,7 +727,7 @@ export function CantonProvider({
     setError(null);
 
     try {
-      const prepareResponse = await cantonService.prepareTransaction(commands, disclosedContracts);
+      const prepareResponse = await cantonService.prepareTransaction(commands, disclosedContracts, options?.commandId);
 
       if (options?.onCostEstimation && prepareResponse.costEstimation) {
         await options.onCostEstimation(prepareResponse.costEstimation);

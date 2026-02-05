@@ -25,6 +25,8 @@ export interface SendTransactionOptions {
   modalDisplayContent?: string;
   /** Show technical transaction details (command, contracts, hash) as JSON. Default: false */
   showTechnicalDetails?: boolean;
+  /** Optional command ID for idempotency */
+  commandId?: string;
   submitOptions?: CantonSubmitPreparedOptions;
 }
 
@@ -69,6 +71,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
         modalRejectText = 'Reject',
         modalDisplayContent,
         showTechnicalDetails = false,
+        commandId,
         submitOptions,
       } = options || {};
 
@@ -84,7 +87,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
 
       try {
         // Step 1: Prepare transaction
-        const prepareResponse = await cantonService.prepareTransaction(commands, disclosedContracts);
+        const prepareResponse = await cantonService.prepareTransaction(commands, disclosedContracts, commandId);
 
         // Step 2: Determine modal display content
         const displayContent = modalDisplayContent 

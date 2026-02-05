@@ -53,6 +53,8 @@ export interface CantonSubmitRegisterRequestDto {
   hash: string;
   /** Base64 signature for provided hash */
   signature: string;
+  /** Optional deduplication period */
+  deduplicationPeriod?: { value: string };
 }
 
 export interface CantonSubmitTransactionResponseDto {
@@ -196,6 +198,8 @@ export interface CantonPrepareTransactionRequestDto {
   commands: unknown;
   /** Optional disclosed contracts */
   disclosedContracts?: unknown;
+  /** Optional command ID for idempotency */
+  commandId?: string;
 }
 
 // ============= Canton Balances Types =============

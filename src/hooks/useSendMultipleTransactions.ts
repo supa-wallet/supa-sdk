@@ -26,6 +26,8 @@ import type { CantonWallet } from '../utils/wallet';
 export interface TransactionToSend {
   commands: unknown;
   disclosedContracts?: unknown;
+  /** Optional command ID for idempotency */
+  commandId?: string;
 }
 
 export interface SendMultipleTransactionsOptions {
@@ -39,6 +41,8 @@ export interface SendMultipleTransactionsOptions {
   modalRejectText?: string;
   /** Show technical transaction details (commands, disclosedContracts, hash) as JSON. Default: false */
   showTechnicalDetails?: boolean;
+  /** Optional deduplication period (shared across all transactions in the batch) */
+  deduplicationPeriod?: { value: string };
   submitOptions?: CantonSubmitPreparedOptions;
 }
 
@@ -123,6 +127,7 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
         modalConfirmText = 'Sign & Send',
         modalRejectText = 'Reject',
         showTechnicalDetails = false,
+        deduplicationPeriod,
         submitOptions,
       } = options || {};
 
@@ -146,7 +151,7 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
       try {
         // Step 1: Prepare (parallel, but we want good error messages)
         const prepareResults = await Promise.allSettled(
-          txs.map((t) => cantonService.prepareTransaction(t.commands, t.disclosedContracts))
+          txs.map((t) => cantonService.prepareTransaction(t.commands, t.disclosedContracts, t.commandId))
         );
 
         const prepared: CantonPrepareTransactionResponseDto[] = [];
@@ -213,7 +218,11 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
               onRejection?.();
               return null;
             }
-            signedTxs.push({ hash: p.hash, signature: hexToBase64(signResult.signature) });
+            signedTxs.push({
+              hash: p.hash,
+              signature: hexToBase64(signResult.signature),
+              ...(deduplicationPeriod && { deduplicationPeriod }),
+            });
           } catch (e) {
             if (isUserRejection(e)) {
               onRejection?.();
@@ -231,7 +240,7 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
           // Fallback: submit individually, but keep mapping back to indices
           const results = await Promise.allSettled(
             signedTxs.map(async (t) => {
-              const res = await cantonService.submitPrepared(t.hash, t.signature);
+              const res = await cantonService.submitPrepared(t.hash, t.signature, t.deduplicationPeriod);
               return { hash: t.hash, success: true as const, submissionId: res.submissionId };
             })
           );

@@ -9,6 +9,7 @@ import {
   CardContent,
   Button,
   TextArea,
+  Input,
   InputGroup,
   InputLabel,
   Flex,
@@ -73,23 +74,29 @@ interface SendTransactionProps {
 export function SendTransaction({ showTechnicalDetails }: SendTransactionProps) {
   // Using the new useSendTransaction hook with built-in confirmation modal
   const { sendTransaction, loading, error } = useSendTransaction();
-  const [commandId, setCommandId] = useState('');
+  const [command, setCommand] = useState('');
   const [disclosedContracts, setDisclosedContracts] = useState('');
+  const [cmdId, setCmdId] = useState('');
+  const [deduplicationPeriod, setDeduplicationPeriod] = useState('');
   const [result, setResult] = useState<CantonQueryCompletionResponseDto | null>(null);
 
   const handleSendClick = async () => {
-    if (!commandId.trim()) return;
+    if (!command.trim()) return;
 
     const parseJSON = (str: string) => {
       try { return JSON.parse(str); } catch { return str; }
     };
 
-    const cmd = parseJSON(commandId);
+    const cmd = parseJSON(command);
     const disclosed = disclosedContracts.trim() ? parseJSON(disclosedContracts) : undefined;
 
     setResult(null);
     await sendTransaction(cmd, disclosed, {
       showTechnicalDetails,
+      commandId: cmdId.trim() || undefined,
+      submitOptions: {
+        deduplicationPeriod: deduplicationPeriod.trim() ? { value: deduplicationPeriod.trim() } : undefined,
+      },
       onSuccess: setResult,
       onRejection: () => console.log('User rejected transaction'),
       onError: (err) => console.error('Transaction failed:', err),
@@ -111,8 +118,8 @@ export function SendTransaction({ showTechnicalDetails }: SendTransactionProps) 
               Enter JSON object, array, or string
             </Text>
             <TextArea
-              value={commandId}
-              onChange={(e) => setCommandId(e.target.value)}
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
               placeholder='{"command": "example"} or "simple-command"'
               $mono
             />
@@ -130,13 +137,39 @@ export function SendTransaction({ showTechnicalDetails }: SendTransactionProps) 
               $mono
             />
           </InputGroup>
+
+          <InputGroup>
+            <InputLabel>Command ID (optional)</InputLabel>
+            <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
+              Optional identifier for idempotency
+            </Text>
+            <Input
+              value={cmdId}
+              onChange={(e) => setCmdId(e.target.value)}
+              placeholder="my-unique-command-id"
+              $mono
+            />
+          </InputGroup>
+
+          <InputGroup>
+            <InputLabel>Deduplication Period (optional)</InputLabel>
+            <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
+              ISO 8601 duration, e.g. PT60S
+            </Text>
+            <Input
+              value={deduplicationPeriod}
+              onChange={(e) => setDeduplicationPeriod(e.target.value)}
+              placeholder="PT60S"
+              $mono
+            />
+          </InputGroup>
         </Flex>
 
         <Button
           $variant="primary"
           $fullWidth
           onClick={handleSendClick}
-          disabled={loading || !commandId.trim()}
+          disabled={loading || !command.trim()}
           style={{ marginTop: 16 }}
         >
           <Send style={{ width: 16, height: 16 }} />

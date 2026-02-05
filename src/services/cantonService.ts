@@ -72,6 +72,10 @@ export interface CantonSubmitPreparedOptions {
   onSubmissionId?: (submissionId: string) => void | Promise<void>;
   /** Callback to receive cost estimation before signing (optional) */
   onCostEstimation?: (costEstimation: CantonCostEstimationDto | undefined) => void | Promise<void>;
+  /** Optional command ID for idempotency (passed to prepareTransaction) */
+  commandId?: string;
+  /** Optional deduplication period (passed to submitPrepared) */
+  deduplicationPeriod?: { value: string };
 }
 
 export class CantonService {
@@ -236,13 +240,15 @@ export class CantonService {
    */
   async submitPrepared(
     hash: string,
-    signature: string
+    signature: string,
+    deduplicationPeriod?: { value: string }
   ): Promise<CantonSubmitTransactionResponseDto> {
     return await this.client.post<CantonSubmitTransactionResponseDto>(
       '/canton/api/submit_prepared',
       {
         hash,
         signature,
+        deduplicationPeriod,
       } as CantonSubmitRegisterRequestDto
     );
   }
@@ -284,10 +290,10 @@ export class CantonService {
     signature: string,
     options: CantonSubmitPreparedOptions = {}
   ): Promise<CantonQueryCompletionResponseDto> {
-    const { timeout = 30000, pollInterval = 1000 } = options;
-    
+    const { timeout = 30000, pollInterval = 1000, deduplicationPeriod } = options;
+
     // Submit the transaction
-    const submitResponse = await this.submitPrepared(hash, signature);
+    const submitResponse = await this.submitPrepared(hash, signature, deduplicationPeriod);
     const { submissionId } = submitResponse;
 
     // Notify caller that the submission was accepted and we have a submissionId
@@ -407,11 +413,12 @@ export class CantonService {
    */
   async prepareTransaction(
     commands: unknown,
-    disclosedContracts?: unknown
+    disclosedContracts?: unknown,
+    commandId?: string
   ): Promise<CantonPrepareTransactionResponseDto> {
     return await this.client.post<CantonPrepareTransactionResponseDto>(
       '/canton/api/prepare_transaction',
-      { commands, disclosedContracts } as CantonPrepareTransactionRequestDto
+      { commands, disclosedContracts, commandId } as CantonPrepareTransactionRequestDto
     );
   }
 

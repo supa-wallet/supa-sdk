@@ -9,6 +9,7 @@ import {
   CardContent,
   Button,
   TextArea,
+  Input,
   InputGroup,
   InputLabel,
   Flex,
@@ -83,14 +84,15 @@ interface SendTransactionsProps {
   showTechnicalDetails: boolean;
 }
 
-type TxDraft = { command: string; disclosedContracts: string };
+type TxDraft = { command: string; disclosedContracts: string; commandId: string };
 
 export function SendTransactions({ showTechnicalDetails }: SendTransactionsProps) {
   const { sendMultipleTransactions, loading, error } = useSendMultipleTransactions();
   const [drafts, setDrafts] = useState<TxDraft[]>([
-    { command: '', disclosedContracts: '' },
-    { command: '', disclosedContracts: '' },
+    { command: '', disclosedContracts: '', commandId: '' },
+    { command: '', disclosedContracts: '', commandId: '' },
   ]);
+  const [deduplicationPeriod, setDeduplicationPeriod] = useState('');
   const [results, setResults] = useState<CantonQueryCompletionResponseDto[] | null>(null);
 
   const canSend = useMemo(
@@ -110,10 +112,11 @@ export function SendTransactions({ showTechnicalDetails }: SendTransactionsProps
     drafts.map((d) => ({
       commands: parseJSON(d.command),
       disclosedContracts: d.disclosedContracts.trim() ? parseJSON(d.disclosedContracts) : undefined,
+      commandId: d.commandId.trim() || undefined,
     }));
 
   const handleAdd = () => {
-    setDrafts((prev) => [...prev, { command: '', disclosedContracts: '' }]);
+    setDrafts((prev) => [...prev, { command: '', disclosedContracts: '', commandId: '' }]);
   };
 
   const handleRemove = (idx: number) => {
@@ -130,6 +133,7 @@ export function SendTransactions({ showTechnicalDetails }: SendTransactionsProps
 
     await sendMultipleTransactions(toTxs(), {
       showTechnicalDetails,
+      deduplicationPeriod: deduplicationPeriod.trim() ? { value: deduplicationPeriod.trim() } : undefined,
       onSuccess: setResults,
       onRejection: () => console.log('User rejected transactions'),
       onError: (err) => console.error('Transactions failed:', err),
@@ -186,9 +190,35 @@ export function SendTransactions({ showTechnicalDetails }: SendTransactionsProps
                     $mono
                   />
                 </InputGroup>
+
+                <InputGroup>
+                  <InputLabel>Command ID (optional)</InputLabel>
+                  <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
+                    Optional identifier for idempotency
+                  </Text>
+                  <Input
+                    value={d.commandId}
+                    onChange={(e) => handleChange(idx, { commandId: e.target.value })}
+                    placeholder="my-unique-command-id"
+                    $mono
+                  />
+                </InputGroup>
               </Flex>
             </TxCard>
           ))}
+
+          <InputGroup>
+            <InputLabel>Deduplication Period (optional, shared)</InputLabel>
+            <Text $size="xs" $color="muted" style={{ marginTop: -4, marginBottom: 4 }}>
+              ISO 8601 duration applied to all transactions, e.g. PT60S
+            </Text>
+            <Input
+              value={deduplicationPeriod}
+              onChange={(e) => setDeduplicationPeriod(e.target.value)}
+              placeholder="PT60S"
+              $mono
+            />
+          </InputGroup>
 
           <Button
             $variant="secondary"

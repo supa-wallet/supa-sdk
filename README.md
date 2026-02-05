@@ -6,6 +6,17 @@ Supa SDK allows dApps to connect to Canton Network with Privy.io authentication 
 
 For a quick overview of the code, check out the demo application in the `/demo` folder.
 
+## Release Notes
+
+### 0.2.34
+
+- Added optional `commandId` parameter to `prepareTransaction` for idempotent command submission
+- Added optional `deduplicationPeriod` parameter (`{ value: string }`, e.g. `"PT60S"`) to `submitPrepared` and `submitMultiplePrepared`
+- Updated `CantonSubmitPreparedOptions` with `commandId` and `deduplicationPeriod` fields — these are threaded through `sendTransaction` (provider), `useSendTransaction`, and `useSendMultipleTransactions`
+- Updated `SendTransactionOptions` with `commandId` field
+- Updated `TransactionToSend` with per-transaction `commandId` field
+- Updated `SendMultipleTransactionsOptions` with shared `deduplicationPeriod` field
+
 ## Key Features
 
 - **Privy.io Authentication** - Email, wallet, and social login methods  
