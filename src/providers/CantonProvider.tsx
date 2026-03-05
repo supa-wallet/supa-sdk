@@ -32,6 +32,8 @@ import type {
   CantonTransactionsParams,
   CantonPriceInterval,
   CantonPriceCandleDto,
+  CantonPrepareTransferRequestDto,
+  CantonCalculateTransferFeeResponseDto,
 } from '../core/types';
 
 // ============================================================================
@@ -41,6 +43,16 @@ import type {
 export interface CantonSendCoinOptions extends CantonSubmitPreparedOptions {
   /** Skip confirmation modal. Default: false */
   skipModal?: boolean;
+  /**
+   * Instrument ID to transfer.
+   * Defaults to "Amulet" (CC).
+   */
+  instrumentId?: CantonPrepareTransferRequestDto['instrumentId'];
+  /**
+   * Optional instrument admin party ID.
+   * Useful for CIP-56 tokens.
+   */
+  instrumentAdmin?: CantonPrepareTransferRequestDto['instrumentAdmin'];
 }
 
 export interface CantonContextValue {
@@ -90,13 +102,19 @@ export interface CantonContextValue {
     options?: CantonSubmitPreparedOptions
   ) => Promise<CantonQueryCompletionResponseDto>;
   
-  /** Send Canton Coin (Amulet) to another party */
+  /** Send transfer to another party (defaults to Canton Coin / Amulet) */
   sendCantonCoin: (
     receiverPartyId: string,
     amount: string,
     memo?: string,
     options?: CantonSendCoinOptions
   ) => Promise<CantonQueryCompletionResponseDto>;
+
+  /** Calculate transfer fee in CC for current user party */
+  calculateTransferFee: (
+    instrumentId?: string,
+    instrumentAdmin?: string
+  ) => Promise<CantonCalculateTransferFeeResponseDto>;
   
   /** Setup transfer preapproval (internal, called automatically) */
   setupTransferPreapproval: () => Promise<void>;
@@ -782,9 +800,15 @@ export function CantonProvider({
     setError(null);
 
     try {
-      const prepareResponse = await cantonService.prepareAmuletTransfer({
+      const instrumentId = options?.instrumentId || 'Amulet';
+      const instrumentAdmin = options?.instrumentAdmin;
+      const isAmuletTransfer = instrumentId === 'Amulet';
+
+      const prepareResponse = await cantonService.prepareTransfer({
         receiverPartyId,
         amount,
+        instrumentId,
+        instrumentAdmin,
         memo,
       });
 
@@ -801,11 +825,11 @@ export function CantonProvider({
         },
         {
           skipModal: options?.skipModal || false,
-          title: 'Send Canton Coin',
-          description: `You are sending ${amount} Canton Coin${memo ? ` (${memo})` : ''}.`,
+          title: isAmuletTransfer ? 'Send Canton Coin' : `Send ${instrumentId}`,
+          description: `You are sending ${amount} ${isAmuletTransfer ? 'Canton Coin' : instrumentId}${memo ? ` (${memo})` : ''}.`,
           confirmText: 'Confirm & Sign',
           rejectText: 'Cancel',
-          displayHash: `Sending ${amount} CC to ${receiverPartyId.slice(0, 20)}...`,
+          displayHash: `Sending ${amount} ${isAmuletTransfer ? 'CC' : instrumentId} to ${receiverPartyId.slice(0, 20)}...`,
         }
       );
 
@@ -833,13 +857,32 @@ export function CantonProvider({
         throw error;
       }
       
-      const error = new Error(`Failed to send Canton Coin: ${err.message}`);
+      const transferLabel = options?.instrumentId && options.instrumentId !== 'Amulet'
+        ? `token ${options.instrumentId}`
+        : 'Canton Coin';
+      const error = new Error(`Failed to send ${transferLabel}: ${err.message}`);
       setError(error);
       throw error;
     } finally {
       setLoading(false);
     }
   }, [cantonWallet, signRawHashWithModal, cantonService, getBalances]);
+
+  // ============================================================================
+  // Calculate Transfer Fee
+  // ============================================================================
+  const calculateTransferFee = useCallback(async (
+    instrumentId = 'Amulet',
+    instrumentAdmin?: string
+  ): Promise<CantonCalculateTransferFeeResponseDto> => {
+    const partyId = cantonUser?.partyId || (await getMe()).partyId;
+
+    return await cantonService.calculateTransferFee({
+      partyId,
+      instrumentId,
+      instrumentAdmin,
+    });
+  }, [cantonUser, getMe, cantonService]);
 
   // ============================================================================
   // Setup Transfer Preapproval (internal)
@@ -975,8 +1018,10 @@ export function CantonProvider({
         options
       );
 
-      // Refresh balances after successful operation
-      await getBalances().catch(() => {});
+      if (accept) {
+        // Balance must be reloaded after accepting incoming transfer.
+        await getBalances().catch(() => {});
+      }
 
       return result;
     } catch (err: any) {
@@ -1070,6 +1115,7 @@ export function CantonProvider({
     signMessage,
     sendTransaction,
     sendCantonCoin,
+    calculateTransferFee,
     setupTransferPreapproval,
     getPendingIncomingTransfers,
     respondToIncomingTransfer,

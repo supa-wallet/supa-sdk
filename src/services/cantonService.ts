@@ -15,6 +15,10 @@ import type {
   CantonPrepareTransactionRequestDto,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
+  CantonPrepareTransferRequestDto,
+  CantonPrepareTransferResponseDto,
+  CantonCalculateTransferFeeRequestDto,
+  CantonCalculateTransferFeeResponseDto,
   CantonPrepareAmuletTransferRequestDto,
   CantonPrepareAmuletTransferResponseDto,
   CantonIncomingTransferDto,
@@ -35,6 +39,10 @@ export type {
   CantonPrepareTransactionResponseDto,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
+  CantonPrepareTransferRequestDto,
+  CantonPrepareTransferResponseDto,
+  CantonCalculateTransferFeeRequestDto,
+  CantonCalculateTransferFeeResponseDto,
   CantonPrepareAmuletTransferRequestDto,
   CantonPrepareAmuletTransferResponseDto,
   CantonIncomingTransferDto,
@@ -83,6 +91,7 @@ export class CantonService {
   private meCacheTimestamp: number = 0;
   private mePendingPromise: Promise<CantonMeResponseDto> | null = null;
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  private static readonly AMULET_INSTRUMENT_ID = 'Amulet';
 
   constructor(private client: ApiClient) {}
 
@@ -94,6 +103,18 @@ export class CantonService {
     this.meCache = null;
     this.meCacheTimestamp = 0;
     this.mePendingPromise = null;
+  }
+
+  /**
+   * Validate decimal places for transfer amount (max 10)
+   */
+  private validateTransferAmount(amount: string): void {
+    const decimalParts = amount.split('.');
+    if (decimalParts.length > 1 && decimalParts[1].length > 10) {
+      throw new Error(
+        `Amount cannot have more than 10 decimal places. Got: ${decimalParts[1].length}`
+      );
+    }
   }
 
   /**
@@ -473,29 +494,72 @@ export class CantonService {
   }
 
   /**
-   * Prepare Amulet (Canton Coin) transfer
-   * @param params Transfer parameters (receiverPartyId, amount, memo)
+   * Prepare Canton transfer (Amulet or CIP-56 token)
+   * @param params Transfer parameters
    * @throws Error if amount has more than 10 decimal places
+   */
+  async prepareTransfer(
+    params: CantonPrepareTransferRequestDto
+  ): Promise<CantonPrepareTransferResponseDto> {
+    this.validateTransferAmount(params.amount);
+
+    const result = await this.client.post<CantonPrepareTransferResponseDto>(
+      '/canton/transfers/prepare_transfer',
+      params
+    );
+
+    // Invalidate cache after transfer preparation
+    this.invalidateMeCache();
+    return result;
+  }
+
+  /**
+   * Calculate transfer fee (always returned in CC)
+   */
+  async calculateTransferFee(
+    params: CantonCalculateTransferFeeRequestDto
+  ): Promise<CantonCalculateTransferFeeResponseDto> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('partyId', params.partyId);
+    queryParams.append('instrumentId', params.instrumentId);
+
+    if (params.instrumentAdmin) {
+      queryParams.append('instrumentAdmin', params.instrumentAdmin);
+    }
+
+    return await this.client.get<CantonCalculateTransferFeeResponseDto>(
+      `/canton/transfers/calculate_transfer_fee?${queryParams.toString()}`
+    );
+  }
+
+  /**
+   * @deprecated Use `prepareTransfer` with `instrumentId: "Amulet"`.
    */
   async prepareAmuletTransfer(
     params: CantonPrepareAmuletTransferRequestDto
   ): Promise<CantonPrepareAmuletTransferResponseDto> {
-    // Validate decimal places (max 10)
-    const decimalParts = params.amount.split('.');
-    if (decimalParts.length > 1 && decimalParts[1].length > 10) {
-      throw new Error(
-        `Amount cannot have more than 10 decimal places. Got: ${decimalParts[1].length}`
-      );
-    }
+    const result = await this.prepareTransfer({
+      receiverPartyId: params.receiverPartyId,
+      amount: params.amount,
+      instrumentId: CantonService.AMULET_INSTRUMENT_ID,
+      memo: params.memo,
+    });
 
-    const result = await this.client.post<CantonPrepareAmuletTransferResponseDto>(
-      '/canton/transfers/prepare_amulet_transfer',
-      params
-    );
-    
-    // Invalidate cache after transfer preparation
-    this.invalidateMeCache();
-    return result;
+    return {
+      ...result,
+      receiverPartyId: params.receiverPartyId,
+      amount: params.amount,
+      memo: params.memo,
+    };
+  }
+
+  /**
+   * @deprecated Typo alias. Use `prepareAmuletTransfer`.
+   */
+  async prepareAmuletTranafer(
+    params: CantonPrepareAmuletTransferRequestDto
+  ): Promise<CantonPrepareAmuletTransferResponseDto> {
+    return await this.prepareAmuletTransfer(params);
   }
 
   /**
@@ -574,4 +638,3 @@ export function getCantonService(): CantonService {
   }
   return cantonServiceInstance;
 }
-

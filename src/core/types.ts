@@ -284,7 +284,57 @@ export interface CantonWalletBalancesResponseDto {
   fetchedAt: string;
 }
 
-/** Request for preparing Amulet (Canton Coin) transfer */
+/** Request for preparing a Canton transfer (Amulet or CIP-56 token) */
+export interface CantonPrepareTransferRequestDto {
+  /** Canton party ID of the receiver wallet */
+  receiverPartyId: string;
+  /** Amount to transfer (decimal string with max 10 decimal places) */
+  amount: string;
+  /** Instrument ID (e.g., "Amulet" for CC, "USDC" for CIP-56 tokens) */
+  instrumentId: string;
+  /**
+   * Instrument admin party ID.
+   * Optional for Amulet (resolved by backend), required for CIP-56 tokens.
+   */
+  instrumentAdmin?: string;
+  /** Optional memo for the transfer */
+  memo?: string;
+}
+
+/** Response for preparing a Canton transfer (Amulet or CIP-56 token) */
+export interface CantonPrepareTransferResponseDto
+  extends CantonPrepareTransactionResponseDto {
+  /** Canton party ID of the receiver wallet */
+  receiverPartyId: string;
+  /** Amount to transfer (decimal string with max 10 decimal places) */
+  amount: string;
+  /** Instrument ID (e.g., "Amulet" for CC, "USDC" for CIP-56 tokens) */
+  instrumentId: string;
+  /** Optional instrument admin party ID */
+  instrumentAdmin?: string;
+  /** Optional memo for the transfer */
+  memo?: string;
+}
+
+/** Request params for transfer fee calculation */
+export interface CantonCalculateTransferFeeRequestDto {
+  /** Sender party ID */
+  partyId: string;
+  /** Instrument ID of the transferred token */
+  instrumentId: string;
+  /** Optional instrument admin party ID */
+  instrumentAdmin?: string;
+}
+
+/**
+ * Transfer fee in CC.
+ * Backend returns a numeric amount in Canton Coin units.
+ */
+export type CantonCalculateTransferFeeResponseDto = number;
+
+/**
+ * @deprecated Use `CantonPrepareTransferRequestDto` with `instrumentId: "Amulet"`.
+ */
 export interface CantonPrepareAmuletTransferRequestDto {
   /** Canton party ID of the receiver wallet */
   receiverPartyId: string;
@@ -294,7 +344,9 @@ export interface CantonPrepareAmuletTransferRequestDto {
   memo?: string;
 }
 
-/** Response for preparing Amulet (Canton Coin) transfer */
+/**
+ * @deprecated Use `CantonPrepareTransferResponseDto` with `instrumentId: "Amulet"`.
+ */
 export interface CantonPrepareAmuletTransferResponseDto
   extends CantonPrepareTransactionResponseDto {
   /** Canton party ID of the receiver wallet */
@@ -656,7 +708,6 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: ApiError;
 }
-
 
 
 

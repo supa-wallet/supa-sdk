@@ -456,9 +456,9 @@ if (cantonBalances) {
 }
 ```
 
-#### Send Canton Coin
+#### Send Canton Coin / Token
 
-Send Canton Coin with cost estimation support:
+Send Canton Coin (default) or CIP-56 token with cost estimation support:
 
 ```tsx
 const { sendCantonCoin } = useCanton();
@@ -470,6 +470,8 @@ try {
     '100.5',                           // Amount (max 10 decimal places)
     'Payment for services',            // Optional memo
     {
+      instrumentId: 'Amulet', // optional, default 'Amulet'
+      // instrumentAdmin: 'token-admin::1220abc...', // optional for Amulet, required for many CIP-56 tokens
       timeout: 30000,      // completion timeout (ms)
       pollInterval: 1000,  // polling interval (ms)
       onCostEstimation: (cost) => {
@@ -502,6 +504,19 @@ interface CantonCostEstimationDto {
   confirmationResponseTrafficCostEstimation: number; // in micro-units
   totalTrafficCostEstimation: number;  // total in micro-units
 }
+```
+
+#### Calculate Transfer Fee (in CC)
+
+```tsx
+const { calculateTransferFee } = useCanton();
+
+const feeCc = await calculateTransferFee(
+  'USDC', // instrumentId (optional, defaults to Amulet)
+  'token-admin::1220abc123...' // optional instrumentAdmin
+);
+
+console.log('Transfer fee (CC):', feeCc);
 ```
 
 **Note**: The amount cannot have more than 10 decimal places. Transfers are only supported to wallets with preapproved transfers enabled.
@@ -744,7 +759,7 @@ await sendTransaction(command, contracts, {
 |------|---------|-------------|
 | `useSupa` | Main SDK hook | `auth`, `canton`, `api`, `onboard`, `logout` (recommended for complete cleanup) |
 | `useAuth` | Authentication | `login`, `logout`, `authenticated`, `user` |
-| `useCanton` | Canton Network | `registerCanton`, `getBalances`, `sendCantonCoin`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet`, `getPendingIncomingTransfers`, `respondToIncomingTransfer`, `resetState` |
+| `useCanton` | Canton Network | `registerCanton`, `getBalances`, `sendCantonCoin`, `calculateTransferFee`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet`, `getPendingIncomingTransfers`, `respondToIncomingTransfer`, `resetState` |
 | `useSignMessage` | Enhanced message signing | `signMessage` with custom modals |
 | `useSendTransaction` | Enhanced transactions | `sendTransaction` with custom modals |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |
@@ -771,6 +786,10 @@ import type {
   CantonInstrumentIdDto,
   CantonLockedUtxoDto,
   CantonUnlockedUtxoDto,
+  CantonPrepareTransferRequestDto,
+  CantonPrepareTransferResponseDto,
+  CantonCalculateTransferFeeRequestDto,
+  CantonCalculateTransferFeeResponseDto,
   CantonPrepareAmuletTransferRequestDto,
   CantonCostEstimationDto,
   CantonIncomingTransferDto,
