@@ -2,13 +2,14 @@
  * Wrapper over Privy's signing with automatic confirmation modals
  *
  * Shows a confirmation modal before every signing operation
- * Supports both Stellar (rawSign) and Solana (signMessage) based on withExport config
+ * Supports both Stellar (rawSign) and Solana (signMessage) based on requested chainType
  */
 
 import { useCallback, useEffect, useRef } from 'react';
 import { useSignRawHash } from '@privy-io/react-auth/extended-chains';
 import { useSignMessage as useSolanaSignMessage, useWallets as useSolanaWallets } from '@privy-io/react-auth/solana';
 import { useSupaContext } from '../providers/SupaProvider';
+import { bytesToHex, hexToBytes, resolveRequestedChainType } from './signing/signingHelpers';
 
 export interface SignRawHashModalOptions {
   skipModal?: boolean;
@@ -37,33 +38,14 @@ export interface UseSignRawHashWithModalReturn {
   ) => Promise<{ signature: string } | null>;
 }
 
-/**
- * Converts hex string to Uint8Array
- */
-const hexToBytes = (hex: string): Uint8Array => {
-  const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex;
-  const bytes = new Uint8Array(cleanHex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(cleanHex.substr(i * 2, 2), 16);
-  }
-  return bytes;
-};
-
-/**
- * Converts Uint8Array to hex string with 0x prefix
- */
-const bytesToHex = (bytes: Uint8Array): string => {
-  return '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-};
-
 export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
   const { signTransactionConfirm, setModalLoading, config } = useSupaContext();
   const withExport = config.withExport ?? false;
 
-  // Stellar signing (for withExport: false)
+  // Stellar signing
   const { signRawHash } = useSignRawHash();
 
-  // Solana signing (for withExport: true)
+  // Solana signing
   const { signMessage: solanaSignMessage } = useSolanaSignMessage();
   const { wallets: solanaWallets } = useSolanaWallets();
   const solanaWalletsRef = useRef(solanaWallets);
@@ -97,7 +79,9 @@ export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
 
       // Helper function to perform signing
       const performSign = async (): Promise<{ signature: string }> => {
-        if (withExport) {
+        const resolvedChainType = resolveRequestedChainType(params.chainType, withExport);
+
+        if (resolvedChainType === 'solana') {
           // Solana approach: use signMessage
           let wallet = solanaWalletsRef.current.find(
             (w) => w.address === params.address,
@@ -136,7 +120,7 @@ export function useSignRawHashWithModal(): UseSignRawHashWithModalReturn {
           // Stellar approach: use signRawHash
           const result = await signRawHash({
             address: params.address,
-            chainType: params.chainType as 'stellar',
+            chainType: 'stellar',
             hash: params.hash,
           });
           return result;

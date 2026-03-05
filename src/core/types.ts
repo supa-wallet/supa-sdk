@@ -94,6 +94,8 @@ export interface CantonMeResponseDto {
   partyId: string;
   /** User email (can be null if not set) */
   email: string | null;
+  /** Public key used in Canton (base64, 32 bytes Ed25519) */
+  publicKey?: string | null;
   /** Indicates whether the transfer preapproval is set and NOT EXPIRED for the party */
   transferPreapprovalSet: boolean;
   /** Transfer preapproval expiration date (ISO 8601, can be null) */
@@ -708,6 +710,5 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: ApiError;
 }
-
 
 

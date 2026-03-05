@@ -11,17 +11,28 @@ import {
   useCallback,
   useRef,
   useEffect,
-  type ReactNode,
 } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import { useCreateWallet } from '@privy-io/react-auth/extended-chains';
-import { useCreateWallet as useSolanaCreateWallet, useWallets as useSolanaWallets } from '@privy-io/react-auth/solana';
+import { useCreateWallet as useSolanaCreateWallet } from '@privy-io/react-auth/solana';
 import { useAuth } from '../hooks/useAuth';
 import { useSignRawHashWithModal } from '../hooks/useSignRawHashWithModal';
 import { useCantonWallet } from '../hooks/useCantonWallet';
-import { getCantonWallets, getPublicKeyBase64, CantonWallet } from '../utils/wallet';
+import { getPublicKeyBase64, CantonWallet } from '../utils/wallet';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
-import type { CantonService, CantonSubmitPreparedOptions } from '../services/cantonService';
+import type { CantonSubmitPreparedOptions } from '../services/cantonService';
+import {
+  collectWalletsByChainType,
+  normalizeBase64Key,
+  resolveSigningWalletFromCandidates,
+  type CantonChainType,
+  type SigningWalletInfo,
+} from './canton/signingWalletResolver';
+import type {
+  CantonContextValue,
+  CantonProviderProps,
+  CantonSendCoinOptions,
+} from './canton/types';
 import type {
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
@@ -32,141 +43,16 @@ import type {
   CantonTransactionsParams,
   CantonPriceInterval,
   CantonPriceCandleDto,
-  CantonPrepareTransferRequestDto,
   CantonCalculateTransferFeeResponseDto,
 } from '../core/types';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface CantonSendCoinOptions extends CantonSubmitPreparedOptions {
-  /** Skip confirmation modal. Default: false */
-  skipModal?: boolean;
-  /**
-   * Instrument ID to transfer.
-   * Defaults to "Amulet" (CC).
-   */
-  instrumentId?: CantonPrepareTransferRequestDto['instrumentId'];
-  /**
-   * Optional instrument admin party ID.
-   * Useful for CIP-56 tokens.
-   */
-  instrumentAdmin?: CantonPrepareTransferRequestDto['instrumentAdmin'];
-}
-
-export interface CantonContextValue {
-  /** First Stellar wallet (primary) */
-  cantonWallet: CantonWallet | null;
-  
-  /** All Stellar wallets */
-  cantonWallets: CantonWallet[];
-  
-  /** Create new Stellar wallet */
-  createCantonWallet: () => Promise<CantonWallet | null>;
-  
-  /** Register Canton wallet on backend */
-  registerCanton: (inviteCode?: string) => Promise<void>;
-  
-  /** Whether Canton wallet is registered */
-  isRegistered: boolean;
-  
-  /** Canton user info (partyId, email, transferPreapprovalSet) */
-  cantonUser: CantonMeResponseDto | null;
-  
-  /** Get Canton user info */
-  getMe: () => Promise<CantonMeResponseDto>;
-  
-  /** Get active contracts with optional filtering */
-  getActiveContracts: (templateIds?: string[]) => Promise<CantonActiveContractsResponseDto>;
-  
-  /** Canton wallet balances */
-  cantonBalances: CantonWalletBalancesResponseDto | null;
-  
-  /** Get Canton wallet balances */
-  getBalances: () => Promise<CantonWalletBalancesResponseDto>;
-  
-  /** Tap devnet faucet */
-  tapDevnet: (amount: string, options?: CantonSubmitPreparedOptions) => Promise<CantonQueryCompletionResponseDto>;
-  
-  /** Sign hash with Stellar wallet */
-  signHash: (hashBase64: string) => Promise<string>;
-  
-  /** Sign text message */
-  signMessage: (message: string) => Promise<string>;
-  
-  /** Prepare and submit transaction with polling for completion */
-  sendTransaction: (
-    commands: unknown,
-    disclosedContracts?: unknown,
-    options?: CantonSubmitPreparedOptions
-  ) => Promise<CantonQueryCompletionResponseDto>;
-  
-  /** Send transfer to another party (defaults to Canton Coin / Amulet) */
-  sendCantonCoin: (
-    receiverPartyId: string,
-    amount: string,
-    memo?: string,
-    options?: CantonSendCoinOptions
-  ) => Promise<CantonQueryCompletionResponseDto>;
-
-  /** Calculate transfer fee in CC for current user party */
-  calculateTransferFee: (
-    instrumentId?: string,
-    instrumentAdmin?: string
-  ) => Promise<CantonCalculateTransferFeeResponseDto>;
-  
-  /** Setup transfer preapproval (internal, called automatically) */
-  setupTransferPreapproval: () => Promise<void>;
-  
-  /** Get pending incoming transfers */
-  getPendingIncomingTransfers: () => Promise<CantonIncomingTransferDto[]>;
-  
-  /** Respond to incoming transfer (accept or reject) */
-  respondToIncomingTransfer: (
-    contractId: string,
-    accept: boolean,
-    options?: CantonSubmitPreparedOptions
-  ) => Promise<CantonQueryCompletionResponseDto>;
-  
-  /** Get Canton transactions history with pagination */
-  getTransactions: (params?: CantonTransactionsParams) => Promise<CantonTransactionDto[]>;
-  
-  /** Get Canton price history (candles from Bybit) */
-  getPriceHistory: (interval: CantonPriceInterval) => Promise<CantonPriceCandleDto[]>;
-  
-  /** Reset all Canton state (for logout) */
-  resetState: () => void;
-  
-  /** Loading state */
-  loading: boolean;
-  
-  /** Error state */
-  error: Error | null;
-  
-  /** Clear error */
-  clearError: () => void;
-}
+export type {
+  CantonContextValue,
+  CantonProviderProps,
+  CantonSendCoinOptions,
+} from './canton/types';
 
 const CantonContext = createContext<CantonContextValue | null>(null);
-
-// ============================================================================
-// Provider Props
-// ============================================================================
-
-export interface CantonProviderProps {
-  cantonService: CantonService;
-  children: ReactNode;
-  /** Enable wallet export (uses Solana instead of Stellar). Default: false */
-  withExport?: boolean;
-  /** Enable automatic onboarding (create wallet + register Canton on login). Default: true */
-  autoOnboarding?: boolean;
-  /**
-   * Legacy onboarding stage: automatically setup transfer preapproval after registration.
-   * Default: false (new onboarding uses prepare_initialization_transactions).
-   */
-  autoTransferPreapproval?: boolean;
-}
 
 // ============================================================================
 // Canton Provider Component
@@ -186,22 +72,17 @@ export function CantonProvider({
   const { createWallet: createSolanaWallet } = useSolanaCreateWallet();
   const { cantonWallet, cantonWallets } = useCantonWallet();
 
-  // Solana wallets for withExport mode
-  const { wallets: solanaWallets } = useSolanaWallets();
-
-  // Chain type based on withExport flag
-  const chainType = withExport ? 'solana' : 'stellar';
+  // Default chain type from config (used as fallback if auto-detection cannot match)
+  const defaultChainType: CantonChainType = withExport ? 'solana' : 'stellar';
 
   // Refs for fresh wallet data in callbacks (similar to useSignRawHashWithModal pattern)
   const walletsRef = useRef(wallets);
-  const solanaWalletsRef = useRef(solanaWallets);
   const userRef = useRef(user);
 
   useEffect(() => {
     walletsRef.current = wallets;
-    solanaWalletsRef.current = solanaWallets;
     userRef.current = user;
-  }, [wallets, solanaWallets, user]);
+  }, [wallets, user]);
   
   // ============================================================================
   // Shared State (single source of truth)
@@ -224,6 +105,31 @@ export function CantonProvider({
   const getBalancesPromise = useRef<Promise<CantonWalletBalancesResponseDto> | null>(null);
   const preapprovalPromise = useRef<Promise<void> | null>(null);
   const preapprovalAttempted = useRef(false);
+
+  const getWalletsByChainType = useCallback((targetChainType: CantonChainType): CantonWallet[] => {
+    return collectWalletsByChainType(userRef.current, walletsRef.current, targetChainType);
+  }, []);
+
+  const resolveSigningWallet = useCallback(async (): Promise<SigningWalletInfo> => {
+    let cantonPublicKey = normalizeBase64Key(cantonUser?.publicKey);
+    if (!cantonPublicKey && isRegistered) {
+      try {
+        const fetchedUser = await cantonService.getMe();
+        setCantonUser(fetchedUser);
+        cantonPublicKey = normalizeBase64Key(fetchedUser.publicKey);
+      } catch {
+        // Best effort: keep fallback below.
+      }
+    }
+
+    return resolveSigningWalletFromCandidates({
+      primaryWallet: cantonWallet,
+      stellarWallets: getWalletsByChainType('stellar'),
+      solanaWallets: getWalletsByChainType('solana'),
+      cantonPublicKey,
+      defaultChainType,
+    });
+  }, [cantonWallet, defaultChainType, getWalletsByChainType, cantonUser?.publicKey, isRegistered, cantonService]);
 
   // ============================================================================
   // Check Registration Status (once on mount)
@@ -341,7 +247,7 @@ export function CantonProvider({
         // Fallback: Wait for React to update wallets
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const freshWallets = getCantonWallets(userRef.current, walletsRef.current, chainType);
+        const freshWallets = getWalletsByChainType(defaultChainType);
         if (freshWallets[0]) {
           console.log(`[Supa SDK] ✅ ${withExport ? 'Solana' : 'Stellar'} wallet created successfully`);
           return freshWallets[0] as CantonWallet;
@@ -361,7 +267,7 @@ export function CantonProvider({
         const maxAttempts = 10; // 10 * 500ms = 5s max
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           // Get fresh wallets from refs - always use getCantonWallets for consistent format
-          const freshWallets = getCantonWallets(userRef.current, walletsRef.current, chainType);
+          const freshWallets = getWalletsByChainType(defaultChainType);
 
           const existingWallet = freshWallets[0];
 
@@ -389,22 +295,19 @@ export function CantonProvider({
     } finally {
       setLoading(false);
     }
-  }, [authenticated, createStellarWallet, createSolanaWallet, withExport, chainType]);
+  }, [authenticated, createStellarWallet, createSolanaWallet, withExport, getWalletsByChainType, defaultChainType]);
 
   // ============================================================================
   // Sign Hash
   // ============================================================================
   const signHash = useCallback(async (hashBase64: string): Promise<string> => {
-    if (!cantonWallet) {
-      throw new Error('No Stellar wallet found');
-    }
-
     try {
+      const { wallet, chainType } = await resolveSigningWallet();
       const hashHex = base64ToHex(hashBase64);
 
       const result = await signRawHashWithModal(
         {
-          address: cantonWallet.address,
+          address: wallet.address,
           chainType,
           hash: hashHex as `0x${string}`,
         },
@@ -425,7 +328,7 @@ export function CantonProvider({
     } catch (err: any) {
       throw new Error(`Failed to sign hash: ${err.message}`);
     }
-  }, [cantonWallet, signRawHashWithModal]);
+  }, [resolveSigningWallet, signRawHashWithModal]);
 
   // ============================================================================
   // Register Canton (with deduplication)
@@ -447,7 +350,7 @@ export function CantonProvider({
       setError(null);
 
       try {
-        // Ensure Stellar wallet exists
+        // Ensure Canton wallet exists
         let wallet: CantonWallet | null = cantonWallet;
         
         if (!wallet) {
@@ -457,18 +360,18 @@ export function CantonProvider({
             wallet = createdWallet;
           } else {
             await new Promise(resolve => setTimeout(resolve, 2000));
-            const freshWallets = getCantonWallets(userRef.current, walletsRef.current, chainType);
+            const freshWallets = getWalletsByChainType(defaultChainType);
             wallet = freshWallets[0] || null;
           }
           
           if (!wallet) {
-            throw new Error('Failed to create Stellar wallet. Please try again.');
+            throw new Error('Failed to create Canton wallet. Please try again.');
           }
         }
 
         // Ensure wallet has chainType for getPublicKeyBase64
-        if (withExport && wallet && !wallet.chainType) {
-          wallet = { ...wallet, chainType: 'solana' } as CantonWallet;
+        if (wallet && (wallet.chainType !== 'solana' && wallet.chainType !== 'stellar')) {
+          wallet = { ...wallet, chainType: defaultChainType } as CantonWallet;
         }
 
         // Poll for public key availability
@@ -483,22 +386,22 @@ export function CantonProvider({
           } catch (err: any) {
             attempts++;
             if (attempts >= maxAttempts) {
-              throw new Error(`${err.message} After ${maxAttempts} attempts, the Stellar wallet is still not ready.`);
+              throw new Error(`${err.message} After ${maxAttempts} attempts, the wallet is still not ready.`);
             }
             await new Promise(resolve => setTimeout(resolve, 2000));
-            const freshWallets = getCantonWallets(userRef.current, walletsRef.current, chainType);
+            const freshWallets = getWalletsByChainType(defaultChainType);
             if (freshWallets[0]) {
               wallet = freshWallets[0];
               // Ensure chainType for getPublicKeyBase64
-              if (withExport && !wallet.chainType) {
-                wallet = { ...wallet, chainType: 'solana' } as CantonWallet;
+              if (wallet.chainType !== 'solana' && wallet.chainType !== 'stellar') {
+                wallet = { ...wallet, chainType: defaultChainType } as CantonWallet;
               }
             }
           }
         }
 
         if (!publicKey) {
-          throw new Error('Failed to obtain public key from Stellar wallet');
+          throw new Error('Failed to obtain public key from wallet');
         }
 
         // Wait for Privy to initialize wallet proxy
@@ -517,7 +420,7 @@ export function CantonProvider({
               const result = await signRawHashWithModal(
                 {
                   address: wallet!.address,
-                  chainType,
+                  chainType: wallet!.chainType || defaultChainType,
                   hash: hashHex as `0x${string}`,
                 },
                 { skipModal: true }
@@ -579,7 +482,7 @@ export function CantonProvider({
 
     registrationPromise.current = promise;
     return promise;
-  }, [cantonWallet, createCantonWallet, signRawHashWithModal, cantonService, isRegistered, withExport, chainType]);
+  }, [cantonWallet, createCantonWallet, signRawHashWithModal, cantonService, isRegistered, getWalletsByChainType, defaultChainType]);
 
   // ============================================================================
   // Tap Devnet
@@ -588,18 +491,15 @@ export function CantonProvider({
     amount: string,
     options?: CantonSubmitPreparedOptions
   ): Promise<CantonQueryCompletionResponseDto> => {
-    if (!cantonWallet) {
-      throw new Error('No Stellar wallet found');
-    }
-
     setLoading(true);
     setError(null);
 
     try {
       const signFunction = async (hashHex: string): Promise<string> => {
+        const { wallet, chainType } = await resolveSigningWallet();
         const result = await signRawHashWithModal(
           {
-            address: cantonWallet.address,
+            address: wallet.address,
             chainType,
             hash: hashHex as `0x${string}`,
           },
@@ -627,7 +527,7 @@ export function CantonProvider({
     } finally {
       setLoading(false);
     }
-  }, [cantonWallet, signRawHashWithModal, cantonService]);
+  }, [resolveSigningWallet, signRawHashWithModal, cantonService]);
 
   // ============================================================================
   // Get Me (with deduplication)
@@ -688,18 +588,15 @@ export function CantonProvider({
   // Sign Message
   // ============================================================================
   const signMessage = useCallback(async (message: string): Promise<string> => {
-    if (!cantonWallet) {
-      throw new Error('No Stellar wallet found');
-    }
-
     setLoading(true);
     setError(null);
 
     try {
       const signFunction = async (hashHex: string): Promise<string> => {
+        const { wallet, chainType } = await resolveSigningWallet();
         const result = await signRawHashWithModal(
           {
-            address: cantonWallet.address,
+            address: wallet.address,
             chainType,
             hash: hashHex as `0x${string}`,
           },
@@ -727,7 +624,7 @@ export function CantonProvider({
     } finally {
       setLoading(false);
     }
-  }, [cantonWallet, signRawHashWithModal, cantonService]);
+  }, [resolveSigningWallet, signRawHashWithModal, cantonService]);
 
   // ============================================================================
   // Send Transaction
@@ -737,14 +634,11 @@ export function CantonProvider({
     disclosedContracts?: unknown,
     options?: CantonSubmitPreparedOptions
   ): Promise<CantonQueryCompletionResponseDto> => {
-    if (!cantonWallet) {
-      throw new Error('No Stellar wallet found');
-    }
-
     setLoading(true);
     setError(null);
 
     try {
+      const { wallet, chainType } = await resolveSigningWallet();
       const prepareResponse = await cantonService.prepareTransaction(commands, disclosedContracts, options?.commandId);
 
       if (options?.onCostEstimation && prepareResponse.costEstimation) {
@@ -755,7 +649,7 @@ export function CantonProvider({
 
       const signResult = await signRawHashWithModal(
         {
-          address: cantonWallet.address,
+          address: wallet.address,
           chainType,
           hash: hashHex as `0x${string}`,
         },
@@ -781,7 +675,7 @@ export function CantonProvider({
     } finally {
       setLoading(false);
     }
-  }, [cantonWallet, signRawHashWithModal, cantonService]);
+  }, [resolveSigningWallet, signRawHashWithModal, cantonService]);
 
   // ============================================================================
   // Send Canton Coin
@@ -792,14 +686,11 @@ export function CantonProvider({
     memo?: string,
     options?: CantonSendCoinOptions
   ): Promise<CantonQueryCompletionResponseDto> => {
-    if (!cantonWallet) {
-      throw new Error('No Stellar wallet found');
-    }
-
     setLoading(true);
     setError(null);
 
     try {
+      const { wallet, chainType } = await resolveSigningWallet();
       const instrumentId = options?.instrumentId || 'Amulet';
       const instrumentAdmin = options?.instrumentAdmin;
       const isAmuletTransfer = instrumentId === 'Amulet';
@@ -819,7 +710,7 @@ export function CantonProvider({
       const hashHex = base64ToHex(prepareResponse.hash);
       const signResult = await signRawHashWithModal(
         {
-          address: cantonWallet.address,
+          address: wallet.address,
           chainType,
           hash: hashHex as `0x${string}`,
         },
@@ -866,7 +757,7 @@ export function CantonProvider({
     } finally {
       setLoading(false);
     }
-  }, [cantonWallet, signRawHashWithModal, cantonService, getBalances]);
+  }, [resolveSigningWallet, signRawHashWithModal, cantonService, getBalances]);
 
   // ============================================================================
   // Calculate Transfer Fee
@@ -888,10 +779,6 @@ export function CantonProvider({
   // Setup Transfer Preapproval (internal)
   // ============================================================================
   const setupTransferPreapprovalInternal = useCallback(async (currentUser?: CantonMeResponseDto): Promise<void> => {
-    if (!cantonWallet) {
-      throw new Error('No Stellar wallet found');
-    }
-
     if (preapprovalPromise.current) {
       return preapprovalPromise.current;
     }
@@ -908,6 +795,7 @@ export function CantonProvider({
       setError(null);
 
       try {
+        const { wallet, chainType } = await resolveSigningWallet();
         if (!currentUser) {
           const freshUser = await cantonService.getMe();
           if (freshUser.transferPreapprovalSet) {
@@ -921,7 +809,7 @@ export function CantonProvider({
         const hashHex = base64ToHex(prepareResponse.hash);
         const signResult = await signRawHashWithModal(
           {
-            address: cantonWallet.address,
+            address: wallet.address,
             chainType,
             hash: hashHex as `0x${string}`,
           },
@@ -953,7 +841,7 @@ export function CantonProvider({
 
     preapprovalPromise.current = promise;
     return promise;
-  }, [cantonWallet, signRawHashWithModal, cantonService, cantonUser]);
+  }, [resolveSigningWallet, signRawHashWithModal, cantonService, cantonUser]);
 
   const setupTransferPreapproval = useCallback(async (): Promise<void> => {
     return setupTransferPreapprovalInternal();
@@ -974,14 +862,11 @@ export function CantonProvider({
     accept: boolean,
     options?: CantonSubmitPreparedOptions
   ): Promise<CantonQueryCompletionResponseDto> => {
-    if (!cantonWallet) {
-      throw new Error('No Stellar wallet found');
-    }
-
     setLoading(true);
     setError(null);
 
     try {
+      const { wallet, chainType } = await resolveSigningWallet();
       const prepareResponse = await cantonService.prepareResponseToIncomingTransfer({
         contractId,
         accept
@@ -994,7 +879,7 @@ export function CantonProvider({
       const hashHex = base64ToHex(prepareResponse.hash);
       const signResult = await signRawHashWithModal(
         {
-          address: cantonWallet.address,
+          address: wallet.address,
           chainType,
           hash: hashHex as `0x${string}`,
         },
@@ -1031,7 +916,7 @@ export function CantonProvider({
     } finally {
       setLoading(false);
     }
-  }, [cantonWallet, signRawHashWithModal, cantonService, getBalances]);
+  }, [resolveSigningWallet, signRawHashWithModal, cantonService, getBalances]);
 
   // ============================================================================
   // Get Transactions History
