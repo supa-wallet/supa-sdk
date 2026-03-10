@@ -85,10 +85,11 @@ export interface CantonContextValue {
     options?: CantonSendCoinOptions
   ) => Promise<CantonQueryCompletionResponseDto>;
 
-  /** Calculate transfer fee in CC for current user party */
+  /** Calculate transfer fee in CC (optional partyId override, receiver recommended for transfers) */
   calculateTransferFee: (
     instrumentId?: string,
-    instrumentAdmin?: string
+    instrumentAdmin?: string,
+    partyId?: string
   ) => Promise<CantonCalculateTransferFeeResponseDto>;
 
   /** Setup transfer preapproval (internal, called automatically) */

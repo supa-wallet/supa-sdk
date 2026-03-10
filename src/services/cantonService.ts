@@ -520,7 +520,9 @@ export class CantonService {
     params: CantonCalculateTransferFeeRequestDto
   ): Promise<CantonCalculateTransferFeeResponseDto> {
     const queryParams = new URLSearchParams();
-    queryParams.append('partyId', params.partyId);
+    if (params.partyId) {
+      queryParams.append('partyId', params.partyId);
+    }
     queryParams.append('instrumentId', params.instrumentId);
 
     if (params.instrumentAdmin) {

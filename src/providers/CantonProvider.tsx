@@ -764,12 +764,16 @@ export function CantonProvider({
   // ============================================================================
   const calculateTransferFee = useCallback(async (
     instrumentId = 'Amulet',
-    instrumentAdmin?: string
+    instrumentAdmin?: string,
+    partyId?: string
   ): Promise<CantonCalculateTransferFeeResponseDto> => {
-    const partyId = cantonUser?.partyId || (await getMe()).partyId;
+    const providedPartyId =
+      typeof partyId === 'string' ? partyId.trim() : '';
+    const resolvedPartyId =
+      providedPartyId || cantonUser?.partyId || (await getMe()).partyId;
 
     return await cantonService.calculateTransferFee({
-      partyId,
+      partyId: resolvedPartyId,
       instrumentId,
       instrumentAdmin,
     });

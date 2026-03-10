@@ -1,7 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
+import { readFileSync } from 'fs';
 import { resolve } from 'path';
+
+const packageJson = JSON.parse(
+  readFileSync(resolve(__dirname, 'package.json'), 'utf-8')
+) as { version?: string };
+const sdkVersion = packageJson.version ?? 'unknown';
 
 export default defineConfig({
   plugins: [
@@ -14,6 +20,7 @@ export default defineConfig({
   ],
   define: {
     global: 'globalThis',
+    __SUPA_SDK_VERSION__: JSON.stringify(sdkVersion),
   },
   resolve: {
     alias: {
@@ -25,6 +32,7 @@ export default defineConfig({
     esbuildOptions: {
       define: {
         global: 'globalThis',
+        __SUPA_SDK_VERSION__: JSON.stringify(sdkVersion),
       },
     },
   },
@@ -55,7 +63,6 @@ export default defineConfig({
     },
   },
 });
-
 
 
 

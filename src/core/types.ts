@@ -320,8 +320,8 @@ export interface CantonPrepareTransferResponseDto
 
 /** Request params for transfer fee calculation */
 export interface CantonCalculateTransferFeeRequestDto {
-  /** Sender party ID */
-  partyId: string;
+  /** Party ID used for fee calculation (receiver recommended for transfer flows) */
+  partyId?: string;
   /** Instrument ID of the transferred token */
   instrumentId: string;
   /** Optional instrument admin party ID */
@@ -710,5 +710,4 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: ApiError;
 }
-
 

@@ -8,6 +8,8 @@ import { ApiService, createApiService } from '../services/apiService';
 import { ConfirmationModal, SignMessageModal, SignTransactionModal } from '../components/ConfirmationModal';
 import { CantonProvider } from './CantonProvider';
 
+const SDK_VERSION = __SUPA_SDK_VERSION__;
+
 // Initialize Buffer polyfill for browser (required by Privy SDK)
 if (typeof window !== 'undefined' && !(window as any).Buffer) {
   (window as any).Buffer = Buffer;
@@ -143,6 +145,7 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
       baseURL: config.apiBaseUrl,
       nodeIdentifier: config.nodeIdentifier,
       supaAppId: config.supaAppId,
+      sdkVersion: SDK_VERSION,
     });
 
     const cantonService = createCantonService(apiClient);
@@ -361,4 +364,3 @@ export function useSupaContext(): SupaContextValue {
   
   return context;
 }
-

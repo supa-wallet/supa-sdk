@@ -513,13 +513,14 @@ const { calculateTransferFee } = useCanton();
 
 const feeCc = await calculateTransferFee(
   'USDC', // instrumentId (optional, defaults to Amulet)
-  'token-admin::1220abc123...' // optional instrumentAdmin
+  'token-admin::1220abc123...', // optional instrumentAdmin
+  'receiver-party::1220abc123...' // optional partyId (recommended: recipient)
 );
 
 console.log('Transfer fee (CC):', feeCc);
 ```
 
-**Note**: The amount cannot have more than 10 decimal places. Transfers are only supported to wallets with preapproved transfers enabled.
+**Note**: The amount cannot have more than 10 decimal places. Transfers are only supported to wallets with preapproved transfers enabled. If `partyId` is omitted, SDK falls back to the current user party ID.
 
 #### Submit a Transaction
 

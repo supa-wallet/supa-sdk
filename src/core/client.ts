@@ -11,6 +11,8 @@ export interface ClientConfig {
   nodeIdentifier: string;
   /** Optional app identifier for app-specific backend rules */
   supaAppId?: string;
+  /** Optional SDK version (sent as X-Supa-SDK header) */
+  sdkVersion?: string;
   getAccessToken?: () => Promise<string | null>;
 }
 
@@ -19,11 +21,15 @@ export class ApiClient {
   private getAccessToken?: () => Promise<string | null>;
   private nodeIdentifier: string;
   private supaAppId?: string;
+  private sdkVersion?: string;
 
   constructor(config: ClientConfig = { nodeIdentifier: '' }) {
     const baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || 'https://stage_api.supa.fyi';
     this.nodeIdentifier = config.nodeIdentifier;
     this.supaAppId = config.supaAppId;
+    const configuredSdkVersion = config.sdkVersion?.trim();
+    const bundledSdkVersion = __SUPA_SDK_VERSION__?.trim();
+    this.sdkVersion = configuredSdkVersion || bundledSdkVersion || undefined;
     
     this.client = axios.create({
       baseURL,
@@ -57,6 +63,11 @@ export class ApiClient {
         if (this.supaAppId) {
           config.headers['X-Supa-App-Id'] = this.supaAppId;
         }
+
+        // Add SDK version header for backend analytics/routing (all requests)
+        if (this.sdkVersion) {
+          config.headers['X-Supa-SDK'] = this.sdkVersion;
+        }
         
         // Log request details
         console.group(`[Supa SDK] 📤 REQUEST: ${config.method?.toUpperCase()} ${config.url}`);
@@ -65,6 +76,7 @@ export class ApiClient {
           'Authorization': config.headers.Authorization ? `Bearer ***${String(config.headers.Authorization).slice(-20)}` : 'none',
           'X-Canton-Node-Id': config.headers['X-Canton-Node-Id'] || 'none',
           'X-Supa-App-Id': config.headers['X-Supa-App-Id'] || 'none',
+          'X-Supa-SDK': config.headers['X-Supa-SDK'] || 'none',
         });
         if (config.data) {
           console.log('Request Body:', config.data);
@@ -157,4 +169,3 @@ export function getApiClient(): ApiClient {
   }
   return clientInstance;
 }
-

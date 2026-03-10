@@ -10,7 +10,7 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-
+declare const __SUPA_SDK_VERSION__: string;
 
 
 
