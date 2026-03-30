@@ -12,7 +12,6 @@ import type {
   CantonPrepareTapRequestDto,
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
-  GetActiveContractsParams,
   CantonPrepareTransactionRequestDto,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
@@ -37,7 +36,6 @@ import { base64ToHex, hexToBase64 } from '../utils/converters';
 export type {
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
-  GetActiveContractsParams,
   CantonPrepareTransactionResponseDto,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
@@ -386,30 +384,30 @@ export class CantonService {
 
   /**
    * Get active contracts with optional template filtering and pagination
-   * @param params Optional parameters: templateIds, limit, offset (offset requires limit)
+   * @param templateIds Optional array of template IDs to filter by
+   * @param pagination Optional pagination: limit, offset (offset requires limit)
    */
   async getActiveContracts(
-    params: GetActiveContractsParams = {}
+    templateIds?: string[],
+    pagination?: { limit: number; offset?: number } | { limit?: number }
   ): Promise<CantonActiveContractsResponseDto> {
-    const { templateIds, limit } = params;
-    const offset = 'offset' in params ? params.offset : undefined;
-
-    const queryParams = new URLSearchParams();
+    const params = new URLSearchParams();
     if (templateIds) {
-      templateIds.forEach(id => queryParams.append('templateIds', id));
+      templateIds.forEach(id => params.append('templateIds', id));
     }
-    if (limit !== undefined) {
-      queryParams.append('limit', String(limit));
+    if (pagination?.limit !== undefined) {
+      params.append('limit', String(pagination.limit));
     }
-    if (offset !== undefined) {
-      queryParams.append('offset', String(offset));
+    if (pagination && 'offset' in pagination && pagination.offset !== undefined) {
+      params.append('offset', String(pagination.offset));
     }
 
-    const queryString = queryParams.toString();
+    const queryString = params.toString();
     const url = queryString
       ? `/canton/api/active_contracts?${queryString}`
       : '/canton/api/active_contracts';
 
+    // API returns array directly, not wrapped in an object
     return await this.client.get<CantonActiveContractsResponseDto>(url);
   }
 

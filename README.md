@@ -418,6 +418,27 @@ const filteredContracts = await getActiveContracts([
   'template-id-1',
   'template-id-2'
 ]);
+
+// With pagination (limit required, offset optional)
+const page = await getActiveContracts(undefined, { limit: 10 });
+const nextPage = await getActiveContracts(undefined, { limit: 10, offset: 10 });
+
+// Combined: filter + pagination
+const filtered = await getActiveContracts(['template-id-1'], { limit: 5, offset: 0 });
+```
+
+**Parameters:**
+- `templateIds` (optional) - Array of template IDs to filter by
+- `pagination` (optional) - `{ limit: number; offset?: number }`. `offset` requires `limit`.
+
+**Note:** The API may return contracts in two formats (legacy wrapped or flat). Use `normalizeContractItem()` to get a consistent shape:
+
+```tsx
+import { normalizeContractItem } from '@supanovaapp/sdk';
+
+const contracts = await getActiveContracts();
+const normalized = contracts.map(normalizeContractItem);
+// normalized[0].contractId, .templateId, .createArgument, .createdAt
 ```
 
 #### Get Canton Balances

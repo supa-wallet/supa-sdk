@@ -299,29 +299,48 @@ console.log('Email:', user.email);
 
 ### Get Active Contracts
 
-Query active contracts with optional template ID filtering:
+Query active contracts with optional template ID filtering and pagination:
 
 ```tsx
 const { getActiveContracts } = useCanton();
 
 // Get all contracts
 const allContracts = await getActiveContracts();
-console.log('All contracts:', allContracts);
 
 // Filter by template IDs
 const filteredContracts = await getActiveContracts([
   'template-id-1',
   'template-id-2'
 ]);
-console.log('Filtered contracts:', filteredContracts);
+
+// With pagination (limit required, offset optional)
+const page = await getActiveContracts(undefined, { limit: 10 });
+const nextPage = await getActiveContracts(undefined, { limit: 10, offset: 10 });
+
+// Combined: filter + pagination
+const filtered = await getActiveContracts(['template-id-1'], { limit: 5, offset: 0 });
 ```
 
-Each contract includes:
+**Parameters:**
+- `templateIds` (optional) - Array of template IDs to filter by
+- `pagination` (optional) - `{ limit: number; offset?: number }`. `offset` requires `limit`.
+
+The API may return contracts in two formats (legacy wrapped or flat). Use `normalizeContractItem()` to get a consistent shape:
+
+```tsx
+import { normalizeContractItem } from '@supanovaapp/sdk';
+
+const contracts = await getActiveContracts();
+const normalized = contracts.map(normalizeContractItem);
+```
+
+Normalized contract includes:
 
 - `contractId` - unique contract ID
 - `templateId` - contract template ID
-- `payload` - contract data
-- `createdAt` - creation timestamp
+- `createArgument` - contract data (varies per template)
+- `createdEventBlob` - created event blob (base64)
+- `createdAt` - creation timestamp (only available in legacy format, `null` otherwise)
 
 ---
 
@@ -910,7 +929,7 @@ After registration, you can call:
 ```tsx
 const { getActiveContracts, sendTransaction, signMessage } = useCanton();
 
-await getActiveContracts(['template-id']);
+await getActiveContracts(['template-id'], { limit: 10 });
 await sendTransaction(command, contracts);
 await signMessage("Hello Canton");
 ```

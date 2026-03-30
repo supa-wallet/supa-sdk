@@ -3,7 +3,6 @@ import type { CantonService, CantonSubmitPreparedOptions } from '../../services/
 import type {
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
-  GetActiveContractsParams,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonIncomingTransferDto,
@@ -54,7 +53,7 @@ export interface CantonContextValue {
   getMe: () => Promise<CantonMeResponseDto>;
 
   /** Get active contracts with optional filtering and pagination */
-  getActiveContracts: (params?: GetActiveContractsParams) => Promise<CantonActiveContractsResponseDto>;
+  getActiveContracts: (templateIds?: string[], pagination?: { limit: number; offset?: number } | { limit?: number }) => Promise<CantonActiveContractsResponseDto>;
 
   /** Canton wallet balances */
   cantonBalances: CantonWalletBalancesResponseDto | null;

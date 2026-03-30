@@ -134,11 +134,7 @@ export function CantonContracts() {
   const loadContracts = async (templateIds?: string[], newOffset = offset) => {
     setIsLoading(true);
     try {
-      const result = await getActiveContracts({
-        ...(templateIds && { templateIds }),
-        limit,
-        offset: newOffset,
-      });
+      const result = await getActiveContracts(templateIds, { limit, offset: newOffset });
       console.log('Active contracts response:', result);
       setContracts(result);
     } catch (err) {
