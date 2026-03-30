@@ -1,7 +1,7 @@
-import { useCanton } from '@supanovaapp/sdk';
+import { useCanton, normalizeContractItem } from '@supanovaapp/sdk';
 import { useState, useEffect } from 'react';
-import type { CantonActiveContractsResponseDto, CantonActiveContractItem, CantonAmuletCreateArgument } from '@supanovaapp/sdk';
-import { FileText, Search, X, RefreshCw, Coins, Clock, User } from 'lucide-react';
+import type { CantonActiveContractsResponseDto, CantonNormalizedContract, CantonAmuletCreateArgument } from '@supanovaapp/sdk';
+import { FileText, Search, X, RefreshCw, Coins, Clock, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Card,
   CardHeader,
@@ -108,30 +108,37 @@ function formatDate(isoString: string): string {
   return new Date(isoString).toLocaleString();
 }
 
-/** Check if contract is an Amulet */
-function isAmuletContract(item: CantonActiveContractItem): boolean {
-  return item.contractEntry.JsActiveContract.createdEvent.templateId.includes('Splice.Amulet:Amulet');
+/** Check if normalized contract is an Amulet */
+function isAmuletContract(contract: CantonNormalizedContract): boolean {
+  return contract.templateId.includes('Splice.Amulet:Amulet');
 }
 
-/** Get Amulet contract data */
-function getAmuletData(item: CantonActiveContractItem): CantonAmuletCreateArgument | null {
-  const createdEvent = item.contractEntry.JsActiveContract.createdEvent;
-  if (isAmuletContract(item)) {
-    return createdEvent.createArgument as CantonAmuletCreateArgument;
+/** Get Amulet contract data if the contract is an Amulet */
+function getAmuletData(contract: CantonNormalizedContract): CantonAmuletCreateArgument | null {
+  if (isAmuletContract(contract)) {
+    return contract.createArgument as CantonAmuletCreateArgument;
   }
   return null;
 }
+
+const DEFAULT_LIMIT = 10;
 
 export function CantonContracts() {
   const { getActiveContracts, error } = useCanton();
   const [contracts, setContracts] = useState<CantonActiveContractsResponseDto | null>(null);
   const [templateFilter, setTemplateFilter] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [limit, setLimit] = useState(DEFAULT_LIMIT);
+  const [offset, setOffset] = useState(0);
 
-  const loadContracts = async (templateIds?: string[]) => {
+  const loadContracts = async (templateIds?: string[], newOffset = offset) => {
     setIsLoading(true);
     try {
-      const result = await getActiveContracts(templateIds);
+      const result = await getActiveContracts({
+        ...(templateIds && { templateIds }),
+        limit,
+        offset: newOffset,
+      });
       console.log('Active contracts response:', result);
       setContracts(result);
     } catch (err) {
@@ -143,29 +150,48 @@ export function CantonContracts() {
   };
 
   useEffect(() => {
-    loadContracts();
+    loadContracts(undefined, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleApplyFilter = () => {
+  const getTemplateFilters = () => {
     const filters = templateFilter
       .split(',')
       .map(f => f.trim())
       .filter(f => f.length > 0);
-    loadContracts(filters.length > 0 ? filters : undefined);
+    return filters.length > 0 ? filters : undefined;
+  };
+
+  const handleApplyFilter = () => {
+    setOffset(0);
+    loadContracts(getTemplateFilters(), 0);
   };
 
   const handleClearFilter = () => {
     setTemplateFilter('');
-    loadContracts();
+    setOffset(0);
+    loadContracts(undefined, 0);
   };
 
-  // API returns array directly
+  const handlePrev = () => {
+    const newOffset = Math.max(0, offset - limit);
+    setOffset(newOffset);
+    loadContracts(getTemplateFilters(), newOffset);
+  };
+
+  const handleNext = () => {
+    const newOffset = offset + limit;
+    setOffset(newOffset);
+    loadContracts(getTemplateFilters(), newOffset);
+  };
+
+  // Normalize all contracts to a consistent shape (supports both legacy and flat formats)
   const contractsList = contracts ?? [];
+  const normalizedContracts = contractsList.map(normalizeContractItem);
 
   // Calculate total amount for Amulet contracts
-  const totalAmuletAmount = contractsList.reduce((sum, item) => {
-    const amuletData = getAmuletData(item);
+  const totalAmuletAmount = normalizedContracts.reduce((sum, contract) => {
+    const amuletData = getAmuletData(contract);
     if (amuletData) {
       return sum + parseFloat(amuletData.amount.initialAmount);
     }
@@ -219,6 +245,22 @@ export function CantonContracts() {
           </Flex>
         </InputGroup>
 
+        <InputGroup>
+          <InputLabel>Items per page</InputLabel>
+          <Flex $gap={2} $align="center">
+            <Input
+              type="number"
+              min={1}
+              value={limit}
+              onChange={(e) => setLimit(Math.max(1, Number(e.target.value) || 1))}
+              style={{ width: 80 }}
+            />
+            <Text $color="secondary" $size="sm">
+              Offset: {offset}
+            </Text>
+          </Flex>
+        </InputGroup>
+
         {error && (
           <Alert $variant="error" style={{ marginTop: 16 }}>
             {error.message}
@@ -234,7 +276,7 @@ export function CantonContracts() {
           <>
             <Flex $justify="space-between" $align="center" $wrap style={{ marginTop: 16, gap: 12 }}>
               <Text $color="secondary" $size="sm">
-                Total: <Text as="span" $weight={600}>{contractsList.length}</Text> contracts
+                Showing {offset + 1}–{offset + normalizedContracts.length} (page {Math.floor(offset / limit) + 1})
               </Text>
               {totalAmuletAmount > 0 && (
                 <Badge $variant="success">
@@ -242,6 +284,26 @@ export function CantonContracts() {
                   Total Amulet: {totalAmuletAmount.toFixed(10)}
                 </Badge>
               )}
+              <Flex $gap={2}>
+                <Button
+                  $variant="secondary"
+                  $size="sm"
+                  onClick={handlePrev}
+                  disabled={isLoading || offset === 0}
+                >
+                  <ChevronLeft style={{ width: 16, height: 16 }} />
+                  Prev
+                </Button>
+                <Button
+                  $variant="secondary"
+                  $size="sm"
+                  onClick={handleNext}
+                  disabled={isLoading || normalizedContracts.length < limit}
+                >
+                  Next
+                  <ChevronRight style={{ width: 16, height: 16 }} />
+                </Button>
+              </Flex>
             </Flex>
 
             {contractsList.length === 0 ? (
@@ -254,17 +316,15 @@ export function CantonContracts() {
               </EmptyState>
             ) : (
               <ContractsList>
-                {contractsList.map((item, idx) => {
-                  const contract = item.contractEntry.JsActiveContract;
-                  const createdEvent = contract.createdEvent;
-                  const amuletData = getAmuletData(item);
-                  const isAmulet = isAmuletContract(item);
+                {normalizedContracts.map((contract, idx) => {
+                  const amuletData = getAmuletData(contract);
+                  const isAmulet = isAmuletContract(contract);
 
                   return (
-                    <ContractItem key={createdEvent.contractId}>
+                    <ContractItem key={contract.contractId}>
                       <ContractHeader>
                         <Flex $align="center" $gap={2}>
-                          <ContractId>{truncateId(createdEvent.contractId, 12, 12)}</ContractId>
+                          <ContractId>{truncateId(contract.contractId, 12, 12)}</ContractId>
                           {isAmulet && (
                             <Badge $variant="warning">
                               <Coins style={{ width: 12, height: 12 }} />
@@ -272,11 +332,11 @@ export function CantonContracts() {
                             </Badge>
                           )}
                         </Flex>
-                        <ContractIndex>#{idx + 1}</ContractIndex>
+                        <ContractIndex>#{offset + idx + 1}</ContractIndex>
                       </ContractHeader>
-                      
+
                       <ContractTemplate>
-                        Template: {getTemplateName(createdEvent.templateId)}
+                        Template: {getTemplateName(contract.templateId)}
                       </ContractTemplate>
 
                       {/* Display Amulet contract data */}
@@ -294,12 +354,14 @@ export function CantonContracts() {
                             </DetailLabel>
                             <DetailValue>{truncateId(amuletData.owner, 16, 8)}</DetailValue>
                           </DetailItem>
-                          <DetailItem>
-                            <DetailLabel>
-                              <Clock /> Created At
-                            </DetailLabel>
-                            <DetailValue>{formatDate(createdEvent.createdAt)}</DetailValue>
-                          </DetailItem>
+                          {contract.createdAt && (
+                            <DetailItem>
+                              <DetailLabel>
+                                <Clock /> Created At
+                              </DetailLabel>
+                              <DetailValue>{formatDate(contract.createdAt)}</DetailValue>
+                            </DetailItem>
+                          )}
                           <DetailItem>
                             <DetailLabel>Rate per Round</DetailLabel>
                             <DetailValue>{amuletData.amount.ratePerRound.rate}</DetailValue>
@@ -310,7 +372,7 @@ export function CantonContracts() {
                       <div style={{ marginTop: 12 }}>
                         <Disclosure title="View Full Contract Data">
                           <CodeBlock>
-                            <code>{JSON.stringify(item, null, 2)}</code>
+                            <code>{JSON.stringify(contractsList[idx], null, 2)}</code>
                           </CodeBlock>
                         </Disclosure>
                       </div>

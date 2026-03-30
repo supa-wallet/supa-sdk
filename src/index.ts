@@ -187,6 +187,12 @@ export * from './utils/converters';
  */
 export * from './utils/wallet';
 
+/**
+ * Canton contract utilities (normalize legacy/flat formats)
+ * @see {@link normalizeContractItem}, {@link isLegacyContractItem}
+ */
+export { normalizeContractItem, isLegacyContractItem } from './utils/canton';
+
 // ===== Advanced: Services =====
 /**
  * Canton Network service for direct API access (advanced usage)

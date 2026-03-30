@@ -36,6 +36,7 @@ import type {
 import type {
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
+  GetActiveContractsParams,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonIncomingTransferDto,
@@ -556,8 +557,8 @@ export function CantonProvider({
   // ============================================================================
   // Get Active Contracts
   // ============================================================================
-  const getActiveContracts = useCallback(async (templateIds?: string[]): Promise<CantonActiveContractsResponseDto> => {
-    return await cantonService.getActiveContracts(templateIds);
+  const getActiveContracts = useCallback(async (params?: GetActiveContractsParams): Promise<CantonActiveContractsResponseDto> => {
+    return await cantonService.getActiveContracts(params ?? {});
   }, [cantonService]);
 
   // ============================================================================

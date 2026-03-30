@@ -173,16 +173,52 @@ export interface CantonContractEntry {
   JsActiveContract: CantonJsActiveContract;
 }
 
-/** Active contract response item from API */
-export interface CantonActiveContractItem {
+/** Active contract item — legacy wrapped format (Canton Ledger API) */
+export interface CantonActiveContractItemLegacy {
   /** Workflow ID (can be empty) */
   workflowId: string;
   /** Contract entry containing the active contract */
   contractEntry: CantonContractEntry;
 }
 
+/** Active contract item — new flat format */
+export interface CantonActiveContractItemFlat {
+  /** Contract ID */
+  contractId: string;
+  /** Template ID in format packageId:module:entity */
+  templateId: string;
+  /** Create argument data — varies per template */
+  createArgument: CantonAmuletCreateArgument | Record<string, unknown>;
+  /** Created event blob (base64) */
+  createdEventBlob: string;
+}
+
+/** Active contract response item — supports both legacy and flat formats */
+export type CantonActiveContractItem = CantonActiveContractItemLegacy | CantonActiveContractItemFlat;
+
+/** Normalized contract data extracted from either format */
+export interface CantonNormalizedContract {
+  contractId: string;
+  templateId: string;
+  createArgument: CantonAmuletCreateArgument | Record<string, unknown>;
+  createdEventBlob: string;
+  /** Only available in legacy format */
+  createdAt: string | null;
+}
+
 /** Response from /canton/api/active_contracts */
 export type CantonActiveContractsResponseDto = CantonActiveContractItem[];
+
+/** Parameters for getActiveContracts (offset requires limit) */
+export type GetActiveContractsParams = {
+  templateIds?: string[];
+  limit?: number;
+  offset?: never;
+} | {
+  templateIds?: string[];
+  limit: number;
+  offset?: number;
+};
 
 // ============= Legacy Canton Types (for backward compatibility) =============
 
