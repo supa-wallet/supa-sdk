@@ -387,10 +387,11 @@ export class CantonService {
    * @param templateIds Optional array of template IDs to filter by
    * @param pagination Optional pagination: limit, offset (offset requires limit)
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getActiveContracts(
     templateIds?: string[],
     pagination?: { limit: number; offset?: number } | { limit?: number }
-  ): Promise<CantonActiveContractsResponseDto> {
+  ): Promise<any> {
     const params = new URLSearchParams();
     if (templateIds) {
       templateIds.forEach(id => params.append('templateIds', id));
@@ -408,7 +409,7 @@ export class CantonService {
       : '/canton/api/active_contracts';
 
     // API returns array directly, not wrapped in an object
-    return await this.client.get<CantonActiveContractsResponseDto>(url);
+    return await this.client.get<any>(url);
   }
 
   /**

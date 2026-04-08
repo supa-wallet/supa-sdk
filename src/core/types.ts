@@ -532,44 +532,6 @@ export interface UserBalanceResponseDto {
   totalUsdBalance: string;
 }
 
-// ============= Dialog & Message Types =============
-
-export interface NewDialogRequestDto {
-  text: string;
-}
-
-export interface MessageResponseDto {
-  id: number;
-  dialogId: number;
-  text: string;
-  isReply: boolean;
-  date: string;
-  command?: any | null;
-  payload?: any | null;
-  actionSuggestions?: any | null;
-}
-
-export interface DialogWithMessagesResponseDto {
-  id: number;
-  createdAt: string;
-  updatedAt: string;
-  isProcessingNow: boolean;
-  messages: MessageResponseDto[];
-}
-
-export interface DialogListResponseDto {
-  id: number;
-  createdAt: string;
-  updatedAt: string;
-  isProcessingNow: boolean;
-  firstMessage: string;
-}
-
-export interface NewMessageRequestDto {
-  /** Message text content */
-  text: string;
-}
-
 // ============= Pagination Types =============
 
 export interface OffsetPaginationDto {

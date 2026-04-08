@@ -1,6 +1,5 @@
-import { useCanton, normalizeContractItem } from '@supanovaapp/sdk';
+import { useCanton } from '@supanovaapp/sdk';
 import { useState, useEffect } from 'react';
-import type { CantonActiveContractsResponseDto, CantonNormalizedContract, CantonAmuletCreateArgument } from '@supanovaapp/sdk';
 import { FileText, Search, X, RefreshCw, Coins, Clock, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Card,
@@ -108,15 +107,15 @@ function formatDate(isoString: string): string {
   return new Date(isoString).toLocaleString();
 }
 
-/** Check if normalized contract is an Amulet */
-function isAmuletContract(contract: CantonNormalizedContract): boolean {
-  return contract.templateId.includes('Splice.Amulet:Amulet');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isAmuletContract(contract: any): boolean {
+  return contract.templateId?.includes('Splice.Amulet:Amulet') ?? false;
 }
 
-/** Get Amulet contract data if the contract is an Amulet */
-function getAmuletData(contract: CantonNormalizedContract): CantonAmuletCreateArgument | null {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getAmuletData(contract: any): any {
   if (isAmuletContract(contract)) {
-    return contract.createArgument as CantonAmuletCreateArgument;
+    return contract.createArgument;
   }
   return null;
 }
@@ -125,7 +124,8 @@ const DEFAULT_LIMIT = 10;
 
 export function CantonContracts() {
   const { getActiveContracts, error } = useCanton();
-  const [contracts, setContracts] = useState<CantonActiveContractsResponseDto | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [contracts, setContracts] = useState<any[] | null>(null);
   const [templateFilter, setTemplateFilter] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
@@ -181,12 +181,10 @@ export function CantonContracts() {
     loadContracts(getTemplateFilters(), newOffset);
   };
 
-  // Normalize all contracts to a consistent shape (supports both legacy and flat formats)
   const contractsList = contracts ?? [];
-  const normalizedContracts = contractsList.map(normalizeContractItem);
 
   // Calculate total amount for Amulet contracts
-  const totalAmuletAmount = normalizedContracts.reduce((sum, contract) => {
+  const totalAmuletAmount = contractsList.reduce((sum, contract) => {
     const amuletData = getAmuletData(contract);
     if (amuletData) {
       return sum + parseFloat(amuletData.amount.initialAmount);
@@ -272,7 +270,7 @@ export function CantonContracts() {
           <>
             <Flex $justify="space-between" $align="center" $wrap style={{ marginTop: 16, gap: 12 }}>
               <Text $color="secondary" $size="sm">
-                Showing {offset + 1}–{offset + normalizedContracts.length} (page {Math.floor(offset / limit) + 1})
+                Showing {offset + 1}–{offset + contractsList.length} (page {Math.floor(offset / limit) + 1})
               </Text>
               {totalAmuletAmount > 0 && (
                 <Badge $variant="success">
@@ -294,7 +292,7 @@ export function CantonContracts() {
                   $variant="secondary"
                   $size="sm"
                   onClick={handleNext}
-                  disabled={isLoading || normalizedContracts.length < limit}
+                  disabled={isLoading || contractsList.length < limit}
                 >
                   Next
                   <ChevronRight style={{ width: 16, height: 16 }} />
@@ -312,7 +310,7 @@ export function CantonContracts() {
               </EmptyState>
             ) : (
               <ContractsList>
-                {normalizedContracts.map((contract, idx) => {
+                {contractsList.map((contract, idx) => {
                   const amuletData = getAmuletData(contract);
                   const isAmulet = isAmuletContract(contract);
 
@@ -368,7 +366,7 @@ export function CantonContracts() {
                       <div style={{ marginTop: 12 }}>
                         <Disclosure title="View Full Contract Data">
                           <CodeBlock>
-                            <code>{JSON.stringify(contractsList[idx], null, 2)}</code>
+                            <code>{JSON.stringify(contract, null, 2)}</code>
                           </CodeBlock>
                         </Disclosure>
                       </div>

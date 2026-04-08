@@ -9,15 +9,7 @@ import type {
   UserResponseDto,
   UserBalanceResponseDto,
   
-  // Dialogs & Messages
-  NewDialogRequestDto,
-  DialogWithMessagesResponseDto,
-  DialogListResponseDto,
   OffsetPaginatedDto,
-  NewMessageRequestDto,
-  MessageResponseDto,
-  PaginationParams,
-  
   // OnChain
   NetworkAddressAndPriceDto,
   GetPricesByAddressesBodyDto,
@@ -133,80 +125,6 @@ export class ApiService {
     );
   }
 
-  // ============= Dialog Methods =============
-
-  /**
-   * Create new dialog
-   * POST /dialogs
-   */
-  async createDialog(text: string): Promise<DialogWithMessagesResponseDto> {
-    return await this.client.post<DialogWithMessagesResponseDto>(
-      '/dialogs',
-      { text } as NewDialogRequestDto
-    );
-  }
-
-  /**
-   * Get all user dialogs
-   * GET /dialogs
-   */
-  async getAllDialogs(params?: PaginationParams): Promise<OffsetPaginatedDto<DialogListResponseDto>> {
-    return await this.client.get<OffsetPaginatedDto<DialogListResponseDto>>(
-      '/dialogs',
-      { params }
-    );
-  }
-
-  /**
-   * Get specific dialog
-   * GET /dialogs/{id}
-   */
-  async getDialog(id: number): Promise<DialogListResponseDto> {
-    return await this.client.get<DialogListResponseDto>(`/dialogs/${id}`);
-  }
-
-  /**
-   * Delete dialog
-   * DELETE /dialogs/{id}
-   */
-  async deleteDialog(id: number): Promise<void> {
-    return await this.client.delete<void>(`/dialogs/${id}`);
-  }
-
-  // ============= Message Methods =============
-
-  /**
-   * Create new message in dialog
-   * POST /dialogs/{dialogId}/messages
-   */
-  async createMessage(dialogId: number, text: string): Promise<MessageResponseDto> {
-    return await this.client.post<MessageResponseDto>(
-      `/dialogs/${dialogId}/messages`,
-      { text } as NewMessageRequestDto
-    );
-  }
-
-  /**
-   * Get all messages in dialog
-   * GET /dialogs/{dialogId}/messages
-   */
-  async getDialogMessages(
-    dialogId: number,
-    params?: PaginationParams
-  ): Promise<OffsetPaginatedDto<MessageResponseDto>> {
-    return await this.client.get<OffsetPaginatedDto<MessageResponseDto>>(
-      `/dialogs/${dialogId}/messages`,
-      { params }
-    );
-  }
-
-  /**
-   * Get specific message
-   * GET /messages/{id}
-   */
-  async getMessage(id: number): Promise<MessageResponseDto> {
-    return await this.client.get<MessageResponseDto>(`/messages/${id}`);
-  }
 
   // ============= OnChain Methods =============
 

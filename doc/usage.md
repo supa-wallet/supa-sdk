@@ -651,8 +651,6 @@ import type {
   // User and Backend Types
   UserResponseDto,
   UserBalanceResponseDto,
-  DialogWithMessagesResponseDto,
-  
   // Canton Types
   CantonQueryCompletionResponseDto,
   CantonMeResponseDto,

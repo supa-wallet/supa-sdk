@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import type { CantonService, CantonSubmitPreparedOptions } from '../../services/cantonService';
 import type {
   CantonMeResponseDto,
-  CantonActiveContractsResponseDto,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonIncomingTransferDto,
@@ -53,7 +52,8 @@ export interface CantonContextValue {
   getMe: () => Promise<CantonMeResponseDto>;
 
   /** Get active contracts with optional filtering and pagination */
-  getActiveContracts: (templateIds?: string[], pagination?: { limit: number; offset?: number } | { limit?: number }) => Promise<CantonActiveContractsResponseDto>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getActiveContracts: (templateIds?: string[], pagination?: { limit: number; offset?: number } | { limit?: number }) => Promise<any>;
 
   /** Canton wallet balances */
   cantonBalances: CantonWalletBalancesResponseDto | null;

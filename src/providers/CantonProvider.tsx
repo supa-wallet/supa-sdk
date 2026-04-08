@@ -35,7 +35,6 @@ import type {
 } from './canton/types';
 import type {
   CantonMeResponseDto,
-  CantonActiveContractsResponseDto,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonIncomingTransferDto,
@@ -556,7 +555,8 @@ export function CantonProvider({
   // ============================================================================
   // Get Active Contracts
   // ============================================================================
-  const getActiveContracts = useCallback(async (templateIds?: string[], pagination?: { limit: number; offset?: number } | { limit?: number }): Promise<CantonActiveContractsResponseDto> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getActiveContracts = useCallback(async (templateIds?: string[], pagination?: { limit: number; offset?: number } | { limit?: number }): Promise<any> => {
     return await cantonService.getActiveContracts(templateIds, pagination);
   }, [cantonService]);
 

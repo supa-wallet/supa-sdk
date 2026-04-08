@@ -3,27 +3,19 @@
  * Supports both flat (new) and legacy (wrapped) response formats.
  */
 
-import type {
-  CantonActiveContractItem,
-  CantonActiveContractItemLegacy,
-  CantonNormalizedContract,
-} from '../core/types';
-
 /**
  * Type guard: checks if item is in legacy wrapped format
  */
-export function isLegacyContractItem(
-  item: CantonActiveContractItem
-): item is CantonActiveContractItemLegacy {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isLegacyContractItem(item: any): boolean {
   return 'contractEntry' in item && item.contractEntry != null;
 }
 
 /**
  * Normalizes a contract item from either format into a consistent shape.
  */
-export function normalizeContractItem(
-  item: CantonActiveContractItem
-): CantonNormalizedContract {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function normalizeContractItem(item: any): any {
   if (isLegacyContractItem(item)) {
     const event = item.contractEntry.JsActiveContract.createdEvent;
     return {

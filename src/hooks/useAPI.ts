@@ -7,11 +7,7 @@ import { useSupaContext } from '../providers/SupaProvider';
 import type {
   UserResponseDto,
   UserBalanceResponseDto,
-  DialogWithMessagesResponseDto,
-  DialogListResponseDto,
   OffsetPaginatedDto,
-  MessageResponseDto,
-  PaginationParams,
   NetworkAddressAndPriceDto,
   TokenInfoWithPriceChangeDto,
   TokenInfo,
@@ -42,28 +38,6 @@ export interface UseAPIReturn {
     getByPrivyId: (privyUserId: string) => Promise<UserResponseDto>;
     /** Fetches user's smart wallet token balances */
     getBalance: (force?: boolean) => Promise<UserBalanceResponseDto>;
-  };
-
-  /** AI dialog management methods */
-  dialogs: {
-    /** Creates a new AI dialog with initial message */
-    create: (text: string) => Promise<DialogWithMessagesResponseDto>;
-    /** Fetches all user dialogs with pagination */
-    findAll: (params?: PaginationParams) => Promise<OffsetPaginatedDto<DialogListResponseDto>>;
-    /** Fetches a specific dialog by ID */
-    findOne: (id: number) => Promise<DialogListResponseDto>;
-    /** Deletes a dialog and all its messages */
-    delete: (id: number) => Promise<void>;
-  };
-
-  /** AI message methods within dialogs */
-  messages: {
-    /** Creates a new message in a dialog */
-    create: (dialogId: number, text: string) => Promise<MessageResponseDto>;
-    /** Fetches all messages in a dialog with pagination */
-    findAll: (dialogId: number, params?: PaginationParams) => Promise<OffsetPaginatedDto<MessageResponseDto>>;
-    /** Fetches a specific message by ID */
-    findOne: (id: number) => Promise<MessageResponseDto>;
   };
 
   /** On-chain data and token price methods */
@@ -140,22 +114,6 @@ export interface UseAPIReturn {
  * ```
  * 
  * @example
- * Creating an AI dialog
- * ```tsx
- * function CreateDialog() {
- *   const api = useAPI();
- * 
- *   const handleCreate = async () => {
- *     const dialog = await api.dialogs.create('Hello AI!');
- *     console.log('Dialog created:', dialog.id);
- *     console.log('AI response:', dialog.messages[1].message);
- *   };
- * 
- *   return <button onClick={handleCreate}>Start Chat</button>;
- * }
- * ```
- * 
- * @example
  * Fetching crypto prices
  * ```tsx
  * function TokenPrices() {
@@ -182,20 +140,6 @@ export const useAPI = (): UseAPIReturn => {
       getAll: () => apiService.getAllUsers(),
       getByPrivyId: (privyUserId: string) => apiService.getUserByPrivyId(privyUserId),
       getBalance: (force?: boolean) => apiService.getSmartWalletBalances(force),
-    },
-
-    dialogs: {
-      create: (text: string) => apiService.createDialog(text),
-      findAll: (params?: PaginationParams) => apiService.getAllDialogs(params),
-      findOne: (id: number) => apiService.getDialog(id),
-      delete: (id: number) => apiService.deleteDialog(id),
-    },
-
-    messages: {
-      create: (dialogId: number, text: string) => apiService.createMessage(dialogId, text),
-      findAll: (dialogId: number, params?: PaginationParams) => 
-        apiService.getDialogMessages(dialogId, params),
-      findOne: (id: number) => apiService.getMessage(id),
     },
 
     onchain: {

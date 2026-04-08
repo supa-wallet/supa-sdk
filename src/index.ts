@@ -169,7 +169,7 @@ export type { ConfirmationModalProps, SignMessageModalProps, SignTransactionModa
 // ===== TypeScript Types =====
 /**
  * All DTO types generated from Swagger specification
- * Includes types for User, Dialog, Message, Canton, Token, etc.
+ * Includes types for User, Canton, Token, etc.
  */
 export * from './core/types';
 

@@ -1,70 +1,70 @@
 {
-  "name": "@supanovaapp/sdk",
-  "version": "0.2.39",
-  "description": "React SDK for Supa Backend + Privy.io integration with Canton Network and EVM Smart Wallets support",
-  "main": "./dist/index.cjs.js",
-  "module": "./dist/index.esm.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.esm.js",
-      "require": "./dist/index.cjs.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:prod": "vite build --mode production",
-    "preview": "vite preview",
-    "type-check": "tsc --noEmit"
-  },
-  "keywords": [
-    "supa",
-    "privy",
-    "canton",
-    "stellar",
-    "web3",
-    "react",
-    "sdk"
-  ],
-  "author": "npm@supanova.app",
-  "license": "MIT",
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@solana-program/compute-budget": {
-      "optional": true
+    "name": "@supanovaapp/sdk",
+    "version": "0.2.41",
+    "description": "React SDK for Supa Backend + Privy.io integration with Canton Network and EVM Smart Wallets support",
+    "main": "./dist/index.cjs.js",
+    "module": "./dist/index.esm.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.esm.js",
+            "require": "./dist/index.cjs.js"
+        }
     },
-    "@solana-program/token-2022": {
-      "optional": true
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "build:prod": "vite build --mode production",
+        "preview": "vite preview",
+        "type-check": "tsc --noEmit"
+    },
+    "keywords": [
+        "supa",
+        "privy",
+        "canton",
+        "stellar",
+        "web3",
+        "react",
+        "sdk"
+    ],
+    "author": "npm@supanova.app",
+    "license": "MIT",
+    "peerDependencies": {
+        "react": "^18.0.0 || ^19.0.0",
+        "react-dom": "^18.0.0 || ^19.0.0"
+    },
+    "peerDependenciesMeta": {
+        "@solana-program/compute-budget": {
+            "optional": true
+        },
+        "@solana-program/token-2022": {
+            "optional": true
+        }
+    },
+    "dependencies": {
+        "@headlessui/react": "^2.2.0",
+        "@privy-io/react-auth": "^3.3.0",
+        "@solana-program/memo": "^0.8.0",
+        "@solana-program/system": "^0.8.0",
+        "@solana-program/token": "^0.6.0",
+        "@solana/kit": "^3.0.3",
+        "axios": "^1.7.9",
+        "buffer": "^6.0.3",
+        "ox": "^0.8.0",
+        "permissionless": "^0.2.24",
+        "viem": "^2.21.54"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.2",
+        "@types/react": "^19.0.2",
+        "@types/react-dom": "^19.0.2",
+        "@vitejs/plugin-react": "^5.0.4",
+        "typescript": "^5.9.3",
+        "vite": "^7.1.11",
+        "vite-plugin-dts": "^4.5.4"
     }
-  },
-  "dependencies": {
-    "@headlessui/react": "^2.2.0",
-    "@privy-io/react-auth": "^3.3.0",
-    "@solana-program/memo": "^0.8.0",
-    "@solana-program/system": "^0.8.0",
-    "@solana-program/token": "^0.6.0",
-    "@solana/kit": "^3.0.3",
-    "axios": "^1.7.9",
-    "buffer": "^6.0.3",
-    "ox": "^0.8.0",
-    "permissionless": "^0.2.24",
-    "viem": "^2.21.54"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@types/react": "^19.0.2",
-    "@types/react-dom": "^19.0.2",
-    "@vitejs/plugin-react": "^5.0.4",
-    "typescript": "^5.9.3",
-    "vite": "^7.1.11",
-    "vite-plugin-dts": "^4.5.4"
-  }
 }
