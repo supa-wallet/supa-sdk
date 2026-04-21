@@ -84,6 +84,8 @@ export interface CantonSubmitPreparedOptions {
   commandId?: string;
   /** Optional deduplication period (passed to submitPrepared) */
   deduplicationPeriod?: any;
+  /** Skip confirmation modal and sign silently. Default: false */
+  skipModal?: boolean;
 }
 
 export class CantonService {

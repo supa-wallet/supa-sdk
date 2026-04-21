@@ -65,7 +65,7 @@ export interface CantonContextValue {
   tapDevnet: (amount: string, options?: CantonSubmitPreparedOptions) => Promise<CantonQueryCompletionResponseDto>;
 
   /** Sign hash with Stellar wallet */
-  signHash: (hashBase64: string) => Promise<string>;
+  signHash: (hashBase64: string, options?: { skipModal?: boolean }) => Promise<string>;
 
   /** Sign text message */
   signMessage: (message: string) => Promise<string>;

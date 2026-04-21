@@ -299,7 +299,10 @@ export function CantonProvider({
   // ============================================================================
   // Sign Hash
   // ============================================================================
-  const signHash = useCallback(async (hashBase64: string): Promise<string> => {
+  const signHash = useCallback(async (
+    hashBase64: string,
+    options?: { skipModal?: boolean }
+  ): Promise<string> => {
     try {
       const { wallet, chainType } = await resolveSigningWallet();
       const hashHex = base64ToHex(hashBase64);
@@ -311,6 +314,7 @@ export function CantonProvider({
           hash: hashHex as `0x${string}`,
         },
         {
+          skipModal: options?.skipModal ?? false,
           title: 'Sign Hash',
           description: 'You are about to sign the following hash.',
           confirmText: 'Sign',
@@ -888,6 +892,7 @@ export function CantonProvider({
           hash: hashHex as `0x${string}`,
         },
         {
+          skipModal: options?.skipModal ?? false,
           title: accept ? 'Accept Transfer' : 'Reject Transfer',
           description: `You are about to ${accept ? 'accept' : 'reject'} an incoming transfer.`,
           confirmText: 'Confirm & Sign',
