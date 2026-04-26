@@ -27,6 +27,16 @@ export interface SupaConfig {
     theme?: 'light' | 'dark';
     accentColor?: string;
     logo?: string;
+    /**
+     * Which external wallet types to show in Privy's login/link modal.
+     * @default 'ethereum-only'
+     */
+    walletChainType?: 'ethereum-only' | 'solana-only' | 'ethereum-and-solana';
+    /**
+     * Order/whitelist of wallet entries shown in the modal.
+     * Default: ['detected_wallets', 'metamask', 'coinbase_wallet', 'rainbow', 'wallet_connect']
+     */
+    walletList?: string[];
   };
   loginMethods?: Array<'email' | 'wallet' | 'google' | 'twitter' | 'discord' | 'github' | 'linkedin' | 'telegram'>;
   smartWallets?: {
@@ -215,6 +225,8 @@ export function SupaProvider({ config, children }: SupaProviderProps) {
       theme,
       accentColor: config.appearance?.accentColor ? `#${config.appearance.accentColor.replace('#', '')}` as `#${string}` : undefined,
       logo: config.appearance?.logo,
+      walletChainType: config.appearance?.walletChainType,
+      walletList: config.appearance?.walletList as NonNullable<PrivyClientConfig['appearance']>['walletList'],
     },
     loginMethods: config.loginMethods || ['email', 'wallet'],
     defaultChain: config.defaultChain,

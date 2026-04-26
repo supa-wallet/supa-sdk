@@ -215,3 +215,24 @@ export { ApiService, getApiService } from './services/apiService';
 export { ApiClient, createApiClient, getApiClient } from './core/client';
 export type { ClientConfig } from './core/client';
 
+// ===== Privy passthrough =====
+/**
+ * Account linking hooks re-exported from Privy. Re-exporting guarantees the
+ * consumer shares the same Privy module instance the SDK uses, so React
+ * Context (events, main, smart-wallets) is wired through a single provider.
+ *
+ * @see {@link https://docs.privy.io/user-management/users/linking-accounts | Privy: Linking accounts}
+ */
+export {
+  useLinkAccount,
+  usePrivy,
+  useLinkWithSiwe,
+  useLinkWithSiws,
+} from '@privy-io/react-auth';
+export type {
+  LinkedAccountWithMetadata,
+  PrivyEvents,
+  PrivyErrorCode,
+  User as PrivyUser,
+} from '@privy-io/react-auth';
+

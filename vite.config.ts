@@ -50,6 +50,9 @@ export default defineConfig({
         if (id === 'react-dom' || id.startsWith('react-dom/')) return true;
         // Solana packages are optional peer deps of Privy
         if (id.startsWith('@solana-program/') || id.startsWith('@solana/')) return true;
+        // Privy must be a single instance: bundling it duplicates React Context
+        // objects and breaks consumer-side hooks (useLinkAccount, usePrivy, ...).
+        if (id === '@privy-io/react-auth' || id.startsWith('@privy-io/react-auth/')) return true;
         return false;
       },
       output: {
