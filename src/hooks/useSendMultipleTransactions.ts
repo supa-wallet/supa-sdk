@@ -21,6 +21,7 @@ import type {
   CantonSubmitRegisterRequestDto,
 } from '../core/types';
 import type { CantonSubmitPreparedOptions } from '../services/cantonService';
+import { pollUntilCompleted } from '../utils/polling';
 import type { CantonWallet } from '../utils/wallet';
 
 export interface TransactionToSend {
@@ -94,16 +95,13 @@ async function waitForCompletionWithDetails(params: {
   options?: CantonSubmitPreparedOptions;
 }): Promise<CantonQueryCompletionResponseDto> {
   const { queryCompletion, submissionId, label, options } = params;
-  const { timeout = 30000, pollInterval = 1000 } = options || {};
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < timeout) {
-    const completionResponse = await queryCompletion(submissionId);
-    if (completionResponse.status === 'completed') return completionResponse;
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
-
-  throw new Error(`Timeout waiting for completion for ${label} after ${timeout}ms (submissionId: ${submissionId})`);
+  return pollUntilCompleted({
+    queryCompletion,
+    submissionId,
+    label,
+    timeout: options?.timeout,
+    pollInterval: options?.pollInterval,
+  });
 }
 
 export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn {

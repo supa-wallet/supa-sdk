@@ -31,6 +31,16 @@ import type {
   CantonSubmitMultipleResultDto,
 } from '../core/types';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
+import {
+  DEFAULT_COMPLETION_POLL_INTERVAL_MS,
+  DEFAULT_COMPLETION_TIMEOUT_MS,
+  pollUntilCompleted,
+} from '../utils/polling';
+
+export {
+  DEFAULT_COMPLETION_POLL_INTERVAL_MS,
+  DEFAULT_COMPLETION_TIMEOUT_MS,
+} from '../utils/polling';
 
 // Re-export types for external use
 export type {
@@ -72,9 +82,9 @@ export interface CantonTapParams {
 }
 
 export interface CantonSubmitPreparedOptions {
-  /** Timeout in milliseconds to wait for completion (default: 30000) */
+  /** Timeout in milliseconds to wait for completion (default: {@link DEFAULT_COMPLETION_TIMEOUT_MS}, 60000) */
   timeout?: number;
-  /** Polling interval in milliseconds (default: 1000) */
+  /** Polling interval in milliseconds (default: {@link DEFAULT_COMPLETION_POLL_INTERVAL_MS}, 1000) */
   pollInterval?: number;
   /** Callback fired after submitPrepared returns submissionId (optional) */
   onSubmissionId?: (submissionId: string) => void | Promise<void>;
@@ -313,13 +323,11 @@ export class CantonService {
     signature: string,
     options: CantonSubmitPreparedOptions = {}
   ): Promise<CantonQueryCompletionResponseDto> {
-    const { timeout = 30000, pollInterval = 1000, deduplicationPeriod } = options;
+    const { timeout, pollInterval, deduplicationPeriod } = options;
 
-    // Submit the transaction
     const submitResponse = await this.submitPrepared(hash, signature, deduplicationPeriod);
     const { submissionId } = submitResponse;
 
-    // Notify caller that the submission was accepted and we have a submissionId
     if (options.onSubmissionId) {
       try {
         await options.onSubmissionId(submissionId);
@@ -328,24 +336,15 @@ export class CantonService {
         // Ignore callback errors to avoid breaking the submit flow
       }
     }
-    
-    // Poll for completion
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < timeout) {
-      const completionResponse = await this.queryCompletion(submissionId);
-      
-      if (completionResponse.status === 'completed') {
-        // Invalidate cache after successful transaction
-        this.invalidateMeCache();
-        return completionResponse;
-      }
-      
-      // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    }
-    
-    throw new Error(`Transaction completion timeout after ${timeout}ms for submissionId: ${submissionId}`);
+
+    const completionResponse = await pollUntilCompleted({
+      queryCompletion: (id) => this.queryCompletion(id),
+      submissionId,
+      timeout,
+      pollInterval,
+    });
+    this.invalidateMeCache();
+    return completionResponse;
   }
 
   /**
