@@ -21,6 +21,7 @@ import { useCantonWallet } from '../hooks/useCantonWallet';
 import { getPublicKeyBase64, CantonWallet } from '../utils/wallet';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 import type { CantonSubmitPreparedOptions } from '../services/cantonService';
+import { CantonTransactionRejectedError } from '../core/errors';
 import {
   collectWalletsByChainType,
   normalizeBase64Key,
@@ -673,6 +674,10 @@ export function CantonProvider({
       const signatureBase64 = hexToBase64(signResult.signature);
       return await cantonService.submitPreparedAndWait(prepareResponse.hash, signatureBase64, options);
     } catch (err: any) {
+      if (err instanceof CantonTransactionRejectedError) {
+        setError(err);
+        throw err;
+      }
       const error = new Error(`Failed to send transaction: ${err.message}`);
       setError(error);
       throw error;
@@ -744,6 +749,10 @@ export function CantonProvider({
 
       return result;
     } catch (err: any) {
+      if (err instanceof CantonTransactionRejectedError) {
+        setError(err);
+        throw err;
+      }
       if (err.message?.includes('CantonTransferOnlySupportedForWalletsWithPreapprovedTransfers')) {
         const error = new Error(
           'Transfer preapproval required. The receiver wallet must have transfer preapproval enabled.'
@@ -751,7 +760,7 @@ export function CantonProvider({
         setError(error);
         throw error;
       }
-      
+
       const transferLabel = options?.instrumentId && options.instrumentId !== 'Amulet'
         ? `token ${options.instrumentId}`
         : 'Canton Coin';
@@ -838,6 +847,10 @@ export function CantonProvider({
           setCantonUser({ ...currentUser, transferPreapprovalSet: true });
         }
       } catch (err: any) {
+        if (err instanceof CantonTransactionRejectedError) {
+          setError(err);
+          throw err;
+        }
         const error = new Error(`Failed to setup transfer preapproval: ${err.message}`);
         setError(error);
         throw error;
@@ -919,6 +932,10 @@ export function CantonProvider({
 
       return result;
     } catch (err: any) {
+      if (err instanceof CantonTransactionRejectedError) {
+        setError(err);
+        throw err;
+      }
       const error = new Error(`Failed to respond to transfer: ${err.message}`);
       setError(error);
       throw error;

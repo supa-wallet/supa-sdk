@@ -173,6 +173,9 @@ export type { ConfirmationModalProps, SignMessageModalProps, SignTransactionModa
  */
 export * from './core/types';
 
+// ===== Errors =====
+export { CantonTransactionRejectedError } from './core/errors';
+
 // ===== Utility Functions =====
 /**
  * Format conversion utilities (hex ↔ base64)

@@ -1,4 +1,5 @@
 import type { CantonQueryCompletionResponseDto } from '../core/types';
+import { CantonTransactionRejectedError } from '../core/errors';
 
 /** Default timeout (ms) to wait for transaction completion */
 export const DEFAULT_COMPLETION_TIMEOUT_MS = 60_000;
@@ -32,6 +33,12 @@ export async function pollUntilCompleted(
   const startTime = Date.now();
   while (Date.now() - startTime < timeout) {
     const response = await queryCompletion(submissionId);
+    if (response.status === 'rejected') {
+      const reason =
+        typeof response.data?.reason === 'string' ? response.data.reason : undefined;
+      const msg = response.message ?? reason ?? 'Transaction rejected';
+      throw new CantonTransactionRejectedError(msg, submissionId, reason, response.data);
+    }
     if (response.status === 'completed') return response;
     if (Date.now() - startTime + pollInterval >= timeout) break;
     await new Promise((resolve) => setTimeout(resolve, pollInterval));

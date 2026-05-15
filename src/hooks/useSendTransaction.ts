@@ -11,6 +11,8 @@ import { useCantonWallet } from './useCantonWallet';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 import type { CantonWallet } from '../utils/wallet';
 import type { CantonQueryCompletionResponseDto, CantonSubmitPreparedOptions } from '../services/cantonService';
+import { CantonTransactionRejectedError } from '../core/errors';
+import { isUserWalletRejection } from '../utils/walletRejection';
 
 export interface SendTransactionOptions {
   onSuccess?: (result: CantonQueryCompletionResponseDto) => void;
@@ -128,8 +130,12 @@ export function useSendTransaction(): UseSendTransactionReturn {
         onSuccess?.(completionResult);
         return completionResult;
       } catch (err: any) {
-        const isRejected = err.message.includes('rejected');
-        if (isRejected) {
+        if (err instanceof CantonTransactionRejectedError) {
+          setError(err);
+          onError?.(err);
+          return null;
+        }
+        if (isUserWalletRejection(err)) {
           onRejection?.();
         } else {
           const error = new Error(`Failed to send transaction: ${err.message}`);

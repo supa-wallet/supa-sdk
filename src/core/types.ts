@@ -73,15 +73,12 @@ export interface CantonSubmitMultipleResultDto {
   error?: string;
 }
 
-export type CantonQueryCompletionStatus = 'completed' | 'unknown';
+export type CantonQueryCompletionStatus = 'completed' | 'unknown' | 'rejected';
 
 export interface CantonQueryCompletionResponseDto {
-  /** Status of the completion query */
   status: CantonQueryCompletionStatus;
-  /** Completion data (nullable, present when status is 'completed') */
-  data: Record<string, unknown> | null;
-  /** Message explaining the status */
-  message: string;
+  data?: Record<string, unknown> | null;
+  message?: string;
 }
 
 export interface CantonPrepareTapRequestDto {

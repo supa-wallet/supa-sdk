@@ -23,6 +23,8 @@ import type {
 import type { CantonSubmitPreparedOptions } from '../services/cantonService';
 import { pollUntilCompleted } from '../utils/polling';
 import type { CantonWallet } from '../utils/wallet';
+import { isUserWalletRejection, toErrorMessage } from '../utils/walletRejection';
+import { CantonTransactionRejectedError } from '../core/errors';
 
 export interface TransactionToSend {
   commands: unknown;
@@ -58,29 +60,6 @@ export interface UseSendMultipleTransactionsReturn {
   clearError: () => void;
   cantonWallets: CantonWallet[];
   cantonWallet: CantonWallet | null;
-}
-
-function toErrorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return String(err);
-  }
-}
-
-function isUserRejection(err: unknown): boolean {
-  const msg = toErrorMessage(err).toLowerCase();
-  // common patterns from Privy / wallets / our own code
-  return (
-    msg.includes('rejected') ||
-    msg.includes('user rejected') ||
-    msg.includes('user denied') ||
-    msg.includes('cancelled') ||
-    msg.includes('canceled') ||
-    msg.includes('denied')
-  );
 }
 
 function txLabel(index0: number, hash?: string): string {
@@ -222,7 +201,7 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
               ...(deduplicationPeriod && { deduplicationPeriod }),
             });
           } catch (e) {
-            if (isUserRejection(e)) {
+            if (isUserWalletRejection(e)) {
               onRejection?.();
               return null;
             }
@@ -299,7 +278,12 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
         onSuccess?.(completions);
         return completions;
       } catch (err) {
-        if (isUserRejection(err)) {
+        if (err instanceof CantonTransactionRejectedError) {
+          setError(err);
+          onError?.(err);
+          return null;
+        }
+        if (isUserWalletRejection(err)) {
           onRejection?.();
         } else {
           const e = new Error(`Failed to send multiple transactions: ${toErrorMessage(err)}`);
