@@ -13,6 +13,7 @@ import type {
   CantonCalculateTransferFeeResponseDto,
 } from '../../core/types';
 import type { CantonWallet } from '../../utils/wallet';
+import type { SigningWalletInfo } from './signingWalletResolver';
 
 export interface CantonSendCoinOptions extends CantonSubmitPreparedOptions {
   /** Skip confirmation modal. Default: false */
@@ -66,6 +67,18 @@ export interface CantonContextValue {
 
   /** Sign hash with Stellar wallet */
   signHash: (hashBase64: string, options?: { skipModal?: boolean }) => Promise<string>;
+
+  /**
+   * Resolve the signing wallet by matching `cantonUser.publicKey` against
+   * available Privy wallets (stellar + solana). Returns the wallet whose
+   * derived Canton public key matches the registered one, falling back to
+   * the configured default chain when no match is possible.
+   *
+   * Use this from any hook that needs to sign a prepared Canton hash, to
+   * avoid the "bad signature" failure mode where the wrong-chain wallet
+   * signs a backend hash prepared for a different public key.
+   */
+  resolveSigningWallet: () => Promise<SigningWalletInfo>;
 
   /** Sign text message */
   signMessage: (message: string) => Promise<string>;

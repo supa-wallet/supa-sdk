@@ -6,6 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { useSupaContext } from '../providers/SupaProvider';
+import { useCantonContext } from '../providers/CantonProvider';
 import { useSignRawHashWithModal } from './useSignRawHashWithModal';
 import { useCantonWallet } from './useCantonWallet';
 import type { CantonWallet } from '../utils/wallet';
@@ -38,6 +39,7 @@ export function useSignMessage(): UseSignMessageReturn {
   const { cantonService } = useSupaContext();
   const { signRawHashWithModal } = useSignRawHashWithModal();
   const { cantonWallet, cantonWallets } = useCantonWallet();
+  const { resolveSigningWallet } = useCantonContext();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -59,20 +61,19 @@ export function useSignMessage(): UseSignMessageReturn {
         showTechnicalDetails = false,
       } = options || {};
 
-      if (!cantonWallet) {
-        const err = new Error('No Canton wallet found. Please create one first.');
-        setError(err);
-        onError?.(err);
-        return null;
-      }
-
       setError(null);
       setLoading(true);
 
       try {
+        const { wallet: signingWallet, chainType: signingChainType } = await resolveSigningWallet();
+
         const signFunction = async (hashHex: string): Promise<string> => {
           const result = await signRawHashWithModal(
-            { address: cantonWallet.address, chainType: cantonWallet.chainType, hash: hashHex as `0x${string}` },
+            {
+              address: signingWallet.address,
+              chainType: signingChainType,
+              hash: hashHex as `0x${string}`,
+            },
             {
               skipModal,
               title,
@@ -84,7 +85,7 @@ export function useSignMessage(): UseSignMessageReturn {
               showTechnicalDetails,
             }
           );
-          
+
           if (!result) throw new Error('User rejected signature');
           return result.signature;
         };
@@ -106,7 +107,7 @@ export function useSignMessage(): UseSignMessageReturn {
         setLoading(false);
       }
     },
-    [cantonWallet, signRawHashWithModal, cantonService]
+    [resolveSigningWallet, signRawHashWithModal, cantonService]
   );
 
   return {

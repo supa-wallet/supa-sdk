@@ -9,7 +9,7 @@
 
 import { useCallback, useState } from 'react';
 import { useSupaContext } from '../providers/SupaProvider';
-import { useCantonWallet } from './useCantonWallet';
+import { useCantonContext } from '../providers/CantonProvider';
 import { useSignRawHashWithModal } from './useSignRawHashWithModal';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 import type { CantonSubmitMultipleResultDto, CantonSubmitRegisterRequestDto } from '../core/types';
@@ -24,8 +24,8 @@ export interface UseInitializationTransactionsReturn {
 }
 
 export function useInitializationTransactions(): UseInitializationTransactionsReturn {
-  const { cantonService, config } = useSupaContext();
-  const { cantonWallet } = useCantonWallet();
+  const { cantonService } = useSupaContext();
+  const { resolveSigningWallet } = useCantonContext();
   const { signRawHashWithModal } = useSignRawHashWithModal();
 
   const [loading, setLoading] = useState(false);
@@ -34,11 +34,6 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
 
   const runInitializationTransactions = useCallback(async (): Promise<CantonSubmitMultipleResultDto[]> => {
     console.log('[Init Txs] Starting initialization transactions...');
-    if (!cantonWallet) {
-      const e = new Error('No Canton wallet found. Please create one first.');
-      setError(e);
-      throw e;
-    }
 
     setLoading(true);
     setError(null);
@@ -52,8 +47,8 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
         return [];
       }
 
-      const chainType = config.withExport ? 'solana' : 'stellar';
-      console.log('[Init Txs] Chain type:', chainType);
+      const { wallet: signingWallet, chainType: signingChainType } = await resolveSigningWallet();
+      console.log('[Init Txs] Signing wallet:', signingWallet.address, 'chain:', signingChainType);
 
       // Sign sequentially to avoid wallet/provider concurrency issues.
       const signedTxs: CantonSubmitRegisterRequestDto[] = [];
@@ -61,7 +56,11 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
         console.log('[Init Txs] Signing transaction:', tx.hash);
         const hashHex = base64ToHex(tx.hash);
         const signResult = await signRawHashWithModal(
-          { address: cantonWallet.address, chainType, hash: hashHex as `0x${string}` },
+          {
+            address: signingWallet.address,
+            chainType: signingChainType,
+            hash: hashHex as `0x${string}`,
+          },
           { skipModal: true }
         );
 
@@ -111,7 +110,7 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
     } finally {
       setLoading(false);
     }
-  }, [cantonWallet, cantonService, config.withExport, signRawHashWithModal]);
+  }, [cantonService, resolveSigningWallet, signRawHashWithModal]);
 
   return { runInitializationTransactions, loading, error, clearError };
 }

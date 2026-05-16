@@ -6,6 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { useSupaContext } from '../providers/SupaProvider';
+import { useCantonContext } from '../providers/CantonProvider';
 import { useSignRawHashWithModal } from './useSignRawHashWithModal';
 import { useCantonWallet } from './useCantonWallet';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
@@ -50,6 +51,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
   const { cantonService } = useSupaContext();
   const { signRawHashWithModal } = useSignRawHashWithModal();
   const { cantonWallet, cantonWallets } = useCantonWallet();
+  const { resolveSigningWallet } = useCantonContext();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -77,31 +79,31 @@ export function useSendTransaction(): UseSendTransactionReturn {
         submitOptions,
       } = options || {};
 
-      if (!cantonWallet) {
-        const err = new Error('No Stellar wallet found. Please create one first.');
-        setError(err);
-        onError?.(err);
-        return null;
-      }
-
       setError(null);
       setLoading(true);
 
       try {
+        const { wallet: signingWallet, chainType: signingChainType } =
+          await resolveSigningWallet();
+
         // Step 1: Prepare transaction
         const prepareResponse = await cantonService.prepareTransaction(commands, disclosedContracts, commandId);
 
         // Step 2: Determine modal display content
-        const displayContent = modalDisplayContent 
-          ? modalDisplayContent 
-          : showTechnicalDetails 
-            ? undefined 
+        const displayContent = modalDisplayContent
+          ? modalDisplayContent
+          : showTechnicalDetails
+            ? undefined
             : `Transaction Hash: ${prepareResponse.hash}`;
 
         // Step 3: Sign hash with automatic modal
         const hashHex = base64ToHex(prepareResponse.hash);
         const signResult = await signRawHashWithModal(
-          { address: cantonWallet.address, chainType: 'solana', hash: hashHex as `0x${string}` },
+          {
+            address: signingWallet.address,
+            chainType: signingChainType,
+            hash: hashHex as `0x${string}`,
+          },
           {
             skipModal,
             title: modalTitle,
@@ -147,7 +149,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
         setLoading(false);
       }
     },
-    [cantonWallet, signRawHashWithModal, cantonService]
+    [resolveSigningWallet, signRawHashWithModal, cantonService]
   );
 
   return {

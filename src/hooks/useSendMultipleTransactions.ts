@@ -11,6 +11,7 @@
 
 import { useCallback, useState } from 'react';
 import { useSupaContext } from '../providers/SupaProvider';
+import { useCantonContext } from '../providers/CantonProvider';
 import { useCantonWallet } from './useCantonWallet';
 import { useSignRawHashWithModal } from './useSignRawHashWithModal';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
@@ -84,9 +85,10 @@ async function waitForCompletionWithDetails(params: {
 }
 
 export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn {
-  const { cantonService, config, signTransactionConfirm } = useSupaContext();
+  const { cantonService, signTransactionConfirm } = useSupaContext();
   const { signRawHashWithModal } = useSignRawHashWithModal();
   const { cantonWallet, cantonWallets } = useCantonWallet();
+  const { resolveSigningWallet } = useCantonContext();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -108,13 +110,6 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
         submitOptions,
       } = options || {};
 
-      if (!cantonWallet) {
-        const err = new Error('No Canton wallet found. Please create one first.');
-        setError(err);
-        onError?.(err);
-        return null;
-      }
-
       if (!Array.isArray(txs) || txs.length === 0) {
         const err = new Error('No transactions provided.');
         setError(err);
@@ -126,6 +121,8 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
       setLoading(true);
 
       try {
+        const { wallet: signingWallet, chainType: signingChainType } = await resolveSigningWallet();
+
         // Step 1: Prepare (parallel, but we want good error messages)
         const prepareResults = await Promise.allSettled(
           txs.map((t) => cantonService.prepareTransaction(t.commands, t.disclosedContracts, t.commandId))
@@ -179,8 +176,9 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
           }
         }
 
-        // Step 4: Sign sequentially to avoid wallet/provider concurrency issues
-        const chainType = config.withExport ? 'solana' : 'stellar';
+        // Step 4: Sign sequentially to avoid wallet/provider concurrency issues.
+        // Signer was resolved at the top of `try` via Canton pubkey match so every
+        // tx in the batch is signed with the same key the backend prepared against.
         const signedTxs: CantonSubmitRegisterRequestDto[] = [];
 
         for (let i = 0; i < prepared.length; i++) {
@@ -188,7 +186,11 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
           try {
             const hashHex = base64ToHex(p.hash);
             const signResult = await signRawHashWithModal(
-              { address: cantonWallet.address, chainType, hash: hashHex as `0x${string}` },
+              {
+                address: signingWallet.address,
+                chainType: signingChainType,
+                hash: hashHex as `0x${string}`,
+              },
               { skipModal: true }
             );
             if (!signResult) {
@@ -295,7 +297,7 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
         setLoading(false);
       }
     },
-    [cantonService, cantonWallet, config.withExport, signRawHashWithModal, signTransactionConfirm]
+    [cantonService, resolveSigningWallet, signRawHashWithModal, signTransactionConfirm]
   );
 
   return { sendMultipleTransactions, loading, error, clearError, cantonWallets, cantonWallet };

@@ -1022,6 +1022,7 @@ export function CantonProvider({
     cantonBalances,
     getBalances,
     tapDevnet,
+    resolveSigningWallet,
     signHash,
     signMessage,
     sendTransaction,
