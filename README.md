@@ -791,8 +791,6 @@ if (fee) {
 
 `estimatedFeeCc` is returned as a decimal string to avoid float precision loss. Convert with `parseFloat`, `Number`, or a decimal library if you need arithmetic.
 
-Backend: `POST /canton/api/estimate_gas`. Fee formula on backend: 48 USD per 1,000,000 traffic bytes (with validator discount) + 5% buffer, converted to CC via current Alchemy rate (5s cache).
-
 ---
 
 ## Available Hooks

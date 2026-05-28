@@ -593,7 +593,7 @@ function FeePreview({ commands, disclosedContracts }) {
 }
 ```
 
-Returns `null` on error; inspect `error` for details. Backend: `POST /canton/api/estimate_gas`. Fee = 48 USD per 1,000,000 traffic bytes (with validator discount) + 5% buffer, converted via Alchemy rate (5s cache on the backend).
+Returns `null` on error; inspect `error` for details.
 
 ---
 
