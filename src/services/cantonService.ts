@@ -13,6 +13,8 @@ import type {
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
   CantonPrepareTransactionRequestDto,
+  CantonEstimateGasRequestDto,
+  CantonEstimateGasResponseDto,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonPrepareTransferRequestDto,
@@ -47,6 +49,8 @@ export type {
   CantonMeResponseDto,
   CantonActiveContractsResponseDto,
   CantonPrepareTransactionResponseDto,
+  CantonEstimateGasRequestDto,
+  CantonEstimateGasResponseDto,
   CantonQueryCompletionResponseDto,
   CantonWalletBalancesResponseDto,
   CantonPrepareTransferRequestDto,
@@ -449,6 +453,16 @@ export class CantonService {
     return await this.client.post<CantonPrepareTransactionResponseDto>(
       '/canton/api/prepare_transaction',
       { commands, disclosedContracts, commandId } as CantonPrepareTransactionRequestDto
+    );
+  }
+
+  async estimateGas(
+    commands: unknown,
+    disclosedContracts?: unknown
+  ): Promise<CantonEstimateGasResponseDto> {
+    return await this.client.post<CantonEstimateGasResponseDto>(
+      '/canton/api/estimate_gas',
+      { commands, disclosedContracts } as CantonEstimateGasRequestDto
     );
   }
 

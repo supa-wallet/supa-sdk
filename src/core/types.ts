@@ -237,6 +237,20 @@ export interface CantonPrepareTransactionRequestDto {
   commandId?: string;
 }
 
+export interface CantonEstimateGasRequestDto {
+  /** Command or array of commands */
+  commands: unknown;
+  /** Optional disclosed contracts */
+  disclosedContracts?: unknown;
+}
+
+export interface CantonEstimateGasResponseDto {
+  /** Estimated fee in CC, decimal string */
+  estimatedFeeCc: string;
+  /** Total traffic cost in bytes (from ledger) */
+  trafficBytes: number;
+}
+
 // ============= Canton Balances Types =============
 
 /** Canton instrument/token identifier */

@@ -106,6 +106,13 @@ export { useSendTransaction } from './hooks/useSendTransaction';
 export type { UseSendTransactionReturn, SendTransactionOptions } from './hooks/useSendTransaction';
 
 /**
+ * Estimate gas hook for Canton transactions (CC fee + traffic bytes preview)
+ * @see {@link useEstimateGas}
+ */
+export { useEstimateGas } from './hooks/useEstimateGas';
+export type { UseEstimateGasReturn } from './hooks/useEstimateGas';
+
+/**
  * Send multiple transactions hook with a single confirmation modal
  * @see {@link useSendMultipleTransactions}
  */

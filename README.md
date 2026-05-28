@@ -773,6 +773,26 @@ await sendTransaction(command, contracts, {
 });
 ```
 
+#### Estimate Gas Before Signing
+
+Preview the CC fee and traffic cost of a transaction before asking the user to sign. Same input shape as `prepareTransaction` (no `commandId`).
+
+```tsx
+import { useEstimateGas } from '@supanovaapp/sdk';
+
+const { estimateGas, loading, error } = useEstimateGas();
+
+const fee = await estimateGas(command, contracts);
+if (fee) {
+  console.log(fee.estimatedFeeCc);  // "6.1" — decimal string from backend
+  console.log(fee.trafficBytes);    // 12345
+}
+```
+
+`estimatedFeeCc` is returned as a decimal string to avoid float precision loss. Convert with `parseFloat`, `Number`, or a decimal library if you need arithmetic.
+
+Backend: `POST /canton/api/estimate_gas`. Fee formula on backend: 48 USD per 1,000,000 traffic bytes (with validator discount) + 5% buffer, converted to CC via current Alchemy rate (5s cache).
+
 ---
 
 ## Available Hooks
@@ -784,6 +804,7 @@ await sendTransaction(command, contracts, {
 | `useCanton` | Canton Network | `registerCanton`, `getBalances`, `sendCantonCoin`, `calculateTransferFee`, `signMessage`, `sendTransaction`, `getActiveContracts`, `tapDevnet`, `getPendingIncomingTransfers`, `respondToIncomingTransfer`, `resetState` |
 | `useSignMessage` | Enhanced message signing | `signMessage` with custom modals |
 | `useSendTransaction` | Enhanced transactions | `sendTransaction` with custom modals |
+| `useEstimateGas` | Pre-sign gas estimate | `estimateGas(commands, disclosedContracts)` → `{ estimatedFeeCc, trafficBytes }` |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |
 
 ## TypeScript Support

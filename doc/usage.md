@@ -566,6 +566,37 @@ function SendTransactionExample() {
 
 ---
 
+### Estimate Gas Before Signing
+
+Use `useEstimateGas` to preview the CC fee and traffic cost of a Canton transaction before asking the user to sign. Same input shape as `prepareTransaction` (without `commandId`).
+
+```tsx
+import { useEstimateGas } from '@supanovaapp/sdk';
+
+function FeePreview({ commands, disclosedContracts }) {
+  const { estimateGas, loading, error, clearError } = useEstimateGas();
+
+  const handlePreview = async () => {
+    const fee = await estimateGas(commands, disclosedContracts);
+    if (fee) {
+      console.log(fee.estimatedFeeCc);  // "6.1" — decimal string from backend
+      console.log(fee.trafficBytes);    // 12345
+      // Convert with parseFloat / Number when arithmetic is needed.
+    }
+  };
+
+  return (
+    <button onClick={handlePreview} disabled={loading}>
+      {loading ? 'Estimating...' : 'Preview Fee'}
+    </button>
+  );
+}
+```
+
+Returns `null` on error; inspect `error` for details. Backend: `POST /canton/api/estimate_gas`. Fee = 48 USD per 1,000,000 traffic bytes (with validator discount) + 5% buffer, converted via Alchemy rate (5s cache on the backend).
+
+---
+
 ### Generic Confirmation Modal
 
 Use `useConfirmModal` for custom confirmation dialogs:
@@ -695,6 +726,7 @@ const modal: UseConfirmModalReturn = useConfirmModal();
 | `useCanton` | Canton Network | `registerCanton`, `signMessage`, `sendTransaction`, `tapDevnet`, `getActiveContracts`, `resetState` |
 | `useSignMessage` | Message signing with modal | `signMessage`, `loading`, `error` |
 | `useSendTransaction` | Transactions with modal | `sendTransaction`, `loading`, `error` |
+| `useEstimateGas` | Pre-sign fee preview | `estimateGas`, `loading`, `error`, `clearError` |
 | `useConfirmModal` | Generic modals | `confirm`, `signMessageConfirm`, `signTransactionConfirm` |
 | `useStellarWallet` | Stellar operations | `stellarWallet`, `stellarWallets`, `createWallet` |
 
