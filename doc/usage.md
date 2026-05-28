@@ -595,6 +595,29 @@ function FeePreview({ commands, disclosedContracts }) {
 
 Returns `null` on error; inspect `error` for details.
 
+#### Calling `estimateGas` without the hook
+
+The hook is a convenience wrapper around `CantonService.estimateGas`. You can also call the service directly — useful outside React (utilities, server-side code) or when you don't need the `loading` / `error` state machine.
+
+From a React component via context:
+
+```tsx
+import { useSupaContext } from '@supanovaapp/sdk';
+
+const { cantonService } = useSupaContext();
+const fee = await cantonService.estimateGas(commands, disclosedContracts);
+```
+
+Outside React, via the singleton accessor:
+
+```ts
+import { getCantonService } from '@supanovaapp/sdk';
+
+const fee = await getCantonService().estimateGas(commands, disclosedContracts);
+```
+
+Both return the raw `CantonEstimateGasResponseDto` and throw on failure (no `null`-on-error swallowing — handle with `try / catch`).
+
 ---
 
 ### Generic Confirmation Modal
