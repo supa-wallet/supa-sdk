@@ -710,6 +710,7 @@ export function CantonProvider({
         instrumentId,
         instrumentAdmin,
         memo,
+        validForSeconds: options?.validForSeconds,
       });
 
       if (options?.onCostEstimation && prepareResponse.costEstimation) {

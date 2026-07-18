@@ -348,6 +348,12 @@ export interface CantonPrepareTransferRequestDto {
   instrumentAdmin?: string;
   /** Optional memo for the transfer */
   memo?: string;
+  /**
+   * Optional validity window in seconds. The backend sets the transfer's
+   * `executeBefore` deadline to `now + validForSeconds` (clamped to an
+   * allowed range). When omitted, the backend applies its default (1 week).
+   */
+  validForSeconds?: number;
 }
 
 /** Response for preparing a Canton transfer (Amulet or CIP-56 token) */
