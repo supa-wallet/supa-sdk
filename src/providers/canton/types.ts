@@ -28,6 +28,12 @@ export interface CantonSendCoinOptions extends CantonSubmitPreparedOptions {
    * Useful for CIP-56 tokens.
    */
   instrumentAdmin?: CantonPrepareTransferRequestDto['instrumentAdmin'];
+  /**
+   * Optional validity window in seconds. Forwarded to the backend, which sets
+   * the transfer's `executeBefore` deadline to `now + validForSeconds`. When
+   * omitted, the backend applies its default validity window (1 week).
+   */
+  validForSeconds?: CantonPrepareTransferRequestDto['validForSeconds'];
 }
 
 export interface CantonContextValue {
