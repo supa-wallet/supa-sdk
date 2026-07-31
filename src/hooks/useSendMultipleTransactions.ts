@@ -26,6 +26,7 @@ import { pollUntilCompleted } from '../utils/polling';
 import type { CantonWallet } from '../utils/wallet';
 import { isUserWalletRejection, toErrorMessage } from '../utils/walletRejection';
 import { CantonTransactionRejectedError } from '../core/errors';
+import { preparedTransactionDisplay } from '../utils/preparedTransactionDisplay';
 
 export interface TransactionToSend {
   commands: unknown;
@@ -144,14 +145,17 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
 
         // Step 2: Build display list for the confirmation modal
         const displayItems = prepared.map((p, idx) => {
-          if (!showTechnicalDetails) return `Transaction Hash: ${p.hash}`;
+          if (!showTechnicalDetails) {
+            return preparedTransactionDisplay(p) ?? `Transaction Hash: ${p.hash}`;
+          }
           const original = txs[idx];
           return JSON.stringify(
             {
               index: idx + 1,
               hash: p.hash,
-              commands: original?.commands,
+              commands: p.effectiveCommands ?? original?.commands,
               disclosedContracts: original?.disclosedContracts,
+              networkFee: p.networkFee,
             },
             null,
             2
@@ -159,7 +163,7 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
         });
 
         // Step 3: Confirm once (show list + count)
-        if (!skipModal) {
+        if (!skipModal || prepared.some((p) => p.networkFee)) {
           const count = prepared.length;
           const confirmed = await signTransactionConfirm({
             transaction: displayItems,
@@ -302,4 +306,3 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
 
   return { sendMultipleTransactions, loading, error, clearError, cantonWallets, cantonWallet };
 }
-

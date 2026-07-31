@@ -12,8 +12,10 @@ import { useCantonWallet } from './useCantonWallet';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 import type { CantonWallet } from '../utils/wallet';
 import type { CantonQueryCompletionResponseDto, CantonSubmitPreparedOptions } from '../services/cantonService';
+import type { CantonPrepareTransactionResponseDto } from '../core/types';
 import { CantonTransactionRejectedError } from '../core/errors';
 import { isUserWalletRejection } from '../utils/walletRejection';
+import { preparedTransactionDisplay } from '../utils/preparedTransactionDisplay';
 
 export interface SendTransactionOptions {
   onSuccess?: (result: CantonQueryCompletionResponseDto) => void;
@@ -34,6 +36,17 @@ export interface SendTransactionOptions {
 }
 
 export interface UseSendTransactionReturn {
+  /** Prepare a transaction and return the exact hash and any wallet-added fee */
+  prepareTransaction: (
+    commands: unknown,
+    disclosedContracts?: unknown,
+    commandId?: string
+  ) => Promise<CantonPrepareTransactionResponseDto>;
+  /** Sign and submit a transaction that has already been prepared and reviewed */
+  sendPreparedTransaction: (
+    prepared: CantonPrepareTransactionResponseDto,
+    options?: SendTransactionOptions
+  ) => Promise<CantonQueryCompletionResponseDto | null>;
   /** Sign and send a Canton transaction with confirmation modal */
   sendTransaction: (
     commands: unknown,
@@ -58,10 +71,36 @@ export function useSendTransaction(): UseSendTransactionReturn {
 
   const clearError = useCallback(() => setError(null), []);
 
-  const sendTransaction = useCallback(
+  const prepareTransaction = useCallback(
     async (
       commands: unknown,
       disclosedContracts?: unknown,
+      commandId?: string
+    ): Promise<CantonPrepareTransactionResponseDto> => {
+      setError(null);
+      setLoading(true);
+      try {
+        return await cantonService.prepareTransaction(
+          commands,
+          disclosedContracts,
+          commandId
+        );
+      } catch (err: any) {
+        const prepareError = new Error(
+          `Failed to prepare transaction: ${err.message}`
+        );
+        setError(prepareError);
+        throw prepareError;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [cantonService]
+  );
+
+  const sendPreparedTransaction = useCallback(
+    async (
+      prepareResponse: CantonPrepareTransactionResponseDto,
       options?: SendTransactionOptions
     ): Promise<CantonQueryCompletionResponseDto | null> => {
       const {
@@ -75,7 +114,6 @@ export function useSendTransaction(): UseSendTransactionReturn {
         modalRejectText = 'Reject',
         modalDisplayContent,
         showTechnicalDetails = false,
-        commandId,
         submitOptions,
       } = options || {};
 
@@ -86,17 +124,12 @@ export function useSendTransaction(): UseSendTransactionReturn {
         const { wallet: signingWallet, chainType: signingChainType } =
           await resolveSigningWallet();
 
-        // Step 1: Prepare transaction
-        const prepareResponse = await cantonService.prepareTransaction(commands, disclosedContracts, commandId);
+        const displayContent = preparedTransactionDisplay(
+          prepareResponse,
+          modalDisplayContent,
+          showTechnicalDetails
+        );
 
-        // Step 2: Determine modal display content
-        const displayContent = modalDisplayContent
-          ? modalDisplayContent
-          : showTechnicalDetails
-            ? undefined
-            : `Transaction Hash: ${prepareResponse.hash}`;
-
-        // Step 3: Sign hash with automatic modal
         const hashHex = base64ToHex(prepareResponse.hash);
         const signResult = await signRawHashWithModal(
           {
@@ -105,7 +138,10 @@ export function useSendTransaction(): UseSendTransactionReturn {
             hash: hashHex as `0x${string}`,
           },
           {
-            skipModal,
+            // A caller cannot silently suppress a backend-added fee. Popup
+            // wallets that already rendered the prepared response submit it
+            // through their own low-level signing flow instead.
+            skipModal: prepareResponse.networkFee ? false : skipModal,
             title: modalTitle,
             description: modalDescription,
             confirmText: modalConfirmText,
@@ -121,7 +157,6 @@ export function useSendTransaction(): UseSendTransactionReturn {
           return null;
         }
 
-        // Step 4: Submit signed transaction
         const signatureBase64 = hexToBase64(signResult.signature);
         const completionResult = await cantonService.submitPreparedAndWait(
           prepareResponse.hash,
@@ -140,9 +175,11 @@ export function useSendTransaction(): UseSendTransactionReturn {
         if (isUserWalletRejection(err)) {
           onRejection?.();
         } else {
-          const error = new Error(`Failed to send transaction: ${err.message}`);
-          setError(error);
-          onError?.(error);
+          const sendError = new Error(
+            `Failed to send transaction: ${err.message}`
+          );
+          setError(sendError);
+          onError?.(sendError);
         }
         return null;
       } finally {
@@ -152,7 +189,30 @@ export function useSendTransaction(): UseSendTransactionReturn {
     [resolveSigningWallet, signRawHashWithModal, cantonService]
   );
 
+  const sendTransaction = useCallback(
+    async (
+      commands: unknown,
+      disclosedContracts?: unknown,
+      options?: SendTransactionOptions
+    ): Promise<CantonQueryCompletionResponseDto | null> => {
+      try {
+        const prepareResponse = await prepareTransaction(
+          commands,
+          disclosedContracts,
+          options?.commandId
+        );
+        return await sendPreparedTransaction(prepareResponse, options);
+      } catch (err) {
+        options?.onError?.(err as Error);
+        return null;
+      }
+    },
+    [prepareTransaction, sendPreparedTransaction]
+  );
+
   return {
+    prepareTransaction,
+    sendPreparedTransaction,
     sendTransaction,
     loading,
     error,

@@ -46,6 +46,22 @@ export interface CantonPrepareTransactionResponseDto {
   hash: string;
   /** Estimated cost of the transaction (optional) */
   costEstimation?: CantonCostEstimationDto;
+  /** Hosted-wallet fee included in the prepared hash, when applicable */
+  networkFee?: CantonHostedWalletNetworkFeeDto;
+  /** Commands actually represented by the prepared hash when the wallet decorated them */
+  effectiveCommands?: unknown;
+}
+
+export interface CantonHostedWalletNetworkFeeDto {
+  applicationId: string;
+  payer: string;
+  receiver: string;
+  /** Decimal CC amount */
+  amount: string;
+  instrumentAdmin: string;
+  instrumentId: string;
+  /** Final Canton traffic estimate priced by the fee */
+  trafficBytes?: number;
 }
 
 export interface CantonSubmitRegisterRequestDto {
@@ -719,4 +735,3 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: ApiError;
 }
-

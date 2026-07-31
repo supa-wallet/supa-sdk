@@ -22,6 +22,7 @@ import { getPublicKeyBase64, CantonWallet } from '../utils/wallet';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 import type { CantonSubmitPreparedOptions } from '../services/cantonService';
 import { CantonTransactionRejectedError } from '../core/errors';
+import { preparedTransactionDisplay } from '../utils/preparedTransactionDisplay';
 import {
   collectWalletsByChainType,
   normalizeBase64Key,
@@ -663,7 +664,7 @@ export function CantonProvider({
           description: 'Review and sign the following transaction.',
           confirmText: 'Sign & Send',
           rejectText: 'Reject',
-          displayHash: `Transaction Hash: ${prepareResponse.hash}`,
+          displayHash: preparedTransactionDisplay(prepareResponse),
         }
       );
 
