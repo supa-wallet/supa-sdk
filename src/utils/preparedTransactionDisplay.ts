@@ -16,7 +16,7 @@ export function preparedTransactionDisplay(
 
   return [
     baseContent,
-    `Supanova network fee: ${prepared.networkFee.amount} CC`,
+    `Supanova wallet transaction fee: ${prepared.networkFee.amount} CC`,
     `Paid to: ${prepared.networkFee.receiver}`,
     baseContent ? undefined : `Transaction Hash: ${prepared.hash}`,
   ]

@@ -46,13 +46,13 @@ export interface CantonPrepareTransactionResponseDto {
   hash: string;
   /** Estimated cost of the transaction (optional) */
   costEstimation?: CantonCostEstimationDto;
-  /** Hosted-wallet fee included in the prepared hash, when applicable */
-  networkFee?: CantonHostedWalletNetworkFeeDto;
+  /** Hosted-wallet transaction fee included in the prepared hash, when applicable */
+  networkFee?: CantonHostedWalletTransactionFeeDto;
   /** Commands actually represented by the prepared hash when the wallet decorated them */
   effectiveCommands?: unknown;
 }
 
-export interface CantonHostedWalletNetworkFeeDto {
+export interface CantonHostedWalletTransactionFeeDto {
   applicationId: string;
   payer: string;
   receiver: string;
@@ -60,9 +60,13 @@ export interface CantonHostedWalletNetworkFeeDto {
   amount: string;
   instrumentAdmin: string;
   instrumentId: string;
-  /** Final Canton traffic estimate priced by the fee */
+  /** Final Canton request-traffic estimate recorded for observability */
   trafficBytes?: number;
 }
+
+/** @deprecated Use CantonHostedWalletTransactionFeeDto. */
+export type CantonHostedWalletNetworkFeeDto =
+  CantonHostedWalletTransactionFeeDto;
 
 export interface CantonSubmitRegisterRequestDto {
   /** Base64 hash provided for signing */
