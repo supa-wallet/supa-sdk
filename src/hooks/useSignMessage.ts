@@ -15,6 +15,10 @@ export interface SignMessageOptions {
   onSuccess?: (signature: string) => void;
   onRejection?: () => void;
   onError?: (error: Error) => void;
+  /**
+   * @deprecated Ignored. The SDK always shows the message and asks the user to
+   * confirm before it signs.
+   */
   skipModal?: boolean;
   title?: string;
   description?: string;
@@ -52,7 +56,6 @@ export function useSignMessage(): UseSignMessageReturn {
         onSuccess,
         onRejection,
         onError,
-        skipModal = false,
         title = 'Sign Message',
         description = 'You are about to sign the following message.',
         confirmText = 'Sign',
@@ -75,7 +78,6 @@ export function useSignMessage(): UseSignMessageReturn {
               hash: hashHex as `0x${string}`,
             },
             {
-              skipModal,
               title,
               description,
               confirmText,

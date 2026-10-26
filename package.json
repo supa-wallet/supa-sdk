@@ -20,7 +20,8 @@
         "build": "vite build",
         "build:prod": "vite build --mode production",
         "preview": "vite preview",
-        "type-check": "tsc --noEmit"
+        "type-check": "tsc --noEmit",
+        "test": "node --test \"src/**/*.test.ts\""
     },
     "keywords": [
         "supa",

@@ -16,7 +16,9 @@ import { useWallets } from '@privy-io/react-auth';
 import { useCreateWallet } from '@privy-io/react-auth/extended-chains';
 import { useCreateWallet as useSolanaCreateWallet } from '@privy-io/react-auth/solana';
 import { useAuth } from '../hooks/useAuth';
+import { useSupaContext } from './SupaProvider';
 import { useSignRawHashWithModal } from '../hooks/useSignRawHashWithModal';
+import { useRawHashSigner } from '../hooks/signing/useRawHashSigner';
 import { useCantonWallet } from '../hooks/useCantonWallet';
 import { getPublicKeyBase64, CantonWallet } from '../utils/wallet';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
@@ -34,6 +36,7 @@ import type {
   CantonContextValue,
   CantonProviderProps,
   CantonSendCoinOptions,
+  CantonSignHashOptions,
 } from './canton/types';
 import type {
   CantonMeResponseDto,
@@ -51,6 +54,7 @@ export type {
   CantonContextValue,
   CantonProviderProps,
   CantonSendCoinOptions,
+  CantonSignHashOptions,
 } from './canton/types';
 
 const CantonContext = createContext<CantonContextValue | null>(null);
@@ -69,6 +73,8 @@ export function CantonProvider({
   const { user, authenticated } = useAuth();
   const { wallets } = useWallets();
   const { signRawHashWithModal } = useSignRawHashWithModal();
+  const { signRawHashAfterConfirmation } = useRawHashSigner();
+  const { signTransactionConfirm } = useSupaContext();
   const { createWallet: createStellarWallet } = useCreateWallet();
   const { createWallet: createSolanaWallet } = useSolanaCreateWallet();
   const { cantonWallet, cantonWallets } = useCantonWallet();
@@ -303,12 +309,14 @@ export function CantonProvider({
   // ============================================================================
   const signHash = useCallback(async (
     hashBase64: string,
-    options?: { skipModal?: boolean }
+    options?: CantonSignHashOptions
   ): Promise<string> => {
     try {
       const { wallet, chainType } = await resolveSigningWallet();
       const hashHex = base64ToHex(hashBase64);
 
+      // The wallet cannot decode a bare hash, so the prompt always says so and
+      // always shows the hash next to whatever context the caller provides.
       const result = await signRawHashWithModal(
         {
           address: wallet.address,
@@ -316,12 +324,15 @@ export function CantonProvider({
           hash: hashHex as `0x${string}`,
         },
         {
-          skipModal: options?.skipModal ?? false,
-          title: 'Sign Hash',
-          description: 'You are about to sign the following hash.',
+          title: options?.title || 'Sign Hash',
+          description: options?.description || 'You are about to sign the following hash.',
           confirmText: 'Sign',
           rejectText: 'Reject',
-          displayHash: `Hash: ${hashBase64}`,
+          infoText:
+            'The wallet cannot show what this hash authorises. Sign only if you started this action and trust the app that asked.',
+          displayHash: [options?.details, `Hash: ${hashBase64}`]
+            .filter((line): line is string => Boolean(line))
+            .join('\n\n'),
         }
       );
 
@@ -412,28 +423,37 @@ export function CantonProvider({
         // Wait for Privy to initialize wallet proxy
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Sign function with retry logic
+        // Sign function: the user confirms the registration once, then signing of
+        // that one hash is retried while the Privy wallet proxy initialises.
         const signFunction = async (hashHex: string): Promise<string> => {
           let signAttempts = 0;
           const maxSignAttempts = 5;
-          
+
+          const confirmed = await signTransactionConfirm({
+            transaction: [
+              `Wallet public key: ${publicKey}`,
+              `Registration hash: ${hexToBase64(hashHex)}`,
+            ].join('\n\n'),
+            title: 'Activate Canton Wallet',
+            description: 'Sign to register your wallet key on the Canton Network.',
+            confirmText: 'Activate',
+            rejectText: 'Cancel',
+            infoText: 'The wallet cannot decode this hash. Continue only if you are setting up your wallet now.',
+          });
+          if (!confirmed.confirmed) {
+            throw new Error('User rejected signature');
+          }
+
           console.log('[Supa SDK] 🔐 Signing with wallet:', wallet!.address);
           
           while (signAttempts < maxSignAttempts) {
             try {
               console.log(`[Supa SDK] 🔐 Sign attempt ${signAttempts + 1}/${maxSignAttempts}...`);
-              const result = await signRawHashWithModal(
-                {
-                  address: wallet!.address,
-                  chainType: wallet!.chainType || defaultChainType,
-                  hash: hashHex as `0x${string}`,
-                },
-                { skipModal: true }
-              );
-              
-              if (!result) {
-                throw new Error('User rejected signature');
-              }
+              const result = await signRawHashAfterConfirmation({
+                address: wallet!.address,
+                chainType: wallet!.chainType || defaultChainType,
+                hash: hashHex as `0x${string}`,
+              });
               
               console.log('[Supa SDK] ✅ Signature obtained successfully');
               return result.signature;
@@ -487,7 +507,7 @@ export function CantonProvider({
 
     registrationPromise.current = promise;
     return promise;
-  }, [cantonWallet, createCantonWallet, signRawHashWithModal, cantonService, isRegistered, getWalletsByChainType, defaultChainType]);
+  }, [cantonWallet, createCantonWallet, signRawHashAfterConfirmation, signTransactionConfirm, cantonService, isRegistered, getWalletsByChainType, defaultChainType]);
 
   // ============================================================================
   // Tap Devnet
@@ -664,7 +684,7 @@ export function CantonProvider({
           description: 'Review and sign the following transaction.',
           confirmText: 'Sign & Send',
           rejectText: 'Reject',
-          displayHash: preparedTransactionDisplay(prepareResponse),
+          displayHash: preparedTransactionDisplay(prepareResponse, undefined, false, commands),
         }
       );
 
@@ -725,12 +745,14 @@ export function CantonProvider({
           hash: hashHex as `0x${string}`,
         },
         {
-          skipModal: options?.skipModal || false,
           title: isAmuletTransfer ? 'Send Canton Coin' : `Send ${instrumentId}`,
           description: `You are sending ${amount} ${isAmuletTransfer ? 'Canton Coin' : instrumentId}${memo ? ` (${memo})` : ''}.`,
           confirmText: 'Confirm & Sign',
           rejectText: 'Cancel',
-          displayHash: `Sending ${amount} ${isAmuletTransfer ? 'CC' : instrumentId} to ${receiverPartyId.slice(0, 20)}...`,
+          displayHash: preparedTransactionDisplay(
+            prepareResponse,
+            `Sending ${amount} ${isAmuletTransfer ? 'CC' : instrumentId} to ${receiverPartyId}`
+          ),
         }
       );
 
@@ -831,7 +853,13 @@ export function CantonProvider({
             chainType,
             hash: hashHex as `0x${string}`,
           },
-          { skipModal: true }
+          {
+            title: 'Enable Incoming Transfers',
+            description: 'Sign to let others send Canton Coin directly to your wallet.',
+            confirmText: 'Confirm & Sign',
+            rejectText: 'Cancel',
+            displayHash: preparedTransactionDisplay(prepareResponse),
+          }
         );
 
         if (!signResult) {
@@ -906,12 +934,14 @@ export function CantonProvider({
           hash: hashHex as `0x${string}`,
         },
         {
-          skipModal: options?.skipModal ?? false,
           title: accept ? 'Accept Transfer' : 'Reject Transfer',
           description: `You are about to ${accept ? 'accept' : 'reject'} an incoming transfer.`,
           confirmText: 'Confirm & Sign',
           rejectText: 'Cancel',
-          displayHash: `${accept ? 'Accepting' : 'Rejecting'} transfer ${contractId.slice(0, 20)}...`,
+          displayHash: preparedTransactionDisplay(
+            prepareResponse,
+            `${accept ? 'Accepting' : 'Rejecting'} transfer ${contractId}`
+          ),
         }
       );
 
