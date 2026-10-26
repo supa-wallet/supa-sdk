@@ -53,7 +53,7 @@
         "@solana-program/system": "^0.8.0",
         "@solana-program/token": "^0.6.0",
         "@solana/kit": "^3.0.3",
-        "axios": "^1.7.9",
+        "axios": "^1.20.0",
         "buffer": "^6.0.3",
         "ox": "^0.8.0",
         "permissionless": "^0.2.24",
