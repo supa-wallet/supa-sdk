@@ -21,6 +21,10 @@ export interface SendTransactionOptions {
   onSuccess?: (result: CantonQueryCompletionResponseDto) => void;
   onRejection?: () => void;
   onError?: (error: Error) => void;
+  /**
+   * @deprecated Ignored. The SDK always shows its confirmation modal, with the
+   * decoded commands, before it signs.
+   */
   skipModal?: boolean;
   modalTitle?: string;
   modalDescription?: string;
@@ -98,16 +102,16 @@ export function useSendTransaction(): UseSendTransactionReturn {
     [cantonService]
   );
 
-  const sendPreparedTransaction = useCallback(
+  const signAndSubmitPrepared = useCallback(
     async (
       prepareResponse: CantonPrepareTransactionResponseDto,
-      options?: SendTransactionOptions
+      options?: SendTransactionOptions,
+      submittedCommands?: unknown
     ): Promise<CantonQueryCompletionResponseDto | null> => {
       const {
         onSuccess,
         onRejection,
         onError,
-        skipModal = false,
         modalTitle = 'Sign Transaction',
         modalDescription = 'Review and sign the following transaction.',
         modalConfirmText = 'Sign & Send',
@@ -127,7 +131,8 @@ export function useSendTransaction(): UseSendTransactionReturn {
         const displayContent = preparedTransactionDisplay(
           prepareResponse,
           modalDisplayContent,
-          showTechnicalDetails
+          showTechnicalDetails,
+          submittedCommands
         );
 
         const hashHex = base64ToHex(prepareResponse.hash);
@@ -138,10 +143,6 @@ export function useSendTransaction(): UseSendTransactionReturn {
             hash: hashHex as `0x${string}`,
           },
           {
-            // A caller cannot silently suppress a backend-added fee. Popup
-            // wallets that already rendered the prepared response submit it
-            // through their own low-level signing flow instead.
-            skipModal: prepareResponse.networkFee ? false : skipModal,
             title: modalTitle,
             description: modalDescription,
             confirmText: modalConfirmText,
@@ -189,6 +190,15 @@ export function useSendTransaction(): UseSendTransactionReturn {
     [resolveSigningWallet, signRawHashWithModal, cantonService]
   );
 
+  const sendPreparedTransaction = useCallback(
+    (
+      prepareResponse: CantonPrepareTransactionResponseDto,
+      options?: SendTransactionOptions
+    ): Promise<CantonQueryCompletionResponseDto | null> =>
+      signAndSubmitPrepared(prepareResponse, options),
+    [signAndSubmitPrepared]
+  );
+
   const sendTransaction = useCallback(
     async (
       commands: unknown,
@@ -201,13 +211,13 @@ export function useSendTransaction(): UseSendTransactionReturn {
           disclosedContracts,
           options?.commandId
         );
-        return await sendPreparedTransaction(prepareResponse, options);
+        return await signAndSubmitPrepared(prepareResponse, options, commands);
       } catch (err) {
         options?.onError?.(err as Error);
         return null;
       }
     },
-    [prepareTransaction, sendPreparedTransaction]
+    [prepareTransaction, signAndSubmitPrepared]
   );
 
   return {

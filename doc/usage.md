@@ -496,9 +496,6 @@ function SignMessageExample() {
       // Display options
       displayContent: 'Custom content to display',
       showTechnicalDetails: false, // Show address, chainType, hash as JSON
-      
-      // Skip modal (use with caution)
-      skipModal: false,
     });
 
     if (signature) {
@@ -857,13 +854,11 @@ function App() {
 
 ## FAQ
 
-### How do I disable confirmation modals?
+### Can I disable confirmation modals?
 
-You can skip modals by passing `skipModal: true` option, but this is **not recommended** for user-facing operations:
-
-```tsx
-await signMessage('Hello', { skipModal: true });
-```
+No. Every signature the SDK produces is shown to the user in a confirmation modal first,
+and transaction prompts always list the decoded commands, any wallet fee and the hash.
+The old `skipModal` option is deprecated and ignored.
 
 ### How do I show technical details in modals?
 

@@ -98,7 +98,10 @@ export interface CantonSubmitPreparedOptions {
   commandId?: string;
   /** Optional deduplication period (passed to submitPrepared) */
   deduplicationPeriod?: any;
-  /** Skip confirmation modal and sign silently. Default: false */
+  /**
+   * @deprecated Ignored. The SDK always asks the user to confirm before it signs;
+   * there is no silent signing path.
+   */
   skipModal?: boolean;
 }
 

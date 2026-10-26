@@ -3,8 +3,8 @@
  *
  * Flow:
  * 1) Prepare each transaction via /canton/api/prepare_transaction
- * 2) Show ONE modal listing N transactions
- * 3) Sign each prepared hash sequentially (no extra SDK modals)
+ * 2) Show ONE modal listing N transactions with their decoded commands (always)
+ * 3) After approval, sign each listed hash sequentially (no extra SDK modals)
  * 4) Submit all signatures in one call (preferred: submit_multiple_prepared; fallback: individual submits)
  * 5) Wait for completion for each successful submissionId
  */
@@ -13,7 +13,8 @@ import { useCallback, useState } from 'react';
 import { useSupaContext } from '../providers/SupaProvider';
 import { useCantonContext } from '../providers/CantonProvider';
 import { useCantonWallet } from './useCantonWallet';
-import { useSignRawHashWithModal } from './useSignRawHashWithModal';
+import { useRawHashSigner } from './signing/useRawHashSigner';
+import { confirmThenSign } from './signing/confirmBeforeSign';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 import type {
   CantonPrepareTransactionResponseDto,
@@ -39,6 +40,10 @@ export interface SendMultipleTransactionsOptions {
   onSuccess?: (results: CantonQueryCompletionResponseDto[]) => void;
   onRejection?: () => void;
   onError?: (error: Error) => void;
+  /**
+   * @deprecated Ignored. The SDK always shows one confirmation listing every
+   * transaction, with its decoded commands, before it signs any of them.
+   */
   skipModal?: boolean;
   modalTitle?: string;
   modalDescription?: string;
@@ -87,7 +92,7 @@ async function waitForCompletionWithDetails(params: {
 
 export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn {
   const { cantonService, signTransactionConfirm } = useSupaContext();
-  const { signRawHashWithModal } = useSignRawHashWithModal();
+  const { signRawHashAfterConfirmation } = useRawHashSigner();
   const { cantonWallet, cantonWallets } = useCantonWallet();
   const { resolveSigningWallet } = useCantonContext();
 
@@ -101,7 +106,6 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
         onSuccess,
         onRejection,
         onError,
-        skipModal = false,
         modalTitle = 'Sign Multiple Transactions',
         modalDescription,
         modalConfirmText = 'Sign & Send',
@@ -145,10 +149,10 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
 
         // Step 2: Build display list for the confirmation modal
         const displayItems = prepared.map((p, idx) => {
-          if (!showTechnicalDetails) {
-            return preparedTransactionDisplay(p) ?? `Transaction Hash: ${p.hash}`;
-          }
           const original = txs[idx];
+          if (!showTechnicalDetails) {
+            return preparedTransactionDisplay(p, undefined, false, original?.commands);
+          }
           return JSON.stringify(
             {
               index: idx + 1,
@@ -162,57 +166,51 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
           );
         });
 
-        // Step 3: Confirm once (show list + count)
-        if (!skipModal || prepared.some((p) => p.networkFee)) {
-          const count = prepared.length;
-          const confirmed = await signTransactionConfirm({
-            transaction: displayItems,
-            title: modalTitle,
-            description: modalDescription ?? `You are about to sign ${count} transactions.`,
-            confirmText: modalConfirmText,
-            rejectText: modalRejectText,
-            infoText: 'You are submitting transactions, please be careful',
-          });
-
-          if (!confirmed.confirmed) {
-            onRejection?.();
-            return null;
-          }
-        }
-
-        // Step 4: Sign sequentially to avoid wallet/provider concurrency issues.
-        // Signer was resolved at the top of `try` via Canton pubkey match so every
-        // tx in the batch is signed with the same key the backend prepared against.
-        const signedTxs: CantonSubmitRegisterRequestDto[] = [];
-
-        for (let i = 0; i < prepared.length; i++) {
-          const p = prepared[i]!;
-          try {
-            const hashHex = base64ToHex(p.hash);
-            const signResult = await signRawHashWithModal(
-              {
-                address: signingWallet.address,
-                chainType: signingChainType,
-                hash: hashHex as `0x${string}`,
-              },
-              { skipModal: true }
-            );
-            if (!signResult) {
-              onRejection?.();
-              return null;
+        // Step 3 + 4: Confirm once (show list + count), always. Only after the
+        // user approves, sign each listed hash sequentially to avoid wallet/provider
+        // concurrency issues. Signer was resolved at the top of `try` via Canton
+        // pubkey match so every tx in the batch is signed with the same key the
+        // backend prepared against.
+        const count = prepared.length;
+        const signedTxs = await confirmThenSign(
+          () =>
+            signTransactionConfirm({
+              transaction: displayItems,
+              title: modalTitle,
+              description: modalDescription ?? `You are about to sign ${count} transactions.`,
+              confirmText: modalConfirmText,
+              rejectText: modalRejectText,
+              infoText: 'You are submitting transactions, please be careful',
+            }),
+          async () => {
+            const signed: CantonSubmitRegisterRequestDto[] = [];
+            for (let i = 0; i < prepared.length; i++) {
+              const p = prepared[i]!;
+              try {
+                const signResult = await signRawHashAfterConfirmation({
+                  address: signingWallet.address,
+                  chainType: signingChainType,
+                  hash: base64ToHex(p.hash) as `0x${string}`,
+                });
+                signed.push({
+                  hash: p.hash,
+                  signature: hexToBase64(signResult.signature),
+                  ...(deduplicationPeriod && { deduplicationPeriod }),
+                });
+              } catch (e) {
+                if (isUserWalletRejection(e)) {
+                  return null;
+                }
+                throw new Error(`Failed to sign ${txLabel(i, p.hash)}: ${toErrorMessage(e)}`);
+              }
             }
-            signedTxs.push({
-              hash: p.hash,
-              signature: hexToBase64(signResult.signature),
-              ...(deduplicationPeriod && { deduplicationPeriod }),
-            });
-          } catch (e) {
-            if (isUserWalletRejection(e)) {
-              onRejection?.();
-              return null;
-            }
-            throw new Error(`Failed to sign ${txLabel(i, p.hash)}: ${toErrorMessage(e)}`);
+            return signed;
           }
+        );
+
+        if (!signedTxs) {
+          onRejection?.();
+          return null;
         }
 
         // Step 5: Submit batch (preferred) with fallback
@@ -301,7 +299,7 @@ export function useSendMultipleTransactions(): UseSendMultipleTransactionsReturn
         setLoading(false);
       }
     },
-    [cantonService, resolveSigningWallet, signRawHashWithModal, signTransactionConfirm]
+    [cantonService, resolveSigningWallet, signRawHashAfterConfirmation, signTransactionConfirm]
   );
 
   return { sendMultipleTransactions, loading, error, clearError, cantonWallets, cantonWallet };

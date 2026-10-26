@@ -3,14 +3,16 @@
  *
  * Flow:
  * 1) POST /canton/api/prepare_initialization_transactions -> 0..N prepared txs
- * 2) Sign each hash silently (no UI)
+ * 2) Show one confirmation listing every prepared tx; after approval sign each listed hash
  * 3) Submit all (preferred: /canton/api/submit_multiple_prepared; fallback: parallel submit_prepared)
  */
 
 import { useCallback, useState } from 'react';
 import { useSupaContext } from '../providers/SupaProvider';
 import { useCantonContext } from '../providers/CantonProvider';
-import { useSignRawHashWithModal } from './useSignRawHashWithModal';
+import { useRawHashSigner } from './signing/useRawHashSigner';
+import { confirmThenSign } from './signing/confirmBeforeSign';
+import { preparedTransactionDisplay } from '../utils/preparedTransactionDisplay';
 import { base64ToHex, hexToBase64 } from '../utils/converters';
 import type { CantonSubmitMultipleResultDto, CantonSubmitRegisterRequestDto } from '../core/types';
 
@@ -24,9 +26,9 @@ export interface UseInitializationTransactionsReturn {
 }
 
 export function useInitializationTransactions(): UseInitializationTransactionsReturn {
-  const { cantonService } = useSupaContext();
+  const { cantonService, signTransactionConfirm } = useSupaContext();
   const { resolveSigningWallet } = useCantonContext();
-  const { signRawHashWithModal } = useSignRawHashWithModal();
+  const { signRawHashAfterConfirmation } = useRawHashSigner();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -50,30 +52,40 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
       const { wallet: signingWallet, chainType: signingChainType } = await resolveSigningWallet();
       console.log('[Init Txs] Signing wallet:', signingWallet.address, 'chain:', signingChainType);
 
-      // Sign sequentially to avoid wallet/provider concurrency issues.
-      const signedTxs: CantonSubmitRegisterRequestDto[] = [];
-      for (const tx of prepared) {
-        console.log('[Init Txs] Signing transaction:', tx.hash);
-        const hashHex = base64ToHex(tx.hash);
-        const signResult = await signRawHashWithModal(
-          {
-            address: signingWallet.address,
-            chainType: signingChainType,
-            hash: hashHex as `0x${string}`,
-          },
-          { skipModal: true }
-        );
-
-        if (!signResult) {
-          console.error('[Init Txs] User rejected signature');
-          throw new Error('User rejected initialization transaction signature');
+      // One confirmation for the whole set, then sign sequentially to avoid
+      // wallet/provider concurrency issues.
+      const signedTxs = await confirmThenSign(
+        () =>
+          signTransactionConfirm({
+            transaction: prepared.map((tx) => preparedTransactionDisplay(tx)),
+            title: 'Set Up Your Wallet',
+            description: `Sign ${prepared.length} setup transaction${prepared.length === 1 ? '' : 's'} for your wallet.`,
+            confirmText: 'Sign & Send',
+            rejectText: 'Cancel',
+            infoText: 'Review what each transaction does before you sign.',
+          }),
+        async () => {
+          const signed: CantonSubmitRegisterRequestDto[] = [];
+          for (const tx of prepared) {
+            console.log('[Init Txs] Signing transaction:', tx.hash);
+            const signResult = await signRawHashAfterConfirmation({
+              address: signingWallet.address,
+              chainType: signingChainType,
+              hash: base64ToHex(tx.hash) as `0x${string}`,
+            });
+            console.log('[Init Txs] Transaction signed successfully');
+            signed.push({
+              hash: tx.hash,
+              signature: hexToBase64(signResult.signature),
+            });
+          }
+          return signed;
         }
+      );
 
-        console.log('[Init Txs] Transaction signed successfully');
-        signedTxs.push({
-          hash: tx.hash,
-          signature: hexToBase64(signResult.signature),
-        });
+      if (!signedTxs) {
+        console.error('[Init Txs] User rejected signature');
+        throw new Error('User rejected initialization transaction signature');
       }
 
       // Preferred: single submit_multiple_prepared call
@@ -110,7 +122,7 @@ export function useInitializationTransactions(): UseInitializationTransactionsRe
     } finally {
       setLoading(false);
     }
-  }, [cantonService, resolveSigningWallet, signRawHashWithModal]);
+  }, [cantonService, resolveSigningWallet, signRawHashAfterConfirmation, signTransactionConfirm]);
 
   return { runInitializationTransactions, loading, error, clearError };
 }

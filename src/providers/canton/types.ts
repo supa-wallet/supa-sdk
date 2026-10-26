@@ -15,8 +15,23 @@ import type {
 import type { CantonWallet } from '../../utils/wallet';
 import type { SigningWalletInfo } from './signingWalletResolver';
 
+export interface CantonSignHashOptions {
+  /**
+   * @deprecated Ignored. The SDK always asks the user to confirm before it signs.
+   */
+  skipModal?: boolean;
+  /** Prompt title. Default: "Sign Hash" */
+  title?: string;
+  /** Prompt description shown under the title */
+  description?: string;
+  /** What the hash authorises, in the caller's words; shown above the hash */
+  details?: string;
+}
+
 export interface CantonSendCoinOptions extends CantonSubmitPreparedOptions {
-  /** Skip confirmation modal. Default: false */
+  /**
+   * @deprecated Ignored. The SDK always asks the user to confirm before it signs.
+   */
   skipModal?: boolean;
   /**
    * Instrument ID to transfer.
@@ -65,8 +80,8 @@ export interface CantonContextValue {
   /** Tap devnet faucet */
   tapDevnet: (amount: string, options?: CantonSubmitPreparedOptions) => Promise<CantonQueryCompletionResponseDto>;
 
-  /** Sign hash with Stellar wallet */
-  signHash: (hashBase64: string, options?: { skipModal?: boolean }) => Promise<string>;
+  /** Sign a hash after the user confirms it in the SDK modal (always shown) */
+  signHash: (hashBase64: string, options?: CantonSignHashOptions) => Promise<string>;
 
   /**
    * Resolve the signing wallet by matching `cantonUser.publicKey` against
