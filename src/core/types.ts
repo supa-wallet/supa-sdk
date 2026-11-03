@@ -281,6 +281,35 @@ export interface CantonInstrumentIdDto {
   id: string;
 }
 
+/**
+ * Optional public Supa Launch presentation data supplied by the wallet backend.
+ * Match networkId AND instrumentId.admin/id before using it. This metadata is
+ * not transfer authority: submit the holding's original instrument identity.
+ */
+export interface CantonLaunchTokenMetadataDto {
+  source: 'supa-launch';
+  networkId: string;
+  instrumentId: CantonInstrumentIdDto;
+  symbol: string;
+  name: string;
+  /** Null when the wallet-metadata endpoint has not resolved yet. */
+  decimals: number | null;
+  imageUrl: string | null;
+  /** CC per whole token, as an exact decimal string; null means unavailable. */
+  priceCc: string | null;
+  /** USD per whole token, as an exact decimal string; null means unavailable. */
+  priceUsd: string | null;
+  /** Catalog projection timestamp, not the balance fetch timestamp. */
+  asOf: string;
+  /** Last successful catalog read. An idle ledger can have an older asOf. */
+  fetchedAt: string;
+  ccUsdAsOf: string | null;
+  /** Catalog data is being served from a bounded stale cache. */
+  stale: boolean;
+  /** The CC/USD conversion quote is stale. */
+  usdStale: boolean;
+}
+
 /** UTXO metadata including creation info and demurrage rate */
 export interface CantonUtxoMetadataDto {
   /** Round number when the UTXO was created */
@@ -327,6 +356,10 @@ export interface CantonLockedUtxoDto {
 export interface CantonTokenBalanceDto {
   /** Unique identifier for this token type */
   instrumentId: CantonInstrumentIdDto;
+  /** Public token icon; absent on older wallet backends. */
+  logo?: string | null;
+  /** Optional identity-checked launchpad presentation data. */
+  launchMetadata?: CantonLaunchTokenMetadataDto;
   /** Total unlocked balance as decimal string */
   totalUnlockedBalance: string;
   /** Total locked balance as decimal string */
@@ -345,6 +378,8 @@ export interface CantonTokenBalanceDto {
 
 /** Canton wallet balances response */
 export interface CantonWalletBalancesResponseDto {
+  /** Canonical Canton network; absent on older wallet backends. */
+  networkId?: string;
   /** Party ID of the wallet owner */
   partyId: string;
   /** Token balances grouped by instrument ID */
@@ -438,6 +473,9 @@ export interface CantonInstrumentDto {
 
 /** Incoming transfer information */
 export interface CantonIncomingTransferDto {
+  /** Canonical network and identity-checked presentation data, when available. */
+  networkId?: string;
+  launchMetadata?: CantonLaunchTokenMetadataDto;
   /** Instrument details (token info) */
   instrument: CantonInstrumentDto;
   /** Contract ID of the transfer instruction (use this to approve or reject) */
@@ -480,6 +518,9 @@ export interface CantonTokenOperationDto {
 
 /** Canton transaction from history */
 export interface CantonTransactionDto {
+  /** Canonical network and identity-checked presentation data, when available. */
+  networkId?: string;
+  launchMetadata?: CantonLaunchTokenMetadataDto;
   /** Balance change (positive for incoming, negative for outgoing) */
   balanceChange: number;
   /** Transaction date (ISO 8601) */

@@ -477,6 +477,27 @@ if (cantonBalances) {
 }
 ```
 
+#### Supa Launch token presentation
+
+Wallet backends that support Supa Launch enrichment return an optional
+`networkId` on balance responses and optional `launchMetadata` on each token.
+The same optional fields are available on incoming transfers and transactions.
+Older backends remain compatible; missing metadata must not hide a holding.
+
+`CantonLaunchTokenMetadataDto` contains the symbol, name, image URL, decimals,
+CC/USD prices, and source timestamps. Prices and ledger quantities are decimal
+strings in **whole-token units**. Preserve decimal precision for valuation and
+do not divide an existing balance by `10 ** decimals`.
+
+Before displaying metadata, compare its `networkId` and full
+`instrumentId.admin` / `instrumentId.id` with the response and holding. Keep
+using the original instrument identity for transfer preparation. A matching
+symbol alone is insufficient. `priceUsd: null` means unavailable, while
+`stale` and `usdStale` distinguish cached catalog data from an old CC/USD quote.
+Use `fetchedAt` to age the catalog observation; `asOf` retains upstream ledger
+provenance and can be older for a quiet market.
+The backend reads the public launch catalog; clients need no launch API key.
+
 #### Send Canton Coin / Token
 
 Send Canton Coin (default) or CIP-56 token with cost estimation support:
